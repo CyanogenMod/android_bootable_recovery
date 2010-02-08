@@ -30,7 +30,10 @@ char* MENU_ITEMS[] = { "reboot system now",
                        NULL };
 
 int device_toggle_display(volatile char* key_pressed, int key_code) {
-    return key_code == KEY_HOME;
+    int alt = key_pressed[KEY_LEFTALT] || key_pressed[KEY_RIGHTALT];
+    if (alt && key_code == KEY_L)
+        return 1;
+    return key_code == KEY_HOME || key_code == KEY_MENU;
 }
 
 int device_reboot_now(volatile char* key_pressed, int key_code) {
