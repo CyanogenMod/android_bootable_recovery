@@ -27,6 +27,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "apply sdcard:update.zip",
                        "wipe data/factory reset",
                        "wipe cache partition",
+                       "install zip from sdcard",
                        "toggle signature verification",
                        "toggle script asserts",
                        NULL };
@@ -56,6 +57,9 @@ int device_handle_key(int key_code, int visible) {
             case KEY_ENTER:
             case BTN_MOUSE:
                 return SELECT_ITEM;
+            case KEY_BACKSPACE:
+            case KEY_END:
+                return GO_BACK;
         }
     }
 

@@ -90,7 +90,7 @@ handle_update_script(ZipArchive *zip, const ZipEntry *update_script_entry)
     char* script_data;
     if (read_data(zip, update_script_entry, &script_data, &script_len) < 0) {
         LOGE("Can't read update script\n");
-        return INSTALL_ERROR;
+        return INSTALL_UPDATE_SCRIPT_MISSING;
     }
 
     /* Parse the script.  Note that the script and parse tree are never freed.

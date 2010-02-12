@@ -61,18 +61,26 @@ int device_wipe_data();
 #define HIGHLIGHT_UP        -2
 #define HIGHLIGHT_DOWN      -3
 #define SELECT_ITEM         -4
+#define GO_BACK             -5
 
 #define ITEM_REBOOT          0
 #define ITEM_APPLY_SDCARD    1
 #define ITEM_WIPE_DATA       2
 #define ITEM_WIPE_CACHE      3
-#define ITEM_SIG_CHECK       4
-#define ITEM_ASSERTS         5
+#define ITEM_INSTALL_ZIP     4
+#define ITEM_SIG_CHECK       5
+#define ITEM_ASSERTS         6
 
 // Header text to display above the main menu.
 extern char* MENU_HEADERS[];
 
 // Text of menu items.
 extern char* MENU_ITEMS[];
+
+int
+get_menu_selection(char** headers, char** items, int menu_only);
+
+void
+set_sdcard_update_bootloader_message();
 
 #endif

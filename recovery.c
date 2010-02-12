@@ -212,7 +212,7 @@ get_args(int *argc, char ***argv) {
     set_bootloader_message(&boot);
 }
 
-static void
+void
 set_sdcard_update_bootloader_message()
 {
     struct bootloader_message boot;
@@ -303,7 +303,7 @@ prepend_title(char** headers) {
     return new_headers;
 }
 
-static int
+int
 get_menu_selection(char** headers, char** items, int menu_only) {
     // throw away keys pressed previously, so user doesn't
     // accidentally trigger menu items.
@@ -334,6 +334,8 @@ get_menu_selection(char** headers, char** items, int menu_only) {
                     break;
                 case NO_ACTION:
                     break;
+                case GO_BACK:
+                    return GO_BACK;
             }
         } else if (!menu_only) {
             chosen_item = action;
@@ -438,6 +440,9 @@ prompt_and_wait()
                 break;
             case ITEM_ASSERTS:
                 toggle_script_asserts();
+                break;
+            case ITEM_INSTALL_ZIP:
+                show_choose_zip_menu();
                 break;
         }
     }
