@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef RECOVERY_INSTALL_H_
-#define RECOVERY_INSTALL_H_
+#ifndef AMEND_PARSER_H_
+#define AMEND_PARSER_H_
 
-#include "common.h"
+#include "parser_y.h"
 
-enum { INSTALL_SUCCESS, INSTALL_ERROR, INSTALL_CORRUPT, INSTALL_UPDATE_BINARY_MISSING };
-int install_package(const char *root_path);
+int yyparse(void);
 
-#endif  // RECOVERY_INSTALL_H_
+#endif  // AMEND_PARSER_H_

@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef RECOVERY_INSTALL_H_
-#define RECOVERY_INSTALL_H_
+#ifndef AMEND_REGISTER_H_
+#define AMEND_REGISTER_H_
 
-#include "common.h"
+int registerUpdateCommands(void);
+int registerUpdateFunctions(void);
 
-enum { INSTALL_SUCCESS, INSTALL_ERROR, INSTALL_CORRUPT, INSTALL_UPDATE_BINARY_MISSING };
-int install_package(const char *root_path);
-
-#endif  // RECOVERY_INSTALL_H_
+#endif  // AMEND_REGISTER_H_

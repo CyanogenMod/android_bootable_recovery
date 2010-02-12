@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef RECOVERY_INSTALL_H_
-#define RECOVERY_INSTALL_H_
+#ifndef AMEND_H_
+#define AMEND_H_
 
-#include "common.h"
+#include "ast.h"
+#include "execute.h"
 
-enum { INSTALL_SUCCESS, INSTALL_ERROR, INSTALL_CORRUPT, INSTALL_UPDATE_BINARY_MISSING };
-int install_package(const char *root_path);
+const AmCommandList *parseAmendScript(const char *buf, size_t bufLen);
 
-#endif  // RECOVERY_INSTALL_H_
+#endif  // AMEND_H_

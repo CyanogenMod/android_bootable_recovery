@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef RECOVERY_INSTALL_H_
-#define RECOVERY_INSTALL_H_
+#include <stdlib.h>
+#include "amend.h"
+#include "lexer.h"
 
-#include "common.h"
+extern const AmCommandList *gCommands;
 
-enum { INSTALL_SUCCESS, INSTALL_ERROR, INSTALL_CORRUPT, INSTALL_UPDATE_BINARY_MISSING };
-int install_package(const char *root_path);
-
-#endif  // RECOVERY_INSTALL_H_
+const AmCommandList *
+parseAmendScript(const char *buf, size_t bufLen)
+{
+    setLexerInputBuffer(buf, bufLen);
+    int ret = yyparse();
+    if (ret != 0) {
+        return NULL;
+    }
+    return gCommands;
+}

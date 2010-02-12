@@ -7,6 +7,7 @@ include $(CLEAR_VARS)
 commands_recovery_local_path := $(LOCAL_PATH)
 
 LOCAL_SRC_FILES := \
+	legacy.c \
 	recovery.c \
 	bootloader.c \
 	firmware.c \
@@ -40,9 +41,11 @@ endif
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmtdutils libmincrypt
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
+LOCAL_STATIC_LIBRARIES += libamend
 
 include $(BUILD_EXECUTABLE)
 
+include $(commands_recovery_local_path)/amend/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk
 include $(commands_recovery_local_path)/mtdutils/Android.mk

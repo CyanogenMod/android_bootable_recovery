@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef RECOVERY_INSTALL_H_
-#define RECOVERY_INSTALL_H_
+#ifndef AMEND_SYMTAB_H_
+#define AMEND_SYMTAB_H_
 
-#include "common.h"
+typedef struct SymbolTable SymbolTable;
 
-enum { INSTALL_SUCCESS, INSTALL_ERROR, INSTALL_CORRUPT, INSTALL_UPDATE_BINARY_MISSING };
-int install_package(const char *root_path);
+SymbolTable *createSymbolTable(void);
 
-#endif  // RECOVERY_INSTALL_H_
+void deleteSymbolTable(SymbolTable *tab);
+
+/* symbol and cookie must be non-NULL.
+ */
+int addToSymbolTable(SymbolTable *tab, const char *symbol, unsigned int flags,
+        const void *cookie);
+
+void *findInSymbolTable(SymbolTable *tab, const char *symbol,
+        unsigned int flags);
+
+#endif  // AMEND_SYMTAB_H_

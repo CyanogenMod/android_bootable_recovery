@@ -14,12 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef RECOVERY_INSTALL_H_
-#define RECOVERY_INSTALL_H_
+#ifndef AMEND_LEXER_H_
+#define AMEND_LEXER_H_
 
-#include "common.h"
+#define AMEND_LEXER_BUFFER_INPUT 1
 
-enum { INSTALL_SUCCESS, INSTALL_ERROR, INSTALL_CORRUPT, INSTALL_UPDATE_BINARY_MISSING };
-int install_package(const char *root_path);
+void yyerror(const char *msg);
+int yylex(void);
 
-#endif  // RECOVERY_INSTALL_H_
+#if AMEND_LEXER_BUFFER_INPUT
+void setLexerInputBuffer(const char *buf, size_t buflen);
+#else
+#include <stdio.h>
+void yyset_in(FILE *in_str);
+#endif
+
+const char *tokenToString(int token);
+
+typedef enum {
+    AM_UNKNOWN_ARGS,
+    AM_WORD_ARGS,
+    AM_BOOLEAN_ARGS,
+} AmArgumentType;
+
+void setLexerArgumentType(AmArgumentType type);
+int getLexerLineNumber(void);
+
+#endif  // AMEND_LEXER_H_

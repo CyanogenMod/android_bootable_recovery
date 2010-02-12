@@ -33,6 +33,7 @@
 #include "roots.h"
 #include "verifier.h"
 #include "firmware.h"
+#include "legacy.h"
 
 #define ASSUMED_UPDATE_BINARY_NAME  "META-INF/com/google/android/update-binary"
 #define PUBLIC_KEYS_FILE "/res/keys"
@@ -103,7 +104,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
     const ZipEntry* binary_entry =
             mzFindZipEntry(zip, ASSUMED_UPDATE_BINARY_NAME);
     if (binary_entry == NULL) {
-        return INSTALL_CORRUPT;
+        return INSTALL_UPDATE_BINARY_MISSING;
     }
 
     char* binary = "/tmp/update_binary";
@@ -240,6 +241,12 @@ handle_update_package(const char *path, ZipArchive *zip)
     ui_print("Installing update...\n");
 
     int result = try_update_binary(path, zip);
+	if (result == INSTALL_UPDATE_BINARY_MISSING)
+	{
+	    const ZipEntry *script_entry;
+	    script_entry = find_update_script(zip);
+	    result = handle_update_script(zip, script_entry);
+	}
     register_package_root(NULL, NULL);  // Unregister package root
     return result;
 }
