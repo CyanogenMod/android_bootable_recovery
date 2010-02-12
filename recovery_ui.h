@@ -66,6 +66,8 @@ int device_wipe_data();
 #define ITEM_APPLY_SDCARD    1
 #define ITEM_WIPE_DATA       2
 #define ITEM_WIPE_CACHE      3
+#define ITEM_SIG_CHECK       4
+#define ITEM_ASSERTS         5
 
 // Header text to display above the main menu.
 extern char* MENU_HEADERS[];

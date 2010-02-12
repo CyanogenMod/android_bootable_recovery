@@ -27,6 +27,8 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "apply sdcard:update.zip",
                        "wipe data/factory reset",
                        "wipe cache partition",
+                       "toggle signature verification",
+                       "toggle script asserts",
                        NULL };
 
 int device_toggle_display(volatile char* key_pressed, int key_code) {

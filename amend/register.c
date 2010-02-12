@@ -125,6 +125,19 @@ cmd_copy_dir(const char *name, void *cookie, int argc, const char *argv[],
     return -1;
 }
 
+/* delete <srcdir> <dstdir>
+ */
+static int
+cmd_delete(const char *name, void *cookie, int argc, const char *argv[],
+        PermissionRequestList *permissions)
+{
+    UNUSED(name);
+    UNUSED(cookie);
+    CHECK_WORDS();
+//xxx
+    return -1;
+}
+
 /* mark <resource> dirty|clean
  */
 static int
@@ -163,6 +176,9 @@ registerUpdateCommands()
     if (ret < 0) return ret;
 
     ret = registerCommand("copy_dir", CMD_ARGS_WORDS, cmd_copy_dir, NULL);
+    if (ret < 0) return ret;
+
+    ret = registerCommand("delete", CMD_ARGS_WORDS, cmd_delete, NULL);
     if (ret < 0) return ret;
 
     ret = registerCommand("format", CMD_ARGS_WORDS, cmd_format, NULL);

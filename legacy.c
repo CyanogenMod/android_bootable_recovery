@@ -46,9 +46,44 @@
 #include "roots.h"
 #include "verifier.h"
 
+static int read_data(ZipArchive *zip, const ZipEntry *entry,
+        char** ppData, int* pLength) {
+    int len = (int)mzGetZipEntryUncompLen(entry);
+    if (len <= 0) {
+        LOGE("Bad data length %d\n", len);
+        return -1;
+    }
+    char *data = malloc(len + 1);
+    if (data == NULL) {
+        LOGE("Can't allocate %d bytes for data\n", len + 1);
+        return -2;
+    }
+    bool ok = mzReadZipEntry(zip, entry, data, len);
+    if (!ok) {
+        LOGE("Error while reading data\n");
+        free(data);
+        return -3;
+    }
+    data[len] = '\0';     // not necessary, but just to be safe
+    *ppData = data;
+    if (pLength) {
+        *pLength = len;
+    }
+    return 0;
+}
+
 int
 handle_update_script(ZipArchive *zip, const ZipEntry *update_script_entry)
 {
+    // This is bizarre. The build fails with "undefined reference" 
+    // unless the following two functions are referenced from somewhere to 
+    // force them to be linked. This seems to be a problem with yacc/lex.
+    if (zip == 1)
+    {
+        fwrite(NULL, 0, 0, NULL);
+        fileno(NULL);
+    }
+    
     /* Read the entire script into a buffer.
      */
     int script_len;

@@ -38,6 +38,9 @@
 #include "roots.h"
 #include "recovery_ui.h"
 
+#include "extendedcommands.h"
+#include "commands.h"
+
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 's' },
   { "update_package", required_argument, NULL, 'u' },
@@ -430,6 +433,12 @@ prompt_and_wait()
                     }
                 }
                 break;
+            case ITEM_SIG_CHECK:
+                toggle_signature_check();
+                break;
+            case ITEM_ASSERTS:
+                toggle_script_asserts();
+                break;
         }
     }
 }
@@ -482,6 +491,11 @@ main(int argc, char **argv)
     fprintf(stderr, "\n");
 
     int status = INSTALL_SUCCESS;
+    
+    RecoveryCommandContext ctx = { NULL };
+    if (register_update_commands(&ctx)) {
+        LOGE("Can't install update commands\n");
+    }
 
     if (update_package != NULL) {
         status = install_package(update_package);
