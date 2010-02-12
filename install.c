@@ -243,12 +243,16 @@ handle_update_package(const char *path, ZipArchive *zip)
     ui_print("Installing update...\n");
 
     int result = try_update_binary(path, zip);
-	if (result == INSTALL_UPDATE_BINARY_MISSING)
-	{
-	    const ZipEntry *script_entry;
-	    script_entry = find_update_script(zip);
-	    result = handle_update_script(zip, script_entry);
-	}
+    if (result == INSTALL_UPDATE_BINARY_MISSING)
+    {
+        if (register_package_root(zip, path) < 0) {
+            LOGE("Can't register package root\n");
+            return INSTALL_ERROR;
+        }
+        const ZipEntry *script_entry;
+        script_entry = find_update_script(zip);
+        result = handle_update_script(zip, script_entry);
+    }
     register_package_root(NULL, NULL);  // Unregister package root
     return result;
 }
