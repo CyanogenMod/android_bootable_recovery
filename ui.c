@@ -538,3 +538,7 @@ void ui_clear_key_queue() {
     key_queue_len = 0;
     pthread_mutex_unlock(&key_queue_mutex);
 }
+
+void ui_get_show_menu() {
+    return show_menu;
+}

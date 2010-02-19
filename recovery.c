@@ -49,6 +49,8 @@ static const struct option OPTIONS[] = {
   { NULL, 0, NULL, 0 },
 };
 
+static int allow_display_toggle = 1;
+
 static const char *COMMAND_FILE = "CACHE:recovery/command";
 static const char *INTENT_FILE = "CACHE:recovery/intent";
 static const char *LOG_FILE = "CACHE:recovery/log";
@@ -313,7 +315,7 @@ get_menu_selection(char** headers, char** items, int menu_only) {
     int selected = 0;
     int chosen_item = -1;
 
-    while (chosen_item < 0) {
+    while (chosen_item < 0 && chosen_item != GO_BACK) {
         int key = ui_wait_key();
         int visible = ui_text_visible();
 
@@ -335,7 +337,8 @@ get_menu_selection(char** headers, char** items, int menu_only) {
                 case NO_ACTION:
                     break;
                 case GO_BACK:
-                    return GO_BACK;
+                    chosen_item = GO_BACK;
+                    break;
             }
         } else if (!menu_only) {
             chosen_item = action;
@@ -394,7 +397,9 @@ prompt_and_wait()
         finish_recovery(NULL);
         ui_reset_progress();
 
+        allow_display_toggle = 1;
         int chosen_item = get_menu_selection(headers, MENU_ITEMS, 0);
+        allow_display_toggle = 0;
 
         // device-specific code may take some action here.  It may
         // return one of the core actions handled in the switch
@@ -529,4 +534,8 @@ main(int argc, char **argv)
     sync();
     reboot(RB_AUTOBOOT);
     return EXIT_SUCCESS;
+}
+
+int get_allow_toggle_display() {
+    return allow_display_toggle;
 }
