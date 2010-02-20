@@ -38,6 +38,7 @@ struct MtdPartition {
 struct MtdReadContext {
     const MtdPartition *partition;
     char *buffer;
+    size_t read_size;
     size_t consumed;
     int fd;
 };
@@ -563,4 +564,85 @@ off_t mtd_find_write_start(MtdWriteContext *ctx, off_t pos) {
         }
     }
     return pos;
+}
+
+
+ssize_t mtd_read_raw(MtdReadContext *ctx, char *data, size_t len)
+{
+    static const int SPARE_SIZE = (2048 >> 5);
+    struct mtd_info_user mtd_info;
+    struct mtd_oob_buf oob_buf;
+    struct nand_ecclayout ecc_layout;
+    struct nand_oobfree *fp;
+    unsigned char ecc[SPARE_SIZE];
+    char *src, *dst;
+    int i, n, ret;
+
+/*
+ * FIXME: These two ioctls should be cached in MtdReadContext.
+ */
+    ret = ioctl(ctx->fd, MEMGETINFO, &mtd_info);
+    if (ret < 0)
+        return -1;
+
+    ret = ioctl(ctx->fd, ECCGETLAYOUT, &ecc_layout);
+    if (ret < 0)
+        return -1;
+
+    ctx->read_size = mtd_info.writesize;
+    ctx->consumed = ctx->read_size;
+
+/*
+ * Read next good data block.
+ */
+    ret = read_block(ctx->partition, ctx->fd, data);
+    if (ret < 0)
+    	return -1;
+
+    dst = src = data + ctx->read_size;
+
+/*
+ * Read OOB data for last block read in read_block().
+ */
+    oob_buf.start = lseek(ctx->fd, 0, SEEK_CUR) - ctx->read_size;
+    oob_buf.length = mtd_info.oobsize;
+    oob_buf.ptr = (unsigned char *) src;
+
+    ret = ioctl(ctx->fd, MEMREADOOB, &oob_buf);
+    if (ret < 0)
+    	return -1;
+
+/*
+ * As yaffs and yaffs2 use mode MEM_OOB_AUTO, but mtdchar uses
+ * MEM_OOB_PLACE, copy the spare data down the hard way.
+ *
+ * Safe away ECC data:
+ */
+    for (i = 0; i < ecc_layout.eccbytes; i++) {
+    	ecc[i] = src[ecc_layout.eccpos[i]];
+    }
+    for ( ; i < SPARE_SIZE; i++) {
+    	ecc[i] = 0;
+    }
+
+/*
+ * Copy yaffs2 spare data down.
+ */
+    n = ecc_layout.oobavail;
+    fp = &ecc_layout.oobfree[0];
+    while (n) {
+    	if (fp->offset) {
+		memmove(dst, src + fp->offset, fp->length); 
+	}
+	dst += fp->length;
+	n -= fp->length;
+	++fp;
+    }
+
+/*
+ * Restore ECC data behind spare data.
+ */
+    memcpy(dst, ecc, (ctx->read_size >> 5) - ecc_layout.oobavail);
+
+    return ctx->read_size + (ctx->read_size >> 5);
 }
