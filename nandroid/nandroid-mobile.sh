@@ -94,6 +94,11 @@ case $1 in
 				exit 1
 			fi
 		fi
+		unyaffs=`which unyaffs`
+		if [ "$unyaffs" == "" ]; then
+			echo "error: unyaffs not found in path"
+			exit 1
+		fi
 		break
 		;;
 esac
@@ -133,17 +138,15 @@ case $1 in
 			echo "error: $RESTOREPATH/nandroid.md5 not found, cannot verify backup data"
 			exit 1
 		fi
-		umount /system 2>/dev/null
-		umount /data 2>/dev/null
-		if [ ! "`mount | grep data`" == "" ]; then
-			echo "error: unable to umount /data, aborting"	
-			exit 1
-		fi
-		if [ ! "`mount | grep system`" == "" ]; then
-			echo "error: unable to umount /system, aborting"	
-			exit 1
-		fi
-		
+    umount /system 2>/dev/null
+    umount /data 2>/dev/null
+    mount -o rw /system || FAIL=1
+    mount -o rw /data || FAIL=2
+    case $FAIL in
+    	1) echo "Error mounting system read-write"; umount /system /data /cache; exit 1;;
+    	2) echo "Error mounting data read-write"; umount /system /data /cache; exit 1;;
+    esac
+	
 		echo "Verifying backup images..."
 		CWD=$PWD
 		cd $RESTOREPATH
@@ -156,8 +159,18 @@ case $1 in
 			echo "Flashing $image..."
 			$flash_image $image $image.img
 		done
-		echo "Flashing system and data not currently supported"
-		echo "Restore done"
+		curdir=$(pwd)
+		for image in system data cache; do
+		  echo "Unpacking $image..."
+      cd /$image
+      rm -rf *
+      unyaffs $curdir/$image.img
+      cd $curdir
+	  done
+	  sync
+    umount /system
+    umount /data
+    echo "Restore done"
 		exit 0
 		;;
 	backup)
