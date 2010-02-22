@@ -440,14 +440,14 @@ prompt_and_wait()
                     }
                 }
                 break;
-            case ITEM_SIG_CHECK:
-                toggle_signature_check();
-                break;
-            case ITEM_ASSERTS:
-                toggle_script_asserts();
-                break;
             case ITEM_INSTALL_ZIP:
-                show_choose_zip_menu();
+                show_install_update_menu();
+                break;
+            case ITEM_BACKUP:
+                do_nandroid_backup();
+                break;
+            case ITEM_RESTORE:
+                show_nandroid_restore_menu();
                 break;
         }
     }

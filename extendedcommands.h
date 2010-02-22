@@ -15,3 +15,9 @@ get_allow_toggle_display();
 
 int
 ui_get_show_menu();
+
+void
+do_nandroid_backup();
+
+void
+show_nandroid_restore_menu();

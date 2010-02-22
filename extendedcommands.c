@@ -28,6 +28,7 @@
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
+static const char *SDCARD_PACKAGE_FILE = "SDCARD:update.zip";
 
 void
 toggle_signature_check()
@@ -42,12 +43,68 @@ void toggle_script_asserts()
     ui_print("Script Asserts: %s\n", script_assert_enabled ? "Enabled" : "Disabled");
 }
 
-void show_choose_zip_menu()
+void install_zip(const char* packagefilepath)
 {
-    static char* headers[] = { "Choose a zip or press POWER to return",
-			       "",
-			       NULL };
-    
+    ui_print("\n-- Installing: %s\n", packagefilepath);
+    set_sdcard_update_bootloader_message();
+    int status = install_package(packagefilepath);
+    if (status != INSTALL_SUCCESS) {
+        ui_set_background(BACKGROUND_ICON_ERROR);
+        ui_print("Installation aborted.\n");
+    } else if (!ui_text_visible()) {
+        return;  // reboot if logs aren't visible
+    } else {
+        if (firmware_update_pending()) {
+            ui_print("\nReboot via menu to complete\n"
+                     "installation.\n");
+        } else {
+            ui_print("\nInstall from sdcard complete.\n");
+        }
+    }
+}
+
+char* INSTALL_MENU_ITEMS[] = {  "apply sdcard:update.zip",
+                                "choose zip from sdcard",
+                                "toggle signature verification",
+                                "toggle script asserts",
+                                NULL };
+#define ITEM_APPLY_SDCARD     0
+#define ITEM_CHOOSE_ZIP       1
+#define ITEM_SIG_CHECK        2
+#define ITEM_ASSERTS          3
+
+void show_install_update_menu()
+{
+    static char* headers[] = {  "Apply update from .zip file on SD card",
+                                "",
+                                NULL 
+    };
+    for (;;)
+    {
+        int chosen_item = get_menu_selection(headers, INSTALL_MENU_ITEMS, 0);
+        switch (chosen_item)
+        {
+            case ITEM_ASSERTS:
+                toggle_script_asserts();
+                break;
+            case ITEM_SIG_CHECK:
+                toggle_signature_check();
+                break;
+            case ITEM_APPLY_SDCARD:
+                install_zip(SDCARD_PACKAGE_FILE);
+                break;
+            case ITEM_CHOOSE_ZIP:
+                show_choose_zip_menu();
+                break;
+            default:
+                return;
+        }
+        
+    }
+}
+
+char* choose_file_menu(const char* directory, const char* extension, const char* headers[])
+{
     char path[PATH_MAX] = "";
     DIR *dir;
     struct dirent *de;
@@ -56,83 +113,126 @@ void show_choose_zip_menu()
     char** files;
     char** list;
 
+    dir = opendir(directory);
+    if (dir == NULL) {
+        ui_print("Couldn't open directory.\n");
+        return NULL;
+    }
+  
+    const int extension_length = strlen(extension);
+  
+    while ((de=readdir(dir)) != NULL) {
+        if (de->d_name[0] != '.' && strlen(de->d_name) > extension_length && strcmp(de->d_name + strlen(de->d_name) - extension_length, extension) == 0) {
+            total++;
+        }
+    }
+
+    if (total==0) {
+        ui_print("No files found.\n");
+        if(closedir(dir) < 0) {
+            LOGE("Failed to close directory.");
+        }
+        return NULL;
+    }
+
+    files = (char**) malloc((total+1)*sizeof(char*));
+    files[total]=NULL;
+
+    list = (char**) malloc((total+1)*sizeof(char*));
+    list[total]=NULL;
+
+    rewinddir(dir);
+
+    i = 0;
+    while ((de = readdir(dir)) != NULL) {
+        if (de->d_name[0] != '.' && strlen(de->d_name) > extension_length && strcmp(de->d_name + strlen(de->d_name) - extension_length, extension) == 0) {
+            files[i] = (char*) malloc(strlen(directory)+strlen(de->d_name)+1);
+            strcpy(files[i], directory);
+            strcat(files[i], de->d_name);
+
+            list[i] = (char*) malloc(strlen(de->d_name)+1);
+            strcpy(list[i], de->d_name);
+
+            i++;
+        }
+    }
+
+    if (closedir(dir) <0) {
+        LOGE("Failure closing directory.");
+        return NULL;
+    }
+
+    int chosen_item = get_menu_selection(headers, list, 1);
+    static char ret[PATH_MAX];
+    strcpy(ret, files[chosen_item]);
+    return ret;
+}
+
+void show_choose_zip_menu()
+{
     if (ensure_root_path_mounted("SDCARD:") != 0) {
         LOGE ("Can't mount /sdcard\n");
         return;
     }
 
-    dir = opendir("/sdcard");
-    if (dir == NULL) {
-        LOGE("Couldn't open /sdcard");
+    static char* headers[] = {  "Choose a zip to apply",
+                                "",
+                                NULL 
+    };
+    
+    char* file = choose_file_menu("/sdcard/", ".zip", headers);
+    if (file == NULL)
+        return;
+    char sdcard_package_file[1024];
+    strcpy(sdcard_package_file, "SDCARD:");
+    strcat(sdcard_package_file,  file + strlen("/sdcard/"));
+    install_zip(sdcard_package_file);
+}
+
+void do_nandroid_backup()
+{
+    ui_print("Performing backup...\n");
+    system("/sbin/nandroid-mobile.sh backup");
+    ui_print("Backup complete.\n");
+}
+
+void show_nandroid_restore_menu()
+{
+    if (ensure_root_path_mounted("SDCARD:") != 0) {
+        LOGE ("Can't mount /sdcard\n");
         return;
     }
+
+    static char* headers[] = {  "Choose an image to restore",
+                                "",
+                                NULL 
+    };
     
-    const char *extension = ".zip";
-    const int extension_length = strlen(extension);
-    
-    while ((de=readdir(dir)) != NULL) {
-        if (de->d_name[0] != '.' && strlen(de->d_name) > extension_length && strcmp(de->d_name + strlen(de->d_name) - extension_length, extension) == 0) {
-            total++;
-	      }
+    system("cat /proc/cmdline | sed 's/.*serialno=//' | cut -d' ' -f1 > /.deviceid");
+    FILE *deviceIdFile = fopen(".deviceid", "r");
+    char deviceId[256];
+    if (deviceIdFile == NULL)
+    {
+        ui_print("Unable to retrieve device id.\n");
+        return;
     }
-
-    if (total==0) {
-        LOGE("No tar archives found\n");
-        if(closedir(dir) < 0) {
-            LOGE("Failed to close directory /sdcard");
-            return;
-	      }
+    int readCount = fread(deviceId, 1, sizeof(deviceId), deviceIdFile);
+    if (readCount == 0)
+    {
+        ui_print("Unable to retrieve device id.\n");
+        return;
     }
-    else {
-        files = (char**) malloc((total+1)*sizeof(char*));
-        files[total]=NULL;
+    deviceId[readCount - 1] = NULL;
+    fclose(deviceIdFile);
+    char backupDirectory[PATH_MAX];
+    sprintf(backupDirectory, "/sdcard/nandroid/%s/", deviceId);
 
-        list = (char**) malloc((total+1)*sizeof(char*));
-        list[total]=NULL;
-	
-        rewinddir(dir);
-
-        i = 0;
-        while ((de = readdir(dir)) != NULL) {
-            if (de->d_name[0] != '.' && strlen(de->d_name) > extension_length && strcmp(de->d_name + strlen(de->d_name) - extension_length, extension) == 0) {
-                files[i] = (char*) malloc(strlen("/sdcard/")+strlen(de->d_name)+1);
-                strcpy(files[i], "/sdcard/");
-                strcat(files[i], de->d_name);
-
-                list[i] = (char*) malloc(strlen(de->d_name)+1);
-                strcpy(list[i], de->d_name);
-
-                i++;
-            }
-        }
-
-        if (closedir(dir) <0) {
-            LOGE("Failure closing directory /sdcard\n");
-            return;
-        }
-
-        int chosen_item = get_menu_selection(headers, list, 1);
-        if (chosen_item >= 0 && chosen_item != GO_BACK) {
-          char sdcard_package_file[1024];
-          strcpy(sdcard_package_file, "SDCARD:");
-          strcat(sdcard_package_file, files[chosen_item] + strlen("/sdcard"));
-
-          ui_print("\n-- Install from sdcard...\n");
-          set_sdcard_update_bootloader_message();
-          int status = install_package(sdcard_package_file);
-          if (status != INSTALL_SUCCESS) {
-              ui_set_background(BACKGROUND_ICON_ERROR);
-              ui_print("Installation aborted.\n");
-          } else if (!ui_text_visible()) {
-              return;  // reboot if logs aren't visible
-          } else {
-              if (firmware_update_pending()) {
-                  ui_print("\nReboot via menu to complete\n"
-                           "installation.\n");
-              } else {
-                  ui_print("\nInstall from sdcard complete.\n");
-              }
-          }
-        }
-    }
+    char* file = choose_file_menu(backupDirectory, "", headers);
+    if (file == NULL)
+        return;
+    char* command[PATH_MAX];
+    sprintf(command, "nandroid-mobile.sh restore %s", file);
+    ui_print("Performing restore...\n");
+    system(command);
+    ui_print("Restore complete.\n");
 }

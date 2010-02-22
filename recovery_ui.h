@@ -68,8 +68,8 @@ int device_wipe_data();
 #define ITEM_WIPE_DATA       2
 #define ITEM_WIPE_CACHE      3
 #define ITEM_INSTALL_ZIP     4
-#define ITEM_SIG_CHECK       5
-#define ITEM_ASSERTS         6
+#define ITEM_BACKUP          5
+#define ITEM_RESTORE         6
 
 // Header text to display above the main menu.
 extern char* MENU_HEADERS[];
