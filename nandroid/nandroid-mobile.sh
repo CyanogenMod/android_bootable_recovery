@@ -56,7 +56,7 @@ DEVICEID=foo
 RECOVERY=foo
 
 echo "nandroid-mobile v2.1"
-
+mkfstab.sh > /etc/fstab
 
 if [ "$1" == "" ]; then
 	echo "Usage: $0 {backup|restore} [/path/to/nandroid/backup/]"

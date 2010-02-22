@@ -75,15 +75,6 @@ static int read_data(ZipArchive *zip, const ZipEntry *entry,
 int
 handle_update_script(ZipArchive *zip, const ZipEntry *update_script_entry)
 {
-    // This is bizarre. The build fails with "undefined reference" 
-    // unless the following two functions are referenced from somewhere to 
-    // force them to be linked. This seems to be a problem with yacc/lex.
-    if (zip == 1)
-    {
-        fwrite(NULL, 0, 0, NULL);
-        fileno(NULL);
-    }
-    
     /* Read the entire script into a buffer.
      */
     int script_len;

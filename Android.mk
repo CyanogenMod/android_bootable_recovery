@@ -41,10 +41,10 @@ ifeq ($(TARGET_RECOVERY_UI_LIB),)
 else
   LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
 endif
+LOCAL_STATIC_LIBRARIES += libamend
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmtdutils libmincrypt
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
-LOCAL_STATIC_LIBRARIES += libamend
 
 include $(BUILD_EXECUTABLE)
 
