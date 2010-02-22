@@ -346,6 +346,7 @@ get_menu_selection(char** headers, char** items, int menu_only) {
     }
 
     ui_end_menu();
+    ui_clear_key_queue();
     return chosen_item;
 }
 

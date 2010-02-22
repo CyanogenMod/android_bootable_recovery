@@ -162,10 +162,16 @@ char* choose_file_menu(const char* directory, const char* extension, const char*
         return NULL;
     }
 
-    int chosen_item = get_menu_selection(headers, list, 1);
-    static char ret[PATH_MAX];
-    strcpy(ret, files[chosen_item]);
-    return ret;
+    for (;;)
+    {
+        int chosen_item = get_menu_selection(headers, list, 0);
+        if (chosen_item == GO_BACK)
+            break;
+        static char ret[PATH_MAX];
+        strcpy(ret, files[chosen_item]);
+        return ret;
+    }
+    return NULL;
 }
 
 void show_choose_zip_menu()
@@ -211,33 +217,14 @@ void show_nandroid_restore_menu()
                                 "",
                                 NULL 
     };
-    
-    int ret = system("cat /proc/cmdline | sed 's/.*serialno=//' | cut -d' ' -f1 > /.deviceid");
-    FILE *deviceIdFile = fopen(".deviceid", "r");
-    char deviceId[256];
-    if (deviceIdFile == NULL || ret == 0)
-    {
-        ui_print("Unable to retrieve device id.\n");
-        return;
-    }
-    int readCount = fread(deviceId, 1, sizeof(deviceId), deviceIdFile);
-    if (readCount == 0)
-    {
-        ui_print("Unable to retrieve device id.\n");
-        return;
-    }
-    deviceId[readCount - 1] = NULL;
-    fclose(deviceIdFile);
-    char backupDirectory[PATH_MAX];
-    sprintf(backupDirectory, "/sdcard/nandroid/%s/", deviceId);
 
-    char* file = choose_file_menu(backupDirectory, "", headers);
+    char* file = choose_file_menu("/sdcard/nandroid/", "", headers);
     if (file == NULL)
         return;
     char* command[PATH_MAX];
     sprintf(command, "nandroid-mobile.sh restore %s", file);
     ui_print("Performing restore...\n");
-    ret = system(command);
+    int ret = system(command);
     if (ret != 0)
     {
         ui_print("Error while restoring!\n");

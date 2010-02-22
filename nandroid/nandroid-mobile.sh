@@ -52,7 +52,6 @@
 # 9.  print success.
 
 
-DEVICEID=foo
 RECOVERY=foo
 
 echo "nandroid-mobile v2.1"
@@ -60,7 +59,7 @@ mkfstab.sh > /etc/fstab
 
 if [ "$1" == "" ]; then
 	echo "Usage: $0 {backup|restore} [/path/to/nandroid/backup/]"
-	echo "- backup will store a full system backup on /sdcard/nandroid/$DEVICEID"
+	echo "- backup will store a full system backup on /sdcard/nandroid"
 	echo "- restore path will restore the last made backup for boot, system, recovery and data"
 	exit 0
 fi
@@ -104,14 +103,9 @@ case $1 in
 esac
 
 # 1
-DEVICEID=`cat /proc/cmdline | sed "s/.*serialno=//" | cut -d" " -f1`
 RECOVERY=`cat /proc/cmdline | grep "androidboot.mode=recovery"`
 if [ "$RECOVERY" == "foo" ]; then
 	echo "error: not running in recovery mode, aborting"
-	exit 1
-fi
-if [ "$DEVICEID" == "foo" ]; then
-	echo "error: device id not found in /proc/cmdline, aborting"
 	exit 1
 fi
 if [ ! "`id -u 2>/dev/null`" == "0" ]; then
@@ -178,7 +172,7 @@ case $1 in
 		;;
 	*)
 		echo "Usage: $0 {backup|restore} [/path/to/nandroid/backup/]"
-		echo "- backup will store a full system backup on /sdcard/nandroid/$DEVICEID"
+		echo "- backup will store a full system backup on /sdcard/nandroid"
 		echo "- restore path will restore the last made backup for boot, system, recovery and data"
 		exit 1
 		;;
@@ -199,7 +193,7 @@ case $FAIL in
 esac
 
 TIMESTAMP="`date +%Y%m%d-%H%M`"
-DESTDIR="/sdcard/nandroid/$DEVICEID/$TIMESTAMP"
+DESTDIR="/sdcard/nandroid/$TIMESTAMP"
 if [ ! -d $DESTDIR ]; then 
 	mkdir -p $DESTDIR
 	if [ ! -d $DESTDIR ]; then 

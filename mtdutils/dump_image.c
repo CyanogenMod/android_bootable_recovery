@@ -34,7 +34,7 @@
 #define BLOCK_SIZE	2048
 #define SPARE_SIZE	(BLOCK_SIZE >> 5)
 
-void die(const char *msg, ...) {
+static void die(const char *msg, ...) {
     int err = errno;
     va_list args;
     va_start(args, msg);
