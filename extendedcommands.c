@@ -192,7 +192,11 @@ void show_choose_zip_menu()
 void do_nandroid_backup()
 {
     ui_print("Performing backup...\n");
-    system("/sbin/nandroid-mobile.sh backup");
+    if (system("/sbin/nandroid-mobile.sh backup") != 0)
+    {
+        ui_print("Error while backing up!\n");
+        return;
+    }
     ui_print("Backup complete.\n");
 }
 
@@ -208,10 +212,10 @@ void show_nandroid_restore_menu()
                                 NULL 
     };
     
-    system("cat /proc/cmdline | sed 's/.*serialno=//' | cut -d' ' -f1 > /.deviceid");
+    int ret = system("cat /proc/cmdline | sed 's/.*serialno=//' | cut -d' ' -f1 > /.deviceid");
     FILE *deviceIdFile = fopen(".deviceid", "r");
     char deviceId[256];
-    if (deviceIdFile == NULL)
+    if (deviceIdFile == NULL || ret == 0)
     {
         ui_print("Unable to retrieve device id.\n");
         return;
@@ -233,6 +237,11 @@ void show_nandroid_restore_menu()
     char* command[PATH_MAX];
     sprintf(command, "nandroid-mobile.sh restore %s", file);
     ui_print("Performing restore...\n");
-    system(command);
+    ret = system(command);
+    if (ret != 0)
+    {
+        ui_print("Error while restoring!\n");
+        return;
+    }
     ui_print("Restore complete.\n");
 }
