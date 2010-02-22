@@ -63,6 +63,7 @@ LOCAL_MODULE_TAGS := eng
 LOCAL_STATIC_LIBRARIES := recovery_mkyaffs2image recovery_unyaffs recovery_dump_image recovery_flash_image libmtdutils libcutils libc 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_UNSTRIPPED_PATH := $(TARGET_OUT_EXECUTABLES_UNSTRIPPED)
 ADDITIONAL_RECOVERY_EXECUTABLES += recovery_tools
 include $(BUILD_EXECUTABLE)
 
