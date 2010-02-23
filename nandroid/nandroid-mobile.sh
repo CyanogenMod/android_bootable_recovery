@@ -149,7 +149,7 @@ case $1 in
 			echo "error: md5sum mismatch, aborting"
 			exit 1
 		fi
-		for image in boot recovery; do
+		for image in boot; do
 			echo "Flashing $image..."
 			$flash_image $image $image.img
 		done
