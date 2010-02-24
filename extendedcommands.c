@@ -218,7 +218,7 @@ void show_nandroid_restore_menu()
                                 NULL 
     };
 
-    char* file = choose_file_menu("/sdcard/nandroid/", "", headers);
+    char* file = choose_file_menu("/sdcard/clockworkmod/backup/", "", headers);
     if (file == NULL)
         return;
     char* command[PATH_MAX];
