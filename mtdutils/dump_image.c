@@ -97,26 +97,9 @@ int main(int argc, char **argv)
 	unlink(argv[2]);
         die("error opening %s: %s\n", argv[1], strerror(errno));
     }
-/* - comment out this outdated shit
-    if (!strcmp(argv[1], "system") ||
-        !strcmp(argv[1], "cache") ||
-	!strcmp(argv[1], "userdata")) {
-	read_size = BLOCK_SIZE + SPARE_SIZE;
-	read_func = mtd_read_raw;
-    } else {
-	read_size = BLOCK_SIZE;
-	read_func = mtd_read_data;
-    }
-*/
-
-// - use mtd_read_data only, clean this up later
-        read_size = BLOCK_SIZE;
-        read_func = mtd_read_data;
-
-//	printf("debug: partition size: %d\n", partition_size);
 
     total = 0;
-    while ((len = read_func(in, buf, read_size)) > 0) {
+    while ((len = mtd_read_data(in, buf, BLOCK_SIZE)) > 0) {
         wrote = write(fd, buf, len);
         if (wrote != len) {
     		close(fd);
@@ -126,15 +109,6 @@ int main(int argc, char **argv)
 	total += BLOCK_SIZE;
     }
 
-//	printf("debug: bytes read: %d\n", total);
-
-/* packetlss - don't assume every eraseblock is ok
-    if (total != partition_size) {
-    	close(fd);
-	unlink(argv[2]);
-    	die("error reading %s", argv[1]);
-    }
-*/
     mtd_read_close(in);
 
     if (close(fd)) {
