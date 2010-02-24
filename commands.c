@@ -397,7 +397,7 @@ cmd_run_program(const char *name, void *cookie, int argc, const char *argv[],
 
     int status;
     waitpid(pid, &status, 0);
-    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0 || !script_assert_enabled) {
         return 0;
     } else {
         LOGE("Error in %s\n(Status %d)\n", path, status);
