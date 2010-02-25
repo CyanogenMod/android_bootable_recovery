@@ -15,6 +15,7 @@
 #include <sys/wait.h>
 #include <sys/limits.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #include <signal.h>
 #include <sys/wait.h>
@@ -103,7 +104,7 @@ void show_install_update_menu()
     }
 }
 
-char* choose_file_menu(const char* directory, const char* extension, const char* headers[])
+char** gather_files(const char* directory, const char* fileExtensionOrDirectory, int* numFiles)
 {
     char path[PATH_MAX] = "";
     DIR *dir;
@@ -111,7 +112,9 @@ char* choose_file_menu(const char* directory, const char* extension, const char*
     int total = 0;
     int i;
     char** files;
-    char** list;
+	int pass;
+	*numFiles = 0;
+	int dirLen = strlen(directory);
 
     dir = opendir(directory);
     if (dir == NULL) {
@@ -119,47 +122,121 @@ char* choose_file_menu(const char* directory, const char* extension, const char*
         return NULL;
     }
   
-    const int extension_length = strlen(extension);
+	int extension_length;
+	if (fileExtensionOrDirectory != NULL)
+		extension_length = strlen(fileExtensionOrDirectory);
   
-    while ((de=readdir(dir)) != NULL) {
-        if (de->d_name[0] != '.' && strlen(de->d_name) > extension_length && strcmp(de->d_name + strlen(de->d_name) - extension_length, extension) == 0) {
-            total++;
-        }
+	int isCounting = 1;
+	i = 0;
+	for (pass = 0; pass < 2; pass++) {
+		while ((de=readdir(dir)) != NULL) {
+			// skip hidden files
+		    if (de->d_name[0] == '.')
+				continue;
+			
+			// NULL means that we are gathering directories, so skip this
+			if (fileExtensionOrDirectory != NULL)
+			{
+				// make sure that we can have the desired extension (prevent seg fault)
+				if (strlen(de->d_name) < extension_length)
+					continue;
+				// compare the extension
+				if (strcmp(de->d_name + strlen(de->d_name) - extension_length, fileExtensionOrDirectory) != 0)
+					continue;
+			}
+			else
+			{
+				struct stat info;
+				char* fullFileName = (char*)malloc(strlen(de->d_name) + dirLen + 1);
+				strcpy(fullFileName, directory);
+				strcat(fullFileName, de->d_name);
+				stat(fullFileName, &info);
+				free(fullFileName);
+				// make sure it is a directory
+				if (!(S_ISDIR(info.st_mode)))
+					continue;
+			}
+			
+			if (pass == 0)
+			{
+		        total++;
+				continue;
+			}
+			
+            files[i] = (char*) malloc(dirLen + strlen(de->d_name) + 2);
+            strcpy(files[i], directory);
+            strcat(files[i], de->d_name);
+			if (fileExtensionOrDirectory == NULL)
+				strcat(files[i], "/");
+			i++;
+		}
+		if (pass == 1)
+			break;
+		if (total == 0)
+			break;
+	    rewinddir(dir);
+		*numFiles = total;
+	    files = (char**) malloc((total+1)*sizeof(char*));
+	    files[total]=NULL;
+	}
+
+    if(closedir(dir) < 0) {
+        LOGE("Failed to close directory.");
     }
 
     if (total==0) {
-        ui_print("No files found.\n");
-        if(closedir(dir) < 0) {
-            LOGE("Failed to close directory.");
-        }
         return NULL;
     }
 
-    files = (char**) malloc((total+1)*sizeof(char*));
-    files[total]=NULL;
+	return files;
+}
 
-    list = (char**) malloc((total+1)*sizeof(char*));
-    list[total]=NULL;
+void free_string_array(char** array)
+{
+	char* cursor = array[0];
+	int i = 0;
+	while (cursor != NULL)
+	{
+		free(cursor);
+		cursor = array[++i];
+	}
+	free(array);
+}
 
-    rewinddir(dir);
+// pass in NULL for fileExtensionOrDirectory and you will get a directory chooser
+char* choose_file_menu(const char* directory, const char* fileExtensionOrDirectory, const char* headers[])
+{
+    char path[PATH_MAX] = "";
+    DIR *dir;
+    struct dirent *de;
+    int numFiles = 0;
+	int numDirs = 0;
+    int i;
 
-    i = 0;
-    while ((de = readdir(dir)) != NULL) {
-        if (de->d_name[0] != '.' && strlen(de->d_name) > extension_length && strcmp(de->d_name + strlen(de->d_name) - extension_length, extension) == 0) {
-            files[i] = (char*) malloc(strlen(directory)+strlen(de->d_name)+1);
-            strcpy(files[i], directory);
-            strcat(files[i], de->d_name);
+	int dir_len = strlen(directory);
 
-            list[i] = (char*) malloc(strlen(de->d_name)+1);
-            strcpy(list[i], de->d_name);
+	char** files = gather_files(directory, fileExtensionOrDirectory, &numFiles);
+	char** dirs;
+	if (fileExtensionOrDirectory != NULL)
+		dirs = gather_files(directory, NULL, &numDirs);
+	int total = numDirs + numFiles;
+	if (total == 0)
+	{
+		ui_print("No files found.\n");
+		return NULL;
+	}
+	char** list = (char**) malloc((total + 1) * sizeof(char*));
+	list[total] = NULL;
 
-            i++;
-        }
+
+	for (i = 0 ; i < numDirs; i++)
+	{
+		list[i] = strdup(dirs[i] + dir_len);
     }
 
-    if (closedir(dir) <0) {
-        LOGE("Failure closing directory.");
-        return NULL;
+	for (i = 0 ; i < numFiles; i++)
+	{
+		list[numDirs + i] = strdup(files[i] + dir_len);
     }
 
     for (;;)
@@ -167,8 +244,16 @@ char* choose_file_menu(const char* directory, const char* extension, const char*
         int chosen_item = get_menu_selection(headers, list, 0);
         if (chosen_item == GO_BACK)
             break;
+		if (chosen_item < numDirs)
+		{
+			char* subret = choose_file_menu(dirs[chosen_item], fileExtensionOrDirectory, headers);
+			if (subret != NULL)
+				return subret;
+			continue;
+		} 
         static char ret[PATH_MAX];
-        strcpy(ret, files[chosen_item]);
+        strcpy(ret, files[chosen_item - numDirs]);
+		ui_print("File chosen: %s\n", ret);
         return ret;
     }
     return NULL;
@@ -260,7 +345,7 @@ void show_nandroid_restore_menu()
                                 NULL 
     };
 
-    char* file = choose_file_menu("/sdcard/clockworkmod/backup/", "", headers);
+    char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, headers);
     if (file == NULL)
         return;
     char* command[PATH_MAX];
