@@ -55,6 +55,7 @@
 RECOVERY=foo
 
 echo "nandroid-mobile v2.1"
+echo here > /etc/foo
 mkfstab.sh > /etc/fstab
 
 if [ "$1" == "" ]; then
@@ -79,7 +80,7 @@ case $1 in
 			dump_image=`which dump_image-arm-uclibc`
 			if [ "$dump_image" == "" ]; then
 				echo "error: dump_image or dump_image-arm-uclibc not found in path"
-				exit 1
+				exit 2
 			fi
 		fi
 		break
@@ -90,13 +91,13 @@ case $1 in
 			flash_image=`which flash_image-arm-uclibc`
 			if [ "$flash_image" == "" ]; then
 				echo "error: flash_image or flash_image-arm-uclibc not found in path"
-				exit 1
+				exit 3
 			fi
 		fi
 		unyaffs=`which unyaffs`
 		if [ "$unyaffs" == "" ]; then
 			echo "error: unyaffs not found in path"
-			exit 1
+			exit 4
 		fi
 		break
 		;;
@@ -106,12 +107,12 @@ esac
 RECOVERY=`cat /proc/cmdline | grep "androidboot.mode=recovery"`
 if [ "$RECOVERY" == "foo" ]; then
 	echo "error: not running in recovery mode, aborting"
-	exit 1
+	exit 5
 fi
 if [ ! "`id -u 2>/dev/null`" == "0" ]; then
 	if [ "`whoami 2>&1 | grep 'uid 0'`" == "" ]; then
 		echo "error: must run as root, aborting"
-		exit 1
+		exit 6
 	fi
 fi
 
@@ -125,20 +126,20 @@ case $1 in
 		if [ ! $ENERGY -ge 30 ]; then
 			echo "Error: not enough battery power"
 			echo "Connect charger or USB power and try again"
-			exit 1
+			exit 7
 		fi
 		RESTOREPATH=$2
 		if [ ! -f $RESTOREPATH/nandroid.md5 ]; then
 			echo "error: $RESTOREPATH/nandroid.md5 not found, cannot verify backup data"
-			exit 1
+			exit 8
 		fi
     umount /system 2>/dev/null
     umount /data 2>/dev/null
     mount -o rw /system || FAIL=1
     mount -o rw /data || FAIL=2
     case $FAIL in
-    	1) echo "Error mounting system read-write"; umount /system /data /cache; exit 1;;
-    	2) echo "Error mounting data read-write"; umount /system /data /cache; exit 1;;
+    	1) echo "Error mounting system read-write"; umount /system /data /cache; exit 9;;
+    	2) echo "Error mounting data read-write"; umount /system /data /cache; exit 10;;
     esac
 	
 		echo "Verifying backup images..."
@@ -147,7 +148,7 @@ case $1 in
 		md5sum -c nandroid.md5
 		if [ $? -eq 1 ]; then
 			echo "error: md5sum mismatch, aborting"
-			exit 1
+			exit 11
 		fi
 		for image in boot; do
 			echo "Flashing $image..."
@@ -174,7 +175,7 @@ case $1 in
 		echo "Usage: $0 {backup|restore} [/path/to/nandroid/backup/]"
 		echo "- backup will store a full system backup on /sdcard/nandroid"
 		echo "- restore path will restore the last made backup for boot, system, recovery and data"
-		exit 1
+		exit 12
 		;;
 esac
 
@@ -185,16 +186,16 @@ umount /data 2>/dev/null
 umount /sdcard 2>/dev/null
 mount -o ro /system || FAIL=1
 mount -o ro /data || FAIL=2
-mount /sdcard || mount /dev/block/mmcblk0 /sdcard || FAIL=3
+mount /sdcard || FAIL=3
 case $FAIL in
-	1) echo "Error mounting system read-only"; umount /system /data /sdcard; exit 1;;
-	2) echo "Error mounting data read-only"; umount /system /data /sdcard; exit 1;;
-	3) echo "Error mounting sdcard read-write"; umount /system /data /sdcard; exit 1;;
+	1) echo "Error mounting system read-only"; umount /system /data /sdcard; exit 13;;
+	2) echo "Error mounting data read-only"; umount /system /data /sdcard; exit 14;;
+	3) echo "Error mounting sdcard read-write"; umount /system /data /sdcard; exit 15;;
 esac
 
 TIMESTAMP="`date +%Y%m%d-%H%M`"
 BASEDIR=/sdcard/nandroid
-if [ !-z "$2" ]; then
+if [ ! -z "$2" ]; then
 	BASEDIR=$2
 fi
 	
@@ -206,7 +207,7 @@ if [ ! -d $DESTDIR ]; then
 		umount /system 2>/dev/null
 		umount /data 2>/dev/null
 		umount /sdcard 2>/dev/null
-		exit 1
+		exit 16
 	fi
 else
 	touch $DESTDIR/.nandroidwritable
@@ -215,7 +216,7 @@ else
 		umount /system 2>/dev/null
 		umount /data 2>/dev/null
 		umount /sdcard 2>/dev/null
-		exit 1
+		exit 16
 	fi
 	rm $DESTDIR/.nandroidwritable
 fi
@@ -229,7 +230,7 @@ if [ $FREEBLOCKS -le 130000 ]; then
 	umount /system 2>/dev/null
 	umount /data 2>/dev/null
 	umount /sdcard 2>/dev/null
-	exit 1
+	exit 17
 fi
 
 
@@ -271,7 +272,7 @@ for image in boot recovery misc; do
 			umount /system
 			umount /data
 			umount /sdcard
-			exit 1
+			exit 18
 		fi
 	done
 	echo "done"
