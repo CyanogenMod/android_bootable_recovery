@@ -54,16 +54,13 @@ void install_zip(const char* packagefilepath)
     if (status != INSTALL_SUCCESS) {
         ui_set_background(BACKGROUND_ICON_ERROR);
         ui_print("Installation aborted.\n");
-    } else if (!ui_text_visible()) {
-        return;  // reboot if logs aren't visible
-    } else {
-        if (firmware_update_pending()) {
-            ui_print("\nReboot via menu to complete\n"
-                     "installation.\n");
-        } else {
-            ui_print("\nInstall from sdcard complete.\n");
-        }
-    }
+		return;
+    } 
+    if (firmware_update_pending()) {
+        ui_print("\nReboot via menu to complete\ninstallation.\n");
+	}
+	ui_print("\nInstall from sdcard complete.\n");
+	ui_set_background(BACKGROUND_ICON_NONE);
 }
 
 char* INSTALL_MENU_ITEMS[] = {  "apply sdcard:update.zip",
