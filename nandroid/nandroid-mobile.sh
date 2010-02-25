@@ -193,7 +193,12 @@ case $FAIL in
 esac
 
 TIMESTAMP="`date +%Y%m%d-%H%M`"
-DESTDIR="/sdcard/nandroid/$TIMESTAMP"
+BASEDIR=/sdcard/nandroid
+if [ !-z "$2" ]; then
+	BASEDIR=$2
+fi
+	
+DESTDIR=$BASEDIR/$TIMESTAMP
 if [ ! -d $DESTDIR ]; then 
 	mkdir -p $DESTDIR
 	if [ ! -d $DESTDIR ]; then 
