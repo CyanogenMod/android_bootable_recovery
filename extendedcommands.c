@@ -55,13 +55,13 @@ void install_zip(const char* packagefilepath)
     if (status != INSTALL_SUCCESS) {
         ui_set_background(BACKGROUND_ICON_ERROR);
         ui_print("Installation aborted.\n");
-		return;
+        return;
     } 
     if (firmware_update_pending()) {
         ui_print("\nReboot via menu to complete\ninstallation.\n");
-	}
-	ui_print("\nInstall from sdcard complete.\n");
-	ui_set_background(BACKGROUND_ICON_NONE);
+    }
+    ui_print("\nInstall from sdcard complete.\n");
+    ui_set_background(BACKGROUND_ICON_NONE);
 }
 
 char* INSTALL_MENU_ITEMS[] = {  "apply sdcard:update.zip",
@@ -112,9 +112,9 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
     int total = 0;
     int i;
     char** files;
-	int pass;
-	*numFiles = 0;
-	int dirLen = strlen(directory);
+    int pass;
+    *numFiles = 0;
+    int dirLen = strlen(directory);
 
     dir = opendir(directory);
     if (dir == NULL) {
@@ -122,63 +122,63 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
         return NULL;
     }
   
-	int extension_length;
-	if (fileExtensionOrDirectory != NULL)
-		extension_length = strlen(fileExtensionOrDirectory);
+    int extension_length;
+    if (fileExtensionOrDirectory != NULL)
+        extension_length = strlen(fileExtensionOrDirectory);
   
-	int isCounting = 1;
-	i = 0;
-	for (pass = 0; pass < 2; pass++) {
-		while ((de=readdir(dir)) != NULL) {
-			// skip hidden files
-		    if (de->d_name[0] == '.')
-				continue;
-			
-			// NULL means that we are gathering directories, so skip this
-			if (fileExtensionOrDirectory != NULL)
-			{
-				// make sure that we can have the desired extension (prevent seg fault)
-				if (strlen(de->d_name) < extension_length)
-					continue;
-				// compare the extension
-				if (strcmp(de->d_name + strlen(de->d_name) - extension_length, fileExtensionOrDirectory) != 0)
-					continue;
-			}
-			else
-			{
-				struct stat info;
-				char* fullFileName = (char*)malloc(strlen(de->d_name) + dirLen + 1);
-				strcpy(fullFileName, directory);
-				strcat(fullFileName, de->d_name);
-				stat(fullFileName, &info);
-				free(fullFileName);
-				// make sure it is a directory
-				if (!(S_ISDIR(info.st_mode)))
-					continue;
-			}
-			
-			if (pass == 0)
-			{
-		        total++;
-				continue;
-			}
-			
+    int isCounting = 1;
+    i = 0;
+    for (pass = 0; pass < 2; pass++) {
+        while ((de=readdir(dir)) != NULL) {
+            // skip hidden files
+            if (de->d_name[0] == '.')
+                continue;
+            
+            // NULL means that we are gathering directories, so skip this
+            if (fileExtensionOrDirectory != NULL)
+            {
+                // make sure that we can have the desired extension (prevent seg fault)
+                if (strlen(de->d_name) < extension_length)
+                    continue;
+                // compare the extension
+                if (strcmp(de->d_name + strlen(de->d_name) - extension_length, fileExtensionOrDirectory) != 0)
+                    continue;
+            }
+            else
+            {
+                struct stat info;
+                char* fullFileName = (char*)malloc(strlen(de->d_name) + dirLen + 1);
+                strcpy(fullFileName, directory);
+                strcat(fullFileName, de->d_name);
+                stat(fullFileName, &info);
+                free(fullFileName);
+                // make sure it is a directory
+                if (!(S_ISDIR(info.st_mode)))
+                    continue;
+            }
+            
+            if (pass == 0)
+            {
+                total++;
+                continue;
+            }
+            
             files[i] = (char*) malloc(dirLen + strlen(de->d_name) + 2);
             strcpy(files[i], directory);
             strcat(files[i], de->d_name);
-			if (fileExtensionOrDirectory == NULL)
-				strcat(files[i], "/");
-			i++;
-		}
-		if (pass == 1)
-			break;
-		if (total == 0)
-			break;
-	    rewinddir(dir);
-		*numFiles = total;
-	    files = (char**) malloc((total+1)*sizeof(char*));
-	    files[total]=NULL;
-	}
+            if (fileExtensionOrDirectory == NULL)
+                strcat(files[i], "/");
+            i++;
+        }
+        if (pass == 1)
+            break;
+        if (total == 0)
+            break;
+        rewinddir(dir);
+        *numFiles = total;
+        files = (char**) malloc((total+1)*sizeof(char*));
+        files[total]=NULL;
+    }
 
     if(closedir(dir) < 0) {
         LOGE("Failed to close directory.");
@@ -188,19 +188,19 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
         return NULL;
     }
 
-	return files;
+    return files;
 }
 
 void free_string_array(char** array)
 {
-	char* cursor = array[0];
-	int i = 0;
-	while (cursor != NULL)
-	{
-		free(cursor);
-		cursor = array[++i];
-	}
-	free(array);
+    char* cursor = array[0];
+    int i = 0;
+    while (cursor != NULL)
+    {
+        free(cursor);
+        cursor = array[++i];
+    }
+    free(array);
 }
 
 // pass in NULL for fileExtensionOrDirectory and you will get a directory chooser
@@ -210,33 +210,33 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
     DIR *dir;
     struct dirent *de;
     int numFiles = 0;
-	int numDirs = 0;
+    int numDirs = 0;
     int i;
 
-	int dir_len = strlen(directory);
+    int dir_len = strlen(directory);
 
-	char** files = gather_files(directory, fileExtensionOrDirectory, &numFiles);
-	char** dirs;
-	if (fileExtensionOrDirectory != NULL)
-		dirs = gather_files(directory, NULL, &numDirs);
-	int total = numDirs + numFiles;
-	if (total == 0)
-	{
-		ui_print("No files found.\n");
-		return NULL;
-	}
-	char** list = (char**) malloc((total + 1) * sizeof(char*));
-	list[total] = NULL;
+    char** files = gather_files(directory, fileExtensionOrDirectory, &numFiles);
+    char** dirs;
+    if (fileExtensionOrDirectory != NULL)
+        dirs = gather_files(directory, NULL, &numDirs);
+    int total = numDirs + numFiles;
+    if (total == 0)
+    {
+        ui_print("No files found.\n");
+        return NULL;
+    }
+    char** list = (char**) malloc((total + 1) * sizeof(char*));
+    list[total] = NULL;
 
 
-	for (i = 0 ; i < numDirs; i++)
-	{
-		list[i] = strdup(dirs[i] + dir_len);
+    for (i = 0 ; i < numDirs; i++)
+    {
+        list[i] = strdup(dirs[i] + dir_len);
     }
 
-	for (i = 0 ; i < numFiles; i++)
-	{
-		list[numDirs + i] = strdup(files[i] + dir_len);
+    for (i = 0 ; i < numFiles; i++)
+    {
+        list[numDirs + i] = strdup(files[i] + dir_len);
     }
 
     for (;;)
@@ -244,16 +244,16 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
         int chosen_item = get_menu_selection(headers, list, 0);
         if (chosen_item == GO_BACK)
             break;
-		if (chosen_item < numDirs)
-		{
-			char* subret = choose_file_menu(dirs[chosen_item], fileExtensionOrDirectory, headers);
-			if (subret != NULL)
-				return subret;
-			continue;
-		} 
+        if (chosen_item < numDirs)
+        {
+            char* subret = choose_file_menu(dirs[chosen_item], fileExtensionOrDirectory, headers);
+            if (subret != NULL)
+                return subret;
+            continue;
+        } 
         static char ret[PATH_MAX];
         strcpy(ret, files[chosen_item - numDirs]);
-		ui_print("File chosen: %s\n", ret);
+        ui_print("File chosen: %s\n", ret);
         return ret;
     }
     return NULL;
@@ -289,42 +289,42 @@ int
 system(const char *command)
 {
   pid_t pid;
-	sig_t intsave, quitsave;
-	sigset_t mask, omask;
-	int pstat;
-	char *argp[] = {"sh", "-c", NULL, NULL};
+    sig_t intsave, quitsave;
+    sigset_t mask, omask;
+    int pstat;
+    char *argp[] = {"sh", "-c", NULL, NULL};
 
-	if (!command)		/* just checking... */
-		return(1);
+    if (!command)        /* just checking... */
+        return(1);
 
-	argp[2] = (char *)command;
+    argp[2] = (char *)command;
 
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGCHLD);
-	sigprocmask(SIG_BLOCK, &mask, &omask);
-	switch (pid = vfork()) {
-	case -1:			/* error */
-		sigprocmask(SIG_SETMASK, &omask, NULL);
-		return(-1);
-	case 0:				/* child */
-		sigprocmask(SIG_SETMASK, &omask, NULL);
-		execve(_PATH_BSHELL, argp, environ);
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &mask, &omask);
+    switch (pid = vfork()) {
+    case -1:            /* error */
+        sigprocmask(SIG_SETMASK, &omask, NULL);
+        return(-1);
+    case 0:                /* child */
+        sigprocmask(SIG_SETMASK, &omask, NULL);
+        execve(_PATH_BSHELL, argp, environ);
     _exit(127);
   }
 
-	intsave = (sig_t)  bsd_signal(SIGINT, SIG_IGN);
-	quitsave = (sig_t) bsd_signal(SIGQUIT, SIG_IGN);
-	pid = waitpid(pid, (int *)&pstat, 0);
-	sigprocmask(SIG_SETMASK, &omask, NULL);
-	(void)bsd_signal(SIGINT, intsave);
-	(void)bsd_signal(SIGQUIT, quitsave);
-	return (pid == -1 ? -1 : pstat);
+    intsave = (sig_t)  bsd_signal(SIGINT, SIG_IGN);
+    quitsave = (sig_t) bsd_signal(SIGQUIT, SIG_IGN);
+    pid = waitpid(pid, (int *)&pstat, 0);
+    sigprocmask(SIG_SETMASK, &omask, NULL);
+    (void)bsd_signal(SIGINT, intsave);
+    (void)bsd_signal(SIGQUIT, quitsave);
+    return (pid == -1 ? -1 : pstat);
 }
 
 void do_nandroid_backup()
 {
     ui_print("Performing backup...\n");
-	int ret = system("/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/");
+    int ret = system("/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/");
     if (ret != 0)
     {
         ui_print("Error while backing up! Error code: %d\n", ret);
