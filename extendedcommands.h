@@ -13,11 +13,14 @@ show_choose_zip_menu();
 int
 get_allow_toggle_display();
 
-int
-ui_get_show_menu();
+void
+ui_set_show_text(int value);
 
 void
 do_nandroid_backup();
 
 void
 show_nandroid_restore_menu();
+
+void
+do_mount_usb_storage();

@@ -359,3 +359,25 @@ void show_nandroid_restore_menu()
     }
     ui_print("Restore complete.\n");
 }
+
+void do_mount_usb_storage()
+{
+    system("echo /dev/block/mmcblk0 > /sys/devices/platform/usb_mass_storage/lun0/file");
+    static char* headers[] = {  "USB Mass Storage device",
+                                "Leaving this menu unmount",
+                                "your SD card from your PC.",
+                                "",
+                                NULL 
+    };
+    
+    static char* list[] = { "Unmount", NULL };
+    
+    for (;;)
+    {
+        int chosen_item = get_menu_selection(headers, list, 0);
+        if (chosen_item == GO_BACK || chosen_item == 0)
+            break;
+    }
+    
+    system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
+}

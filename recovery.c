@@ -456,6 +456,9 @@ prompt_and_wait()
                     LOGE ("Can't mount /sdcard\n");
                 }    
                 break;
+            case ITEM_MOUNT_USB:
+                do_mount_usb_storage();
+                break;
         }
     }
 }
@@ -469,6 +472,7 @@ print_property(const char *key, const char *name, void *cookie)
 int
 main(int argc, char **argv)
 {
+    int is_user_initiated_recovery = 0;
     time_t start = time(NULL);
 
     // If these fail, there's not really anywhere to complain...
@@ -528,9 +532,14 @@ main(int argc, char **argv)
         if (status != INSTALL_SUCCESS) ui_print("Cache wipe failed.\n");
     } else {
         status = INSTALL_ERROR;  // No command specified
+        // we are starting up in user initiated recovery here
+        // let's set up some default options
+        signature_check_enabled = 0;
+        is_user_initiated_recovery = 1;
+        ui_set_show_text(1);
     }
 
-    if (status != INSTALL_SUCCESS) ui_set_background(BACKGROUND_ICON_ERROR);
+    if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) ui_set_background(BACKGROUND_ICON_ERROR);
     if (status != INSTALL_SUCCESS || ui_text_visible()) prompt_and_wait();
 
     // If there is a radio image pending, reboot now to install it.

@@ -553,6 +553,6 @@ void ui_clear_key_queue() {
     pthread_mutex_unlock(&key_queue_mutex);
 }
 
-void ui_get_show_menu() {
-    return show_menu;
+void ui_set_show_text(int value) {
+    show_text = value;
 }
