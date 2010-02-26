@@ -20,9 +20,7 @@
 #include "common.h"
 #include "extendedcommands.h"
 
-char* MENU_HEADERS[] = { "Android system recovery utility",
-                         "",
-                         NULL };
+char* MENU_HEADERS[] = { NULL };
 
 char* MENU_ITEMS[] = { "reboot system now",
                        "apply sdcard:update.zip",

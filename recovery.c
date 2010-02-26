@@ -136,7 +136,7 @@ fopen_root_path(const char *root_path, const char *mode) {
     if (strchr("wa", mode[0])) dirCreateHierarchy(path, 0777, NULL, 1);
 
     FILE *fp = fopen(path, mode);
-    if (fp == NULL) LOGE("Can't open %s\n", path);
+    if (fp == NULL && root_path != COMMAND_FILE) LOGE("Can't open %s\n", path);
     return fp;
 }
 
@@ -284,8 +284,8 @@ erase_root(const char *root)
 
 static char**
 prepend_title(char** headers) {
-    char* title[] = { "Android system recovery <"
-                          EXPAND(RECOVERY_API_VERSION) "e>",
+    char* title[] = { "ClockworkMod Recovery v"
+                          EXPAND(RECOVERY_API_VERSION),
                       "",
                       NULL };
 
@@ -393,7 +393,8 @@ static void
 prompt_and_wait()
 {
     char** headers = prepend_title(MENU_HEADERS);
-
+    ui_print("ClockworkMod Recovery v"EXPAND(RECOVERY_API_VERSION)"\n");
+    
     for (;;) {
         finish_recovery(NULL);
         ui_reset_progress();

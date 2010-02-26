@@ -55,7 +55,6 @@
 RECOVERY=foo
 
 echo "nandroid-mobile v2.1"
-echo here > /etc/foo
 mkfstab.sh > /etc/fstab
 
 if [ "$1" == "" ]; then
@@ -193,7 +192,7 @@ case $FAIL in
 	3) echo "Error mounting sdcard read-write"; umount /system /data /sdcard; exit 15;;
 esac
 
-TIMESTAMP="`date +%Y%m%d-%H%M`"
+TIMESTAMP="`date +%Y-%m-%d-%H%M`"
 BASEDIR=/sdcard/nandroid
 if [ ! -z "$2" ]; then
 	BASEDIR=$2

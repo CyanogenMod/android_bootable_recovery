@@ -164,6 +164,10 @@ static void draw_text_line(int row, const char* t) {
   }
 }
 
+#define MENU_TEXT_COLOR 7, 133, 74, 255
+#define NORMAL_TEXT_COLOR 200, 200, 200, 255
+#define HEADER_TEXT_COLOR NORMAL_TEXT_COLOR
+
 // Redraw everything on the screen.  Does not flip pages.
 // Should only be called with gUpdateMutex locked.
 static void draw_screen_locked(void)
@@ -177,15 +181,21 @@ static void draw_screen_locked(void)
 
         int i = 0;
         if (show_menu) {
-            gr_color(64, 96, 255, 255);
+            gr_color(MENU_TEXT_COLOR);
             gr_fill(0, (menu_top+menu_sel) * CHAR_HEIGHT,
                     gr_fb_width(), (menu_top+menu_sel+1)*CHAR_HEIGHT+1);
 
+            gr_color(HEADER_TEXT_COLOR);
+            int is_drawing_header = 1;
             for (; i < menu_top + menu_items; ++i) {
+                if (is_drawing_header && strcmp(menu[i], "") == 0) {
+                    gr_color(MENU_TEXT_COLOR);
+                    is_drawing_header = 0;            
+                }
                 if (i == menu_top + menu_sel) {
                     gr_color(255, 255, 255, 255);
                     draw_text_line(i, menu[i]);
-                    gr_color(64, 96, 255, 255);
+                    gr_color(MENU_TEXT_COLOR);
                 } else {
                     draw_text_line(i, menu[i]);
                 }
@@ -195,7 +205,7 @@ static void draw_screen_locked(void)
             ++i;
         }
 
-        gr_color(255, 255, 0, 255);
+        gr_color(NORMAL_TEXT_COLOR);
 
         for (; i < text_rows; ++i) {
             draw_text_line(i, text[(i+text_top) % text_rows]);
@@ -458,6 +468,9 @@ void ui_print(const char *fmt, ...)
     pthread_mutex_unlock(&gUpdateMutex);
 }
 
+#define MENU_ITEM_HEADER " - "
+#define MENU_ITEM_HEADER_LENGTH strlen(MENU_ITEM_HEADER)
+
 void ui_start_menu(char** headers, char** items) {
     int i;
     pthread_mutex_lock(&gUpdateMutex);
@@ -470,7 +483,8 @@ void ui_start_menu(char** headers, char** items) {
         menu_top = i;
         for (; i < text_rows; ++i) {
             if (items[i-menu_top] == NULL) break;
-            strncpy(menu[i], items[i-menu_top], text_cols-1);
+            strcpy(menu[i], MENU_ITEM_HEADER);
+            strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, items[i-menu_top], text_cols-1 - MENU_ITEM_HEADER_LENGTH);
             menu[i][text_cols-1] = '\0';
         }
         menu_items = i - menu_top;
