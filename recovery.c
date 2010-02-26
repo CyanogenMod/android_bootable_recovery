@@ -515,6 +515,13 @@ main(int argc, char **argv)
     }
 
     if (update_package != NULL) {
+        if (wipe_data && erase_root("DATA:")) status = INSTALL_ERROR;
+        status = install_package(update_package);
+        if (status != INSTALL_SUCCESS) ui_print("Installation aborted.\n");
+    } else if (update_package != NULL && wipe_data) {
+        if (device_wipe_data()) status = INSTALL_ERROR;
+        if (erase_root("DATA:")) status = INSTALL_ERROR;
+        if (wipe_cache && erase_root("CACHE:")) status = INSTALL_ERROR;
         status = install_package(update_package);
         if (status != INSTALL_SUCCESS) ui_print("Installation aborted.\n");
     } else if (wipe_data) {
