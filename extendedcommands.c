@@ -379,5 +379,6 @@ void do_mount_usb_storage()
             break;
     }
     
+    system("echo '' > /sys/devices/platform/usb_mass_storage/lun0/file");
     system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
 }
