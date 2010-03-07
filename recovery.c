@@ -482,6 +482,8 @@ main(int argc, char **argv)
 	        return mkyaffs2image_main(argc, argv);
 	    if (strstr(argv[0], "unyaffs") != NULL)
 	        return unyaffs_main(argc, argv);
+        if (strstr(argv[0], "amend"))
+            return amend_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
     int is_user_initiated_recovery = 0;

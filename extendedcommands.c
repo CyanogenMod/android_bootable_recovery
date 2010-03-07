@@ -30,6 +30,9 @@
 #include "roots.h"
 #include "recovery_ui.h"
 
+#include "commands.h"
+#include "amend/amend.h"
+
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
 static const char *SDCARD_PACKAGE_FILE = "SDCARD:update.zip";
@@ -382,4 +385,57 @@ void do_mount_usb_storage()
     
     system("echo '' > /sys/devices/platform/usb_mass_storage/lun0/file");
     system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
+}
+
+int amend_main(int argc, char** argv)
+{
+    if (argc != 2) 
+    {
+        printf("Usage: amend <script>\n");
+        return 0;
+    }
+
+    RecoveryCommandContext ctx = { NULL };
+    if (register_update_commands(&ctx)) {
+        LOGE("Can't install update commands\n");
+    }
+
+    struct stat file_info;
+    if (0 != stat(argv[1], &file_info)) {
+        printf("Error executing stat on file: %s\n", argv[1]);
+        return 1;
+    }
+    
+    int script_len = file_info.st_size;
+    char* script_data = (char*)malloc(script_len);
+    FILE *file = fopen(argv[1], "rb");
+    fread(script_data, script_len, 1, file);
+    fclose(file);
+
+    /* Parse the script.  Note that the script and parse tree are never freed.
+     */
+    const AmCommandList *commands = parseAmendScript(script_data, script_len);
+    if (commands == NULL) {
+        printf("Syntax error in update script\n");
+        return 1;
+    } else {
+        printf("Parsed %.*s\n", script_len, argv[1]);
+    }
+
+    /* Execute the script.
+     */
+    int ret = execCommandList((ExecContext *)1, commands);
+    if (ret != 0) {
+        int num = ret;
+        char *line, *next = script_data;
+        while (next != NULL && ret-- > 0) {
+            line = next;
+            next = memchr(line, '\n', script_data + script_len - line);
+            if (next != NULL) *next++ = '\0';
+        }
+        printf("Failure at line %d:\n%s\n", num, next ? line : "(not found)");
+        return 1;
+    }    
+    
+    return 0;
 }
