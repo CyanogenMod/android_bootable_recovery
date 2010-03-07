@@ -553,8 +553,11 @@ main(int argc, char **argv)
         is_user_initiated_recovery = 1;
         ui_set_show_text(1);
         
-        if (extendedcommand_file_exists())
-            run_and_remove_extendedcommand();
+        if (extendedcommand_file_exists()) {
+            if (0 == run_and_remove_extendedcommand()) {
+                status = INSTALL_SUCCESS;
+            }
+        }
     }
 
     if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) ui_set_background(BACKGROUND_ICON_ERROR);
