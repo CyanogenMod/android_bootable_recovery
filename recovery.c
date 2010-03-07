@@ -556,6 +556,7 @@ main(int argc, char **argv)
         if (extendedcommand_file_exists()) {
             if (0 == run_and_remove_extendedcommand()) {
                 status = INSTALL_SUCCESS;
+                ui_set_show_text(0);
             }
         }
     }
