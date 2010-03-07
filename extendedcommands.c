@@ -387,28 +387,25 @@ void do_mount_usb_storage()
     system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
 }
 
-int amend_main(int argc, char** argv)
+#define EXTENDEDCOMMAND_SCRIPT "/cache/recovery/extendedcommand"
+
+int extendedcommand_file_exists()
 {
-    if (argc != 2) 
-    {
-        printf("Usage: amend <script>\n");
-        return 0;
-    }
-
-    RecoveryCommandContext ctx = { NULL };
-    if (register_update_commands(&ctx)) {
-        LOGE("Can't install update commands\n");
-    }
-
     struct stat file_info;
-    if (0 != stat(argv[1], &file_info)) {
-        printf("Error executing stat on file: %s\n", argv[1]);
+    return 0 == stat(EXTENDEDCOMMAND_SCRIPT, &file_info);
+}
+
+int run_script(char* filename)
+{
+    struct stat file_info;
+    if (0 != stat(filename, &file_info)) {
+        printf("Error executing stat on file: %s\n", filename);
         return 1;
     }
     
     int script_len = file_info.st_size;
     char* script_data = (char*)malloc(script_len);
-    FILE *file = fopen(argv[1], "rb");
+    FILE *file = fopen(filename, "rb");
     fread(script_data, script_len, 1, file);
     fclose(file);
 
@@ -419,7 +416,7 @@ int amend_main(int argc, char** argv)
         printf("Syntax error in update script\n");
         return 1;
     } else {
-        printf("Parsed %.*s\n", script_len, argv[1]);
+        printf("Parsed %.*s\n", script_len, filename);
     }
 
     /* Execute the script.
@@ -438,4 +435,26 @@ int amend_main(int argc, char** argv)
     }    
     
     return 0;
+}
+
+int run_and_remove_extendedcommand()
+{
+    int ret = run_script(EXTENDEDCOMMAND_SCRIPT);
+    remove(EXTENDEDCOMMAND_SCRIPT);
+    return ret;
+}
+
+int amend_main(int argc, char** argv)
+{
+    if (argc != 2) 
+    {
+        printf("Usage: amend <script>\n");
+        return 0;
+    }
+
+    RecoveryCommandContext ctx = { NULL };
+    if (register_update_commands(&ctx)) {
+        LOGE("Can't install update commands\n");
+    }
+    return run_and_remove_extendedcommand(argv[1]);
 }

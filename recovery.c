@@ -552,6 +552,9 @@ main(int argc, char **argv)
         script_assert_enabled = 0;
         is_user_initiated_recovery = 1;
         ui_set_show_text(1);
+        
+        if (extendedcommand_file_exists())
+            run_and_remove_extendedcommand();
     }
 
     if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) ui_set_background(BACKGROUND_ICON_ERROR);
