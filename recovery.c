@@ -446,7 +446,7 @@ prompt_and_wait()
                 show_install_update_menu();
                 break;
             case ITEM_BACKUP:
-                do_nandroid_backup();
+                do_nandroid_backup(NULL);
                 break;
             case ITEM_RESTORE:
                 show_nandroid_restore_menu();

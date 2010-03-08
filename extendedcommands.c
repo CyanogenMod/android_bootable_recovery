@@ -335,9 +335,9 @@ int do_nandroid_backup(char* backup_name)
 
     char cmd[PATH_MAX];
     if (NULL != backup_name)
-    	sprintf(cmd, "/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/ %s", backup_name);
-    else
-	sprintf(cmd, "/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/");
+		sprintf(cmd, "/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/ %s", backup_name);
+	else
+		sprintf(cmd, "/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/");
     ui_print("Performing backup...\n");
     int ret = system(cmd);
     if (ret != 0)

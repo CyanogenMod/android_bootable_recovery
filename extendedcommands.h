@@ -17,7 +17,7 @@ void
 ui_set_show_text(int value);
 
 int
-do_nandroid_backup();
+do_nandroid_backup(char* backup_name);
 
 int
 do_nandroid_restore();
