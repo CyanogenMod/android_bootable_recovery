@@ -50,7 +50,7 @@ void toggle_script_asserts()
     ui_print("Script Asserts: %s\n", script_assert_enabled ? "Enabled" : "Disabled");
 }
 
-void install_zip(const char* packagefilepath)
+int install_zip(const char* packagefilepath)
 {
     ui_print("\n-- Installing: %s\n", packagefilepath);
     set_sdcard_update_bootloader_message();
@@ -59,13 +59,14 @@ void install_zip(const char* packagefilepath)
     if (status != INSTALL_SUCCESS) {
         ui_set_background(BACKGROUND_ICON_ERROR);
         ui_print("Installation aborted.\n");
-        return;
+        return 1;
     } 
     if (firmware_update_pending()) {
         ui_print("\nReboot via menu to complete\ninstallation.\n");
     }
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_print("\nInstall from sdcard complete.\n");
+    return 0;
 }
 
 char* INSTALL_MENU_ITEMS[] = {  "apply sdcard:update.zip",
