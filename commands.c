@@ -797,6 +797,44 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
     return do_nandroid_restore(argv[0]);
 }
 
+static int
+cmd_sleep(const char *name, void *cookie, int argc, const char *argv[],
+            PermissionRequestList *permissions)
+{
+    UNUSED(cookie);
+    CHECK_WORDS();
+
+    if (argc != 1) {
+        LOGE("Command %s requires exactly one argument\n", name);
+        return 1;
+    }
+    
+    int seconds = atoi(argv[0]);
+    sleep(seconds);
+
+    return 0;
+}
+
+static int
+cmd_print(const char *name, void *cookie, int argc, const char *argv[],
+            PermissionRequestList *permissions)
+{
+    UNUSED(cookie);
+    CHECK_WORDS();
+    
+    char message[1024];
+    message[0] = NULL;
+    int i;
+    for (i = 0; i < argc; i++)
+    {
+        strcat(message, argv[i]);
+        strcat(message, " ");
+    }
+    strcat(message, "\n");
+    
+    ui_print(message);
+    return 0;
+}
 
 /*
  * Function definitions
@@ -1165,6 +1203,12 @@ register_update_commands(RecoveryCommandContext *ctx)
     if (ret < 0) return ret;
 
     ret = registerCommand("restore_rom", CMD_ARGS_WORDS, cmd_restore_rom, (void *)ctx);
+    if (ret < 0) return ret;
+
+    ret = registerCommand("sleep", CMD_ARGS_WORDS, cmd_sleep, (void *)ctx);
+    if (ret < 0) return ret;
+
+    ret = registerCommand("print", CMD_ARGS_WORDS, cmd_print, (void *)ctx);
     if (ret < 0) return ret;
 
     /*

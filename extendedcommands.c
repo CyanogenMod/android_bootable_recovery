@@ -327,6 +327,11 @@ system(const char *command)
 
 int do_nandroid_backup(char* backup_name)
 {
+    if (ensure_root_path_mounted("SDCARD:") != 0) {
+        LOGE ("Can't mount /sdcard\n");
+        return 1;
+    }
+
     char cmd[PATH_MAX];
     if (NULL == backup_name)
         backup_name = "";
@@ -344,6 +349,11 @@ int do_nandroid_backup(char* backup_name)
 
 int do_nandroid_restore(char* backup_path)
 {
+    if (ensure_root_path_mounted("SDCARD:") != 0) {
+        LOGE ("Can't mount /sdcard\n");
+        return 1;
+    }
+
     char* command[PATH_MAX];
     sprintf(command, "nandroid-mobile.sh restore %s", backup_path);
     ui_print("Performing restore...\n");
@@ -359,11 +369,6 @@ int do_nandroid_restore(char* backup_path)
 
 void show_nandroid_restore_menu()
 {
-    if (ensure_root_path_mounted("SDCARD:") != 0) {
-        LOGE ("Can't mount /sdcard\n");
-        return;
-    }
-
     static char* headers[] = {  "Choose an image to restore",
                                 "",
                                 NULL 
