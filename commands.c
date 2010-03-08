@@ -759,6 +759,45 @@ cmd_done(const char *name, void *cookie, int argc, const char *argv[],
 }
 
 
+static int
+cmd_backup_rom(const char *name, void *cookie, int argc, const char *argv[],
+        PermissionRequestList *permissions)
+{
+    UNUSED(cookie);
+    CHECK_WORDS();
+
+    char* backup_name = NULL;
+    switch(argc)
+    {
+        case 0:
+            break;
+        case 1:
+            backup_name = argv[0];
+            break;
+        default:
+            LOGE("Command %s requires zero or one argument\n", name);
+            return 1;
+    }
+
+    return do_nandroid_backup(backup_name);
+}
+
+static int
+cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
+        PermissionRequestList *permissions)
+{
+    UNUSED(cookie);
+    CHECK_WORDS();
+
+    if (argc != 1) {
+        LOGE("Command %s requires exactly one argument\n", name);
+        return 1;
+    }
+
+    return do_nandroid_restore(argv[0]);
+}
+
+
 /*
  * Function definitions
  */
@@ -1120,6 +1159,12 @@ register_update_commands(RecoveryCommandContext *ctx)
     if (ret < 0) return ret;
 
     ret = registerCommand("done", CMD_ARGS_WORDS, cmd_done, (void *)ctx);
+    if (ret < 0) return ret;
+
+    ret = registerCommand("backup_rom", CMD_ARGS_WORDS, cmd_backup_rom, (void *)ctx);
+    if (ret < 0) return ret;
+
+    ret = registerCommand("restore_rom", CMD_ARGS_WORDS, cmd_restore_rom, (void *)ctx);
     if (ret < 0) return ret;
 
     /*

@@ -325,16 +325,36 @@ system(const char *command)
     return (pid == -1 ? -1 : pstat);
 }
 
-void do_nandroid_backup()
+int do_nandroid_backup(char* backup_name)
 {
+    char cmd[PATH_MAX];
+    if (NULL == backup_name)
+        backup_name = "";
+    sprintf(cmd, "/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/ %s", backup_name);
     ui_print("Performing backup...\n");
-    int ret = system("/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/");
+    int ret = system(cmd);
     if (ret != 0)
     {
         ui_print("Error while backing up! Error code: %d\n", ret);
-        return;
+        return ret;
     }
     ui_print("Backup complete.\n");
+    return ret;
+}
+
+int do_nandroid_restore(char* backup_path)
+{
+    char* command[PATH_MAX];
+    sprintf(command, "nandroid-mobile.sh restore %s", backup_path);
+    ui_print("Performing restore...\n");
+    int ret = system(command);
+    if (ret != 0)
+    {
+        ui_print("Error while restoring!\n");
+        return ret;
+    }
+    ui_print("Restore complete.\n");
+    return ret;
 }
 
 void show_nandroid_restore_menu()
@@ -352,16 +372,7 @@ void show_nandroid_restore_menu()
     char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, headers);
     if (file == NULL)
         return;
-    char* command[PATH_MAX];
-    sprintf(command, "nandroid-mobile.sh restore %s", file);
-    ui_print("Performing restore...\n");
-    int ret = system(command);
-    if (ret != 0)
-    {
-        ui_print("Error while restoring!\n");
-        return;
-    }
-    ui_print("Restore complete.\n");
+    do_nandroid_restore(file);
 }
 
 void do_mount_usb_storage()
@@ -456,5 +467,5 @@ int amend_main(int argc, char** argv)
     if (register_update_commands(&ctx)) {
         LOGE("Can't install update commands\n");
     }
-    return run_and_remove_extendedcommand(argv[1]);
+    return run_script(argv[1]);
 }

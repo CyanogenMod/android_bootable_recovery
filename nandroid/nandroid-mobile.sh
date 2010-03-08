@@ -171,7 +171,7 @@ case $1 in
 		break
 		;;
 	*)
-		echo "Usage: $0 {backup|restore} [/path/to/nandroid/backup/]"
+		echo "Usage: $0 {backup|restore} [/path/to/nandroid/backup/] [backupname]"
 		echo "- backup will store a full system backup on /sdcard/nandroid"
 		echo "- restore path will restore the last made backup for boot, system, recovery and data"
 		exit 12
@@ -192,13 +192,18 @@ case $FAIL in
 	3) echo "Error mounting sdcard read-write"; umount /system /data /sdcard; exit 15;;
 esac
 
-TIMESTAMP="`date +%Y-%m-%d-%H%M`"
+if [ -z "$3" ]
+then
+    BACKUPNAME="`date +%Y-%m-%d-%H%M`"
+else
+    BACKUPNAME=$3
+fi
 BASEDIR=/sdcard/nandroid
 if [ ! -z "$2" ]; then
 	BASEDIR=$2
 fi
 	
-DESTDIR=$BASEDIR/$TIMESTAMP
+DESTDIR=$BASEDIR/$BACKUPNAME
 if [ ! -d $DESTDIR ]; then 
 	mkdir -p $DESTDIR
 	if [ ! -d $DESTDIR ]; then 
@@ -297,6 +302,8 @@ echo "done"
 
 # 8.
 echo "unmounting system, data and sdcard"
+sync
+sleep 2s
 umount /system
 umount /data
 umount /sdcard

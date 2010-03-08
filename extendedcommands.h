@@ -16,11 +16,17 @@ get_allow_toggle_display();
 void
 ui_set_show_text(int value);
 
-void
+int
 do_nandroid_backup();
+
+int
+do_nandroid_restore();
 
 void
 show_nandroid_restore_menu();
 
 void
 do_mount_usb_storage();
+
+void
+show_choose_zip_menu();
