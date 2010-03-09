@@ -457,6 +457,20 @@ int run_script(char* filename)
 
 int run_and_remove_extendedcommand()
 {
+    int i = 0;
+    for (i = 20; i > 0; i--) {
+        ui_print("Waiting for SD Card to mount (%ds)\n", i);
+        if (ensure_root_path_mounted("SDCARD:") == 0) {
+            ui_print("SD Card mounted...\n");
+            break;
+        }
+        sleep(1);
+    }
+    if (i == 0) {
+        ui_print("Timed out waiting for SD card... continuing anyways.");
+    }
+    
+    
     int ret = run_script(EXTENDEDCOMMAND_SCRIPT);
     remove(EXTENDEDCOMMAND_SCRIPT);
     return ret;
