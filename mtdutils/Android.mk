@@ -29,6 +29,14 @@ LOCAL_SHARED_LIBRARIES := libcutils libc
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
+LOCAL_SRC_FILES := erase_flash.c
+LOCAL_MODULE := erase_flash
+LOCAL_MODULE_TAGS := eng
+LOCAL_STATIC_LIBRARIES := libmtdutils
+LOCAL_SHARED_LIBRARIES := libcutils libc
+include $(BUILD_EXECUTABLE)
+
+include $(CLEAR_VARS)
 LOCAL_SRC_FILES := flash_image.c
 LOCAL_MODULE := libflash_image
 LOCAL_CFLAGS += -Dmain=flash_image_main
@@ -45,6 +53,7 @@ LOCAL_UNSTRIPPED_PATH := $(TARGET_OUT_EXECUTABLES_UNSTRIPPED)
 LOCAL_MODULE_PATH := $(TARGET_OUT)/utilities
 LOCAL_STATIC_LIBRARIES := libmtdutils libcutils libc 
 include $(BUILD_EXECUTABLE)
+
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := dump_image.c
