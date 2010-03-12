@@ -413,20 +413,8 @@ int extendedcommand_file_exists()
     return 0 == stat(EXTENDEDCOMMAND_SCRIPT, &file_info);
 }
 
-int run_script(char* filename)
+int run_script_from_buffer(char* script_data, int script_len, char* filename)
 {
-    struct stat file_info;
-    if (0 != stat(filename, &file_info)) {
-        printf("Error executing stat on file: %s\n", filename);
-        return 1;
-    }
-    
-    int script_len = file_info.st_size;
-    char* script_data = (char*)malloc(script_len);
-    FILE *file = fopen(filename, "rb");
-    fread(script_data, script_len, 1, file);
-    fclose(file);
-
     /* Parse the script.  Note that the script and parse tree are never freed.
      */
     const AmCommandList *commands = parseAmendScript(script_data, script_len);
@@ -455,6 +443,25 @@ int run_script(char* filename)
     return 0;
 }
 
+int run_script(char* filename, int delete_file)
+{
+    struct stat file_info;
+    if (0 != stat(filename, &file_info)) {
+        printf("Error executing stat on file: %s\n", filename);
+        return 1;
+    }
+    
+    int script_len = file_info.st_size;
+    char* script_data = (char*)malloc(script_len);
+    FILE *file = fopen(filename, "rb");
+    fread(script_data, script_len, 1, file);
+    fclose(file);
+	if (delete_file)
+    	remove(filename);
+
+	return run_script_from_buffer(script_data, script_len, filename);
+}
+
 int run_and_remove_extendedcommand()
 {
     int i = 0;
@@ -470,10 +477,7 @@ int run_and_remove_extendedcommand()
         ui_print("Timed out waiting for SD card... continuing anyways.");
     }
     
-    
-    int ret = run_script(EXTENDEDCOMMAND_SCRIPT);
-    remove(EXTENDEDCOMMAND_SCRIPT);
-    return ret;
+    return run_script(EXTENDEDCOMMAND_SCRIPT, 1);
 }
 
 int amend_main(int argc, char** argv)
@@ -488,5 +492,5 @@ int amend_main(int argc, char** argv)
     if (register_update_commands(&ctx)) {
         LOGE("Can't install update commands\n");
     }
-    return run_script(argv[1]);
+    return run_script(argv[1], 0);
 }

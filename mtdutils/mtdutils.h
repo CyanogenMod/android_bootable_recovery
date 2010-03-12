@@ -52,6 +52,4 @@ off_t mtd_erase_blocks(MtdWriteContext *, int blocks);  /* 0 ok, -1 for all */
 off_t mtd_find_write_start(MtdWriteContext *ctx, off_t pos);
 int mtd_write_close(MtdWriteContext *);
 
-ssize_t mtd_read_raw(MtdReadContext *ctx, char *data, size_t len);
-
 #endif  // MTDUTILS_H_
