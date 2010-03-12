@@ -31,8 +31,8 @@
 
 #define LOG_TAG "dump_image"
 
-#define BLOCK_SIZE	2048
-#define SPARE_SIZE	(BLOCK_SIZE >> 5)
+#define BLOCK_SIZE    2048
+#define SPARE_SIZE    (BLOCK_SIZE >> 5)
 
 static void die(const char *msg, ...) {
     int err = errno;
@@ -72,29 +72,30 @@ int main(int argc, char **argv)
     }
 
     if (mtd_scan_partitions() <= 0)
-    	die("error scanning partitions");
+        die("error scanning partitions");
 
     partition = mtd_find_partition_by_name(argv[1]);
     if (partition == NULL)
-   	 die("can't find %s partition", argv[1]);
+        die("can't find %s partition", argv[1]);
 
     if (mtd_partition_info(partition, &partition_size, NULL, NULL)) {
-   	 die("can't get info of partition %s", argv[1]);
+        die("can't get info of partition %s", argv[1]);
     }
 
     if (!strcmp(argv[2], "-")) {
-	fd = fileno(stdout);
-    } else {
-	fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0666);
+        fd = fileno(stdout);
+    } 
+    else {
+        fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0666);
     }
 
     if (fd < 0)
-    	die("error opening %s", argv[2]);
+        die("error opening %s", argv[2]);
 
     in = mtd_read_partition(partition);
     if (in == NULL) {
-    	close(fd);
-	unlink(argv[2]);
+        close(fd);
+        unlink(argv[2]);
         die("error opening %s: %s\n", argv[1], strerror(errno));
     }
 
@@ -102,18 +103,18 @@ int main(int argc, char **argv)
     while ((len = mtd_read_data(in, buf, BLOCK_SIZE)) > 0) {
         wrote = write(fd, buf, len);
         if (wrote != len) {
-    		close(fd);
-		unlink(argv[2]);
-		die("error writing %s", argv[2]);
-	}
-	total += BLOCK_SIZE;
+            close(fd);
+            unlink(argv[2]);
+            die("error writing %s", argv[2]);
+        }
+        total += BLOCK_SIZE;
     }
 
     mtd_read_close(in);
 
     if (close(fd)) {
-	unlink(argv[2]);
-    	die("error closing %s", argv[2]);
+        unlink(argv[2]);
+        die("error closing %s", argv[2]);
     }
 
     return 0;
