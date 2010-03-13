@@ -364,7 +364,6 @@ int do_nandroid_backup(char* backup_name)
         return print_and_error("Error while dumping boot image!\n");
     
     // TODO: Wrap this up in a loop?
-
     ui_print("Backing up system...\n");
     sprintf(tmp, "%s/%s", backupdir, "system.img");
     if (ensure_root_path_mounted("SYSTEM:") != 0)
@@ -412,6 +411,7 @@ int do_nandroid_restore(char* backup_path)
     if (0 != system(tmp))
         return print_and_error("MD5 mismatch!\n");
     
+    // TODO: put this in a loop?
     ui_print("Restoring system...\n");
     if (0 != ensure_root_path_unmounted("SYSTEM:")) 
         return print_and_error("Can't unmount /system!\n");
