@@ -33,6 +33,9 @@
 #include "commands.h"
 #include "amend/amend.h"
 
+#include "mtdutils/dump_image.h"
+#include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
+
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
 static const char *SDCARD_PACKAGE_FILE = "SDCARD:update.zip";
@@ -326,27 +329,76 @@ system(const char *command)
     return (pid == -1 ? -1 : pstat);
 }
 
+int print_and_error(char* message)
+{
+    ui_print(message);
+    return 1;
+}
+
 int do_nandroid_backup(char* backup_name)
 {
     if (ensure_root_path_mounted("SDCARD:") != 0) {
         LOGE ("Can't mount /sdcard\n");
         return 1;
     }
-
-    char cmd[PATH_MAX];
-    if (NULL != backup_name)
-		sprintf(cmd, "/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/ %s", backup_name);
-	else
-		sprintf(cmd, "/sbin/nandroid-mobile.sh backup /sdcard/clockworkmod/backup/");
-    ui_print("Performing backup...\n");
-    int ret = system(cmd);
-    if (ret != 0)
-    {
-        ui_print("Error while backing up! Error code: %d\n", ret);
-        return ret;
+    if (ensure_root_path_mounted("SYSTEM:") != 0) {
+        LOGE ("Can't mount /system\n");
+        return 1;
     }
-    ui_print("Backup complete.\n");
-    return ret;
+    if (ensure_root_path_mounted("DATA:") != 0) {
+        LOGE ("Can't mount /data\n");
+        return 1;
+    }
+    if (ensure_root_path_mounted("CACHE:") != 0) {
+        LOGE ("Can't mount /cache\n");
+        return 1;
+    }
+
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    
+    char backupdir[PATH_MAX];
+    char tmp[PATH_MAX];
+    if (NULL != backup_name)
+		sprintf(backupdir, "/sdcard/clockworkmod/backup/%s", backup_name);
+	else
+		sprintf(backupdir, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+		
+    sprintf(tmp, "mkdir -p %s", backupdir);
+    system(tmp);
+
+    int ret;
+    ui_print("Backing up boot...\n");
+    sprintf(tmp, "%s/%s", backupdir, "boot.img");
+    ret = dump_image("boot", tmp, NULL);
+    if (0 != ret)
+        return print_and_error("Error while dumping boot image!\n");
+    
+    ui_print("Backing up system...\n");
+    sprintf(tmp, "%s/%s", backupdir, "system.img");
+    ret = mkyaffs2image("/system", tmp, 0, NULL);
+    ensure_root_path_unmounted("SYSTEM:");
+    if (0 != ret)
+        return print_and_error("Error while making a yaffs2 image of system!\n");
+    
+    ui_print("Backing up data...\n");
+    sprintf(tmp, "%s/%s", backupdir, "data.img");
+    ret = mkyaffs2image("/data", tmp, 0, NULL);
+    ensure_root_path_unmounted("DATA:");
+    if (0 != ret)
+        return print_and_error("Error while making a yaffs2 image of data!\n");
+    
+    ui_print("Backing up cache...\n");
+    sprintf(tmp, "%s/%s", backupdir, "cache.img");
+    ret = mkyaffs2image("/cache", tmp, 0, NULL);
+    ensure_root_path_unmounted("CACHE:");
+    if (0 != ret)
+        return print_and_error("Error while making a yaffs2 image of cache!\n");
+    
+    sprintf(tmp, "md5sum %s/*img > %s/nandroid.md5", backupdir, backupdir);
+    system(tmp);
+    
+    return 0;
 }
 
 int do_nandroid_restore(char* backup_path)

@@ -24,6 +24,7 @@
 
 #include "cutils/log.h"
 #include "mtdutils.h"
+#include "dump_image.h"
 
 #ifdef LOG_TAG
 #undef LOG_TAG
@@ -34,7 +35,7 @@
 #define BLOCK_SIZE    2048
 #define SPARE_SIZE    (BLOCK_SIZE >> 5)
 
-static void die(const char *msg, ...) {
+static int die(const char *msg, ...) {
     int err = errno;
     va_list args;
     va_start(args, msg);
@@ -48,10 +49,71 @@ static void die(const char *msg, ...) {
     }
 
     fprintf(stderr, "%s\n", buf);
-    exit(1);
+    return 1;
 }
 
 /* Read a flash partition and write it to an image file. */
+
+int dump_image(char* partition_name, char* filename, dump_image_callback callback) {
+    MtdReadContext *in;
+    const MtdPartition *partition;
+    char buf[BLOCK_SIZE + SPARE_SIZE];
+    size_t partition_size;
+    size_t read_size;
+    size_t total;
+    int fd;
+    int wrote;
+    int len;
+    
+    if (mtd_scan_partitions() <= 0)
+        return die("error scanning partitions");
+
+    partition = mtd_find_partition_by_name(partition_name);
+    if (partition == NULL)
+        return die("can't find %s partition", partition_name);
+
+    if (mtd_partition_info(partition, &partition_size, NULL, NULL)) {
+        return die("can't get info of partition %s", partition_name);
+    }
+
+    if (!strcmp(filename, "-")) {
+        fd = fileno(stdout);
+    } 
+    else {
+        fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    }
+
+    if (fd < 0)
+        return die("error opening %s", filename);
+
+    in = mtd_read_partition(partition);
+    if (in == NULL) {
+        close(fd);
+        unlink(filename);
+        return die("error opening %s: %s\n", partition_name, strerror(errno));
+    }
+
+    total = 0;
+    while ((len = mtd_read_data(in, buf, BLOCK_SIZE)) > 0) {
+        wrote = write(fd, buf, len);
+        if (wrote != len) {
+            close(fd);
+            unlink(filename);
+            return die("error writing %s", filename);
+        }
+        total += BLOCK_SIZE;
+        if (callback != NULL)
+            callback(total, partition_size);
+    }
+
+    mtd_read_close(in);
+
+    if (close(fd)) {
+        unlink(filename);
+        return die("error closing %s", filename);
+    }
+    return 0;
+}
 
 int main(int argc, char **argv)
 {
@@ -71,51 +133,5 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    if (mtd_scan_partitions() <= 0)
-        die("error scanning partitions");
-
-    partition = mtd_find_partition_by_name(argv[1]);
-    if (partition == NULL)
-        die("can't find %s partition", argv[1]);
-
-    if (mtd_partition_info(partition, &partition_size, NULL, NULL)) {
-        die("can't get info of partition %s", argv[1]);
-    }
-
-    if (!strcmp(argv[2], "-")) {
-        fd = fileno(stdout);
-    } 
-    else {
-        fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0666);
-    }
-
-    if (fd < 0)
-        die("error opening %s", argv[2]);
-
-    in = mtd_read_partition(partition);
-    if (in == NULL) {
-        close(fd);
-        unlink(argv[2]);
-        die("error opening %s: %s\n", argv[1], strerror(errno));
-    }
-
-    total = 0;
-    while ((len = mtd_read_data(in, buf, BLOCK_SIZE)) > 0) {
-        wrote = write(fd, buf, len);
-        if (wrote != len) {
-            close(fd);
-            unlink(argv[2]);
-            die("error writing %s", argv[2]);
-        }
-        total += BLOCK_SIZE;
-    }
-
-    mtd_read_close(in);
-
-    if (close(fd)) {
-        unlink(argv[2]);
-        die("error closing %s", argv[2]);
-    }
-
-    return 0;
+    return dump_image(argv[1], argv[2], NULL);
 }

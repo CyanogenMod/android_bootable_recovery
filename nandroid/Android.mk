@@ -19,4 +19,3 @@ LOCAL_MODULE_STEM := mkfstab.sh
 ADDITIONAL_RECOVERY_EXECUTABLES += recovery_mkfstab
 include $(BUILD_PREBUILT)
 
-include $(CLEAR_VARS)
