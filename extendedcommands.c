@@ -35,6 +35,7 @@
 
 #include "mtdutils/dump_image.h"
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
+#include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -261,7 +262,6 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
         } 
         static char ret[PATH_MAX];
         strcpy(ret, files[chosen_item - numDirs]);
-        ui_print("File chosen: %s\n", ret);
         return ret;
     }
     return NULL;
@@ -335,22 +335,11 @@ int print_and_error(char* message)
     return 1;
 }
 
+// TODO : Separate file for Nandroid?
 int do_nandroid_backup(char* backup_name)
 {
     if (ensure_root_path_mounted("SDCARD:") != 0) {
         LOGE ("Can't mount /sdcard\n");
-        return 1;
-    }
-    if (ensure_root_path_mounted("SYSTEM:") != 0) {
-        LOGE ("Can't mount /system\n");
-        return 1;
-    }
-    if (ensure_root_path_mounted("DATA:") != 0) {
-        LOGE ("Can't mount /data\n");
-        return 1;
-    }
-    if (ensure_root_path_mounted("CACHE:") != 0) {
-        LOGE ("Can't mount /cache\n");
         return 1;
     }
 
@@ -374,8 +363,12 @@ int do_nandroid_backup(char* backup_name)
     if (0 != ret)
         return print_and_error("Error while dumping boot image!\n");
     
+    // TODO: Wrap this up in a loop?
+
     ui_print("Backing up system...\n");
     sprintf(tmp, "%s/%s", backupdir, "system.img");
+    if (ensure_root_path_mounted("SYSTEM:") != 0)
+        return print_and_error("Can't mount /system!\n");
     ret = mkyaffs2image("/system", tmp, 0, NULL);
     ensure_root_path_unmounted("SYSTEM:");
     if (0 != ret)
@@ -383,6 +376,8 @@ int do_nandroid_backup(char* backup_name)
     
     ui_print("Backing up data...\n");
     sprintf(tmp, "%s/%s", backupdir, "data.img");
+    if (ensure_root_path_mounted("DATA:") != 0)
+        return print_and_error("Can't mount /data!\n");
     ret = mkyaffs2image("/data", tmp, 0, NULL);
     ensure_root_path_unmounted("DATA:");
     if (0 != ret)
@@ -390,6 +385,8 @@ int do_nandroid_backup(char* backup_name)
     
     ui_print("Backing up cache...\n");
     sprintf(tmp, "%s/%s", backupdir, "cache.img");
+    if (ensure_root_path_mounted("CACHE:") != 0)
+        return print_and_error("Can't mount /cache!\n");
     ret = mkyaffs2image("/cache", tmp, 0, NULL);
     ensure_root_path_unmounted("CACHE:");
     if (0 != ret)
@@ -407,22 +404,57 @@ int do_nandroid_restore(char* backup_path)
         LOGE ("Can't mount /sdcard\n");
         return 1;
     }
+    
+    char tmp[PATH_MAX];
 
-    char* command[PATH_MAX];
-    sprintf(command, "nandroid-mobile.sh restore %s", backup_path);
-    ui_print("Performing restore...\n");
-    int ret = system(command);
-    if (ret != 0)
-    {
-        ui_print("Error while restoring!\n");
-        return ret;
-    }
-    ui_print("Restore complete.\n");
-    return ret;
+    ui_print("Checking MD5 sums...\n");
+    sprintf(tmp, "md5sum -c %s/nandroid.md5", backup_path);
+    if (0 != system(tmp))
+        return print_and_error("MD5 mismatch!\n");
+    
+    ui_print("Restoring system...\n");
+    if (0 != ensure_root_path_unmounted("SYSTEM:")) 
+        return print_and_error("Can't unmount /system!\n");
+    if (0 != format_root_device("SYSTEM:"))
+        return print_and_error("Error while formatting /system!\n");
+    if (ensure_root_path_mounted("SYSTEM:") != 0)
+        return print_and_error("Can't mount /system!\n");
+    sprintf(tmp, "%s/system.img", backup_path);
+    if (0 != unyaffs(tmp, "/system", NULL))
+        return print_and_error("Error while restoring /system!\n");
+
+    ui_print("Restoring data...\n");
+    if (0 != ensure_root_path_unmounted("DATA:")) 
+        return print_and_error("Can't unmount /data!\n");
+    if (0 != format_root_device("DATA:"))
+        return print_and_error("Error while formatting /data!\n");
+    if (ensure_root_path_mounted("DATA:") != 0)
+        return print_and_error("Can't mount /data!\n");
+    sprintf(tmp, "%s/data.img", backup_path);
+    if (0 != unyaffs(tmp, "/data", NULL))
+        return print_and_error("Error while restoring /data!\n");
+
+    ui_print("Restoring cache...\n");
+    if (0 != ensure_root_path_unmounted("CACHE:")) 
+        return print_and_error("Can't unmount /cache!\n");
+    if (0 != format_root_device("CACHE:"))
+        return print_and_error("Error while formatting /cache!\n");
+    if (ensure_root_path_mounted("CACHE:") != 0)
+        return print_and_error("Can't mount /cache!\n");
+    sprintf(tmp, "%s/cache.img", backup_path);
+    if (0 != unyaffs(tmp, "/cache", NULL))
+        return print_and_error("Error while restoring /cache!\n");
+        
+    return 0;
 }
 
 void show_nandroid_restore_menu()
 {
+    if (ensure_root_path_mounted("SDCARD:") != 0) {
+        LOGE ("Can't mount /sdcard\n");
+        return 1;
+    }
+    
     static char* headers[] = {  "Choose an image to restore",
                                 "",
                                 NULL 
