@@ -117,7 +117,8 @@ int nandroid_backup(char* backup_path)
     if (0 != ret)
         return print_and_error("Error while making a yaffs2 image of cache!\n");
     
-    sprintf(tmp, "md5sum %s/*img > %s/nandroid.md5", backup_path, backup_path);
+    sprintf(tmp, "cd %s && md5sum *img > nandroid.md5", backup_path);
+    ui_print(tmp);
     __system(tmp);
     
     sync();
@@ -139,7 +140,7 @@ int nandroid_restore(char* backup_path)
     char tmp[PATH_MAX];
 
     ui_print("Checking MD5 sums...\n");
-    sprintf(tmp, "md5sum -c %s/nandroid.md5", backup_path);
+    sprintf(tmp, "cd %s && md5sum -c nandroid.md5", backup_path);
     if (0 != __system(tmp))
         return print_and_error("MD5 mismatch!\n");
     
