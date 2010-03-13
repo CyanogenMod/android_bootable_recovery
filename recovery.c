@@ -446,7 +446,13 @@ prompt_and_wait()
                 show_install_update_menu();
                 break;
             case ITEM_BACKUP:
-                do_nandroid_backup(NULL);
+                {
+                    struct timeval tp;
+                    gettimeofday(&tp, NULL);
+                    char backup_path[PATH_MAX];
+                    sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                    nandroid_backup(backup_path);
+                }
                 break;
             case ITEM_RESTORE:
                 show_nandroid_restore_menu();

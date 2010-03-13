@@ -8,7 +8,8 @@ commands_recovery_local_path := $(LOCAL_PATH)
 # LOCAL_CPP_EXTENSION := .c
 
 LOCAL_SRC_FILES := \
-    extendedcommands.c \
+  extendedcommands.c \
+  nandroid.c \
 	legacy.c \
 	commands.c \
 	recovery.c \
@@ -50,7 +51,6 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 include $(BUILD_EXECUTABLE)
 
 include $(commands_recovery_local_path)/amend/Android.mk
-include $(commands_recovery_local_path)/nandroid/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk
 include $(commands_recovery_local_path)/mtdutils/Android.mk

@@ -779,7 +779,7 @@ cmd_backup_rom(const char *name, void *cookie, int argc, const char *argv[],
             return 1;
     }
 
-    return do_nandroid_backup(backup_name);
+    return nandroid_backup(backup_name);
 }
 
 static int
@@ -794,7 +794,7 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
         return 1;
     }
 
-    return do_nandroid_restore(argv[0]);
+    return nandroid_restore(argv[0]);
 }
 
 static int

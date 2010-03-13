@@ -33,6 +33,8 @@ void ui_clear_key_queue();
 // so keep the output short and not too cryptic.
 void ui_print(const char *fmt, ...);
 
+void ui_reset_text_col();
+
 // Display some header text followed by a menu of items, which appears
 // at the top of the screen (in place of any scrolling ui_print()
 // output, if necessary).

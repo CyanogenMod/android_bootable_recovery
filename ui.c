@@ -480,6 +480,13 @@ void ui_print(const char *fmt, ...)
     pthread_mutex_unlock(&gUpdateMutex);
 }
 
+void ui_reset_text_col()
+{
+    pthread_mutex_lock(&gUpdateMutex);
+    text_col = 0;
+    pthread_mutex_unlock(&gUpdateMutex);
+}
+
 #define MENU_ITEM_HEADER " - "
 #define MENU_ITEM_HEADER_LENGTH strlen(MENU_ITEM_HEADER)
 

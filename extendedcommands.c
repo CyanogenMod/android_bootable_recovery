@@ -37,6 +37,9 @@
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
 #include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
 
+#include "extendedcommands.h"
+#include "nandroid.h"
+
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
 static const char *SDCARD_PACKAGE_FILE = "SDCARD:update.zip";
@@ -120,7 +123,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
     struct dirent *de;
     int total = 0;
     int i;
-    char** files;
+    char** files = NULL;
     int pass;
     *numFiles = 0;
     int dirLen = strlen(directory);
@@ -131,7 +134,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
         return NULL;
     }
   
-    int extension_length;
+    int extension_length = 0;
     if (fileExtensionOrDirectory != NULL)
         extension_length = strlen(fileExtensionOrDirectory);
   
@@ -225,7 +228,7 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
     int dir_len = strlen(directory);
 
     char** files = gather_files(directory, fileExtensionOrDirectory, &numFiles);
-    char** dirs;
+    char** dirs = NULL;
     if (fileExtensionOrDirectory != NULL)
         dirs = gather_files(directory, NULL, &numDirs);
     int total = numDirs + numFiles;
@@ -291,10 +294,10 @@ void show_choose_zip_menu()
 // This was pulled from bionic: The default system command always looks
 // for shell in /system/bin/sh. This is bad.
 #define _PATH_BSHELL "/sbin/sh"
-#define system recovery_system
+
 extern char **environ;
 int
-system(const char *command)
+__system(const char *command)
 {
   pid_t pid;
     sig_t intsave, quitsave;
@@ -335,124 +338,11 @@ int print_and_error(char* message)
     return 1;
 }
 
-// TODO : Separate file for Nandroid?
-int do_nandroid_backup(char* backup_name)
-{
-    if (ensure_root_path_mounted("SDCARD:") != 0) {
-        LOGE ("Can't mount /sdcard\n");
-        return 1;
-    }
-
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    
-    char backupdir[PATH_MAX];
-    char tmp[PATH_MAX];
-    if (NULL != backup_name)
-		sprintf(backupdir, "/sdcard/clockworkmod/backup/%s", backup_name);
-	else
-		sprintf(backupdir, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
-		
-    sprintf(tmp, "mkdir -p %s", backupdir);
-    system(tmp);
-
-    int ret;
-    ui_print("Backing up boot...\n");
-    sprintf(tmp, "%s/%s", backupdir, "boot.img");
-    ret = dump_image("boot", tmp, NULL);
-    if (0 != ret)
-        return print_and_error("Error while dumping boot image!\n");
-    
-    // TODO: Wrap this up in a loop?
-    ui_print("Backing up system...\n");
-    sprintf(tmp, "%s/%s", backupdir, "system.img");
-    if (ensure_root_path_mounted("SYSTEM:") != 0)
-        return print_and_error("Can't mount /system!\n");
-    ret = mkyaffs2image("/system", tmp, 0, NULL);
-    ensure_root_path_unmounted("SYSTEM:");
-    if (0 != ret)
-        return print_and_error("Error while making a yaffs2 image of system!\n");
-    
-    ui_print("Backing up data...\n");
-    sprintf(tmp, "%s/%s", backupdir, "data.img");
-    if (ensure_root_path_mounted("DATA:") != 0)
-        return print_and_error("Can't mount /data!\n");
-    ret = mkyaffs2image("/data", tmp, 0, NULL);
-    ensure_root_path_unmounted("DATA:");
-    if (0 != ret)
-        return print_and_error("Error while making a yaffs2 image of data!\n");
-    
-    ui_print("Backing up cache...\n");
-    sprintf(tmp, "%s/%s", backupdir, "cache.img");
-    if (ensure_root_path_mounted("CACHE:") != 0)
-        return print_and_error("Can't mount /cache!\n");
-    ret = mkyaffs2image("/cache", tmp, 0, NULL);
-    ensure_root_path_unmounted("CACHE:");
-    if (0 != ret)
-        return print_and_error("Error while making a yaffs2 image of cache!\n");
-    
-    sprintf(tmp, "md5sum %s/*img > %s/nandroid.md5", backupdir, backupdir);
-    system(tmp);
-    
-    return 0;
-}
-
-int do_nandroid_restore(char* backup_path)
-{
-    if (ensure_root_path_mounted("SDCARD:") != 0) {
-        LOGE ("Can't mount /sdcard\n");
-        return 1;
-    }
-    
-    char tmp[PATH_MAX];
-
-    ui_print("Checking MD5 sums...\n");
-    sprintf(tmp, "md5sum -c %s/nandroid.md5", backup_path);
-    if (0 != system(tmp))
-        return print_and_error("MD5 mismatch!\n");
-    
-    // TODO: put this in a loop?
-    ui_print("Restoring system...\n");
-    if (0 != ensure_root_path_unmounted("SYSTEM:")) 
-        return print_and_error("Can't unmount /system!\n");
-    if (0 != format_root_device("SYSTEM:"))
-        return print_and_error("Error while formatting /system!\n");
-    if (ensure_root_path_mounted("SYSTEM:") != 0)
-        return print_and_error("Can't mount /system!\n");
-    sprintf(tmp, "%s/system.img", backup_path);
-    if (0 != unyaffs(tmp, "/system", NULL))
-        return print_and_error("Error while restoring /system!\n");
-
-    ui_print("Restoring data...\n");
-    if (0 != ensure_root_path_unmounted("DATA:")) 
-        return print_and_error("Can't unmount /data!\n");
-    if (0 != format_root_device("DATA:"))
-        return print_and_error("Error while formatting /data!\n");
-    if (ensure_root_path_mounted("DATA:") != 0)
-        return print_and_error("Can't mount /data!\n");
-    sprintf(tmp, "%s/data.img", backup_path);
-    if (0 != unyaffs(tmp, "/data", NULL))
-        return print_and_error("Error while restoring /data!\n");
-
-    ui_print("Restoring cache...\n");
-    if (0 != ensure_root_path_unmounted("CACHE:")) 
-        return print_and_error("Can't unmount /cache!\n");
-    if (0 != format_root_device("CACHE:"))
-        return print_and_error("Error while formatting /cache!\n");
-    if (ensure_root_path_mounted("CACHE:") != 0)
-        return print_and_error("Can't mount /cache!\n");
-    sprintf(tmp, "%s/cache.img", backup_path);
-    if (0 != unyaffs(tmp, "/cache", NULL))
-        return print_and_error("Error while restoring /cache!\n");
-        
-    return 0;
-}
-
 void show_nandroid_restore_menu()
 {
     if (ensure_root_path_mounted("SDCARD:") != 0) {
         LOGE ("Can't mount /sdcard\n");
-        return 1;
+        return;
     }
     
     static char* headers[] = {  "Choose an image to restore",
@@ -463,7 +353,7 @@ void show_nandroid_restore_menu()
     char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, headers);
     if (file == NULL)
         return;
-    do_nandroid_restore(file);
+    nandroid_restore(file);
 }
 
 void do_mount_usb_storage()
@@ -514,7 +404,7 @@ int run_script_from_buffer(char* script_data, int script_len, char* filename)
     int ret = execCommandList((ExecContext *)1, commands);
     if (ret != 0) {
         int num = ret;
-        char *line, *next = script_data;
+        char *line = NULL, *next = script_data;
         while (next != NULL && ret-- > 0) {
             line = next;
             next = memchr(line, '\n', script_data + script_len - line);
