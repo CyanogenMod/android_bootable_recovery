@@ -120,6 +120,7 @@ int nandroid_backup(char* backup_path)
     sprintf(tmp, "md5sum %s/*img > %s/nandroid.md5", backup_path, backup_path);
     __system(tmp);
     
+    sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
     ui_print("Backup complete!\n");
@@ -176,6 +177,7 @@ int nandroid_restore(char* backup_path)
     if (0 != unyaffs(tmp, "/cache", yaffs_callback))
         return print_and_error("Error while restoring /cache!\n");
         
+    sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
     ui_print("Restore complete!\n");
