@@ -332,12 +332,6 @@ __system(const char *command)
     return (pid == -1 ? -1 : pstat);
 }
 
-int print_and_error(char* message)
-{
-    ui_print(message);
-    return 1;
-}
-
 void show_nandroid_restore_menu()
 {
     if (ensure_root_path_mounted("SDCARD:") != 0) {

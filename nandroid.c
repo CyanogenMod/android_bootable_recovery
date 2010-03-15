@@ -40,6 +40,11 @@
 #include "extendedcommands.h"
 #include "nandroid.h"
 
+int print_and_error(char* message) {
+    ui_print(message);
+    return 1;
+}
+
 int yaffs_files_total = 0;
 int yaffs_files_count = 0;
 void yaffs_callback(char* filename)
@@ -68,6 +73,28 @@ void compute_directory_stats(char* directory)
     ui_show_progress(1, 0);
 }
 
+int nandroid_backup_partition(char* backup_path, char* root, char* name) {
+    int ret = 0;
+    char mount_point[PATH_MAX];
+    sprintf(mount_point, "/%s", name);
+    
+    ui_print("Backing up %s...\n", name);
+    if (0 != (ret = ensure_root_path_mounted(root) != 0)) {
+        ui_print("Can't mount %s!\n", mount_point);
+        return ret;
+    }
+    compute_directory_stats(mount_point);
+    char tmp[PATH_MAX];
+    sprintf(tmp, "%s/%s.img", backup_path, name);
+    ret = mkyaffs2image(mount_point, tmp, 0, yaffs_callback);
+    ensure_root_path_unmounted(root);
+    if (0 != ret) {
+        ui_print("Error while making a yaffs2 image of %s!\n", mount_point);
+        return ret;
+    }
+    return 0;
+}
+
 int nandroid_backup(char* backup_path)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
@@ -86,45 +113,51 @@ int nandroid_backup(char* backup_path)
     if (0 != ret)
         return print_and_error("Error while dumping boot image!\n");
     
-    // TODO: Wrap this up in a loop?
-    ui_print("Backing up system...\n");
-    sprintf(tmp, "%s/%s", backup_path, "system.img");
-    if (ensure_root_path_mounted("SYSTEM:") != 0)
-        return print_and_error("Can't mount /system!\n");
-    compute_directory_stats("/system");
-    ret = mkyaffs2image("/system", tmp, 0, yaffs_callback);
-    ensure_root_path_unmounted("SYSTEM:");
-    if (0 != ret)
-        return print_and_error("Error while making a yaffs2 image of system!\n");
-    
-    ui_print("Backing up data...\n");
-    sprintf(tmp, "%s/%s", backup_path, "data.img");
-    if (ensure_root_path_mounted("DATA:") != 0)
-        return print_and_error("Can't mount /data!\n");
-    compute_directory_stats("/data");
-    ret = mkyaffs2image("/data", tmp, 0, yaffs_callback);
-    ensure_root_path_unmounted("DATA:");
-    if (0 != ret)
-        return print_and_error("Error while making a yaffs2 image of data!\n");
-    
-    ui_print("Backing up cache...\n");
-    sprintf(tmp, "%s/%s", backup_path, "cache.img");
-    if (ensure_root_path_mounted("CACHE:") != 0)
-        return print_and_error("Can't mount /cache!\n");
-    compute_directory_stats("/cache");
-    ret = mkyaffs2image("/cache", tmp, 0, yaffs_callback);
-    ensure_root_path_unmounted("CACHE:");
-    if (0 != ret)
-        return print_and_error("Error while making a yaffs2 image of cache!\n");
+    if (0 != (ret = nandroid_backup_partition(backup_path, "SYSTEM:", "system")))
+        return ret;
+
+    if (0 != (ret = nandroid_backup_partition(backup_path, "DATA:", "data")))
+        return ret;
+
+    if (0 != (ret = nandroid_backup_partition(backup_path, "CACHE:", "cache")))
+        return ret;
     
     sprintf(tmp, "cd %s && md5sum *img > nandroid.md5", backup_path);
-    ui_print(tmp);
     __system(tmp);
     
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
-    ui_print("Backup complete!\n");
+    ui_print("\nBackup complete!\n");
+    return 0;
+}
+
+int nandroid_restore_partition(char* backup_path, char* root, char* name) {
+    int ret = 0;
+    char mount_point[PATH_MAX];
+    sprintf(mount_point, "/%s", name);
+    
+    ui_print("Restoring %s...\n", name);
+    if (0 != (ret = ensure_root_path_unmounted(root))) {
+        ui_print("Can't unmount %s!\n", mount_point);
+        return ret;
+    }
+    if (0 != (ret = format_root_device(root))) {
+        ui_print("Error while formatting %s!\n", root);
+        return ret;
+    }
+    
+    if (0 != (ret = ensure_root_path_mounted(root))) {
+        ui_print("Can't mount %s!\n", mount_point);
+        return ret;
+    }
+    
+    char tmp[PATH_MAX];
+    sprintf(tmp, "%s/%s.img", backup_path, name);
+    if (0 != (ret = unyaffs(tmp, mount_point, yaffs_callback))) {
+        ui_print("Error while restoring %s!\n", mount_point);
+        return ret;
+    }
     return 0;
 }
 
@@ -144,43 +177,19 @@ int nandroid_restore(char* backup_path)
     if (0 != __system(tmp))
         return print_and_error("MD5 mismatch!\n");
     
-    // TODO: put this in a loop?
-    ui_print("Restoring system...\n");
-    if (0 != ensure_root_path_unmounted("SYSTEM:")) 
-        return print_and_error("Can't unmount /system!\n");
-    if (0 != format_root_device("SYSTEM:"))
-        return print_and_error("Error while formatting /system!\n");
-    if (ensure_root_path_mounted("SYSTEM:") != 0)
-        return print_and_error("Can't mount /system!\n");
-    sprintf(tmp, "%s/system.img", backup_path);
-    if (0 != unyaffs(tmp, "/system", yaffs_callback))
-        return print_and_error("Error while restoring /system!\n");
+    int ret;
+    if (0 != (ret = nandroid_restore_partition(backup_path, "SYSTEM:", "system")))
+        return ret;
 
-    ui_print("Restoring data...\n");
-    if (0 != ensure_root_path_unmounted("DATA:")) 
-        return print_and_error("Can't unmount /data!\n");
-    if (0 != format_root_device("DATA:"))
-        return print_and_error("Error while formatting /data!\n");
-    if (ensure_root_path_mounted("DATA:") != 0)
-        return print_and_error("Can't mount /data!\n");
-    sprintf(tmp, "%s/data.img", backup_path);
-    if (0 != unyaffs(tmp, "/data", yaffs_callback))
-        return print_and_error("Error while restoring /data!\n");
+    if (0 != (ret = nandroid_restore_partition(backup_path, "DATA:", "data")))
+        return ret;
 
-    ui_print("Restoring cache...\n");
-    if (0 != ensure_root_path_unmounted("CACHE:")) 
-        return print_and_error("Can't unmount /cache!\n");
-    if (0 != format_root_device("CACHE:"))
-        return print_and_error("Error while formatting /cache!\n");
-    if (ensure_root_path_mounted("CACHE:") != 0)
-        return print_and_error("Can't mount /cache!\n");
-    sprintf(tmp, "%s/cache.img", backup_path);
-    if (0 != unyaffs(tmp, "/cache", yaffs_callback))
-        return print_and_error("Error while restoring /cache!\n");
-        
+    if (0 != (ret = nandroid_restore_partition(backup_path, "CACHE:", "cache")))
+        return ret;
+
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
-    ui_print("Restore complete!\n");
+    ui_print("\nRestore complete!\n");
     return 0;
 }
