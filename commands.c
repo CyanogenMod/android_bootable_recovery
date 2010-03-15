@@ -767,9 +767,16 @@ cmd_backup_rom(const char *name, void *cookie, int argc, const char *argv[],
     CHECK_WORDS();
 
     char* backup_name = NULL;
+    char backup_path[PATH_MAX];
     switch(argc)
     {
         case 0:
+            {
+                struct timeval tp;
+                gettimeofday(&tp, NULL);
+                sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                backup_name = backup_path;
+            }
             break;
         case 1:
             backup_name = argv[0];
