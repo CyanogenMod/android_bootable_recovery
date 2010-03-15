@@ -70,8 +70,7 @@ int device_wipe_data();
 #define ITEM_INSTALL_ZIP     4
 #define ITEM_BACKUP          5
 #define ITEM_RESTORE         6
-#define ITEM_MOUNT_SDCARD    7
-#define ITEM_MOUNT_USB       8
+#define ITEM_MOUNT           7
 
 // Header text to display above the main menu.
 extern char* MENU_HEADERS[];

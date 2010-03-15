@@ -356,7 +356,7 @@ void show_nandroid_restore_menu()
     nandroid_restore(file);
 }
 
-void do_mount_usb_storage()
+void show_mount_usb_storage_menu()
 {
     system("echo /dev/block/mmcblk0 > /sys/devices/platform/usb_mass_storage/lun0/file");
     static char* headers[] = {  "USB Mass Storage device",
@@ -377,6 +377,58 @@ void do_mount_usb_storage()
     
     system("echo '' > /sys/devices/platform/usb_mass_storage/lun0/file");
     system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
+}
+
+
+void show_mount_menu()
+{
+    static char* headers[] = {  "Mount and unmount partitions",
+                                "",
+                                NULL 
+    };
+
+    typedef char* string;
+    string mounts[3][3] = { 
+        { "mount /system", "unmount /system", "SYSTEM:" },
+        { "mount /data", "unmount /data", "DATA:" },
+        { "mount /cache", "unmount /cache", "CACHE:" }
+        };
+        
+    for (;;)
+    {
+        int ismounted[3];
+        int i;
+        static string options[5];
+        for (i = 0; i < 3; i++)
+        {
+            ismounted[i] = is_root_path_mounted(mounts[i][2]);
+            options[i] = ismounted[i] ? mounts[i][1] : mounts[i][0];
+        }
+    
+        options[3] = "mount USB storage";
+        options[4] = NULL;
+        
+        int chosen_item = get_menu_selection(headers, options, 0);
+        if (chosen_item == GO_BACK)
+            break;
+        if (chosen_item == 4)
+        {
+            show_mount_usb_storage_menu();
+        }
+        else if (chosen_item < 4)
+        {
+            if (ismounted[chosen_item])
+            {
+                if (0 != ensure_root_path_unmounted(mounts[chosen_item][2]))
+                    ui_print("Error unmounting %s!\n", mounts[chosen_item][2]);
+            }
+            else
+            {
+                if (0 != ensure_root_path_mounted(mounts[chosen_item][2]))
+                    ui_print("Error mounting %s!\n", mounts[chosen_item][2]);
+            }
+        }
+    }
 }
 
 #define EXTENDEDCOMMAND_SCRIPT "/cache/recovery/extendedcommand"

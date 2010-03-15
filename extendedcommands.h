@@ -11,12 +11,6 @@ void
 show_choose_zip_menu();
 
 int
-get_allow_toggle_display();
-
-void
-ui_set_show_text(int value);
-
-int
 do_nandroid_backup(char* backup_name);
 
 int
@@ -26,7 +20,7 @@ void
 show_nandroid_restore_menu();
 
 void
-do_mount_usb_storage();
+show_mount_menu();
 
 void
 show_choose_zip_menu();

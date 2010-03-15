@@ -457,6 +457,10 @@ prompt_and_wait()
             case ITEM_RESTORE:
                 show_nandroid_restore_menu();
                 break;
+            case ITEM_MOUNT:
+                show_mount_menu();
+                break;
+                /*
             case ITEM_MOUNT_SDCARD:
                 if (ensure_root_path_mounted("SDCARD:") != 0) {
                     LOGE ("Can't mount /sdcard\n");
@@ -465,6 +469,7 @@ prompt_and_wait()
             case ITEM_MOUNT_USB:
                 do_mount_usb_storage();
                 break;
+                */
         }
     }
 }

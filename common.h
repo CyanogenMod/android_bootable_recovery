@@ -34,6 +34,7 @@ void ui_clear_key_queue();
 void ui_print(const char *fmt, ...);
 
 void ui_reset_text_col();
+void ui_set_show_text(int value);
 
 // Display some header text followed by a menu of items, which appears
 // at the top of the screen (in place of any scrolling ui_print()

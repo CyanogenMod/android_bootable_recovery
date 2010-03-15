@@ -29,8 +29,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "install zip from sdcard",
                        "backup",
                        "restore",
-                       "mount /sdcard",
-                       "mount USB storage",
+                       "mount partitions",
                        NULL };
 
 int device_toggle_display(volatile char* key_pressed, int key_code) {
@@ -58,6 +57,8 @@ int device_handle_key(int key_code, int visible) {
 
             case KEY_ENTER:
             case BTN_MOUSE:
+            case KEY_CENTER:
+            case KEY_CAMERA:
                 return SELECT_ITEM;
             
             case KEY_POWER:
