@@ -51,7 +51,7 @@ void yaffs_callback(char* filename)
 {
     char* justfile = basename(filename);
     if (strlen(justfile) < 30)
-        ui_print(basename(filename));
+        ui_print(justfile);
     yaffs_files_count++;
     if (yaffs_files_total != 0)
         ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
