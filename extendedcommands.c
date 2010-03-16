@@ -352,7 +352,7 @@ void show_nandroid_restore_menu()
 
 void show_mount_usb_storage_menu()
 {
-    system("echo /dev/block/mmcblk0 > /sys/devices/platform/usb_mass_storage/lun0/file");
+    __system("echo /dev/block/mmcblk0 > /sys/devices/platform/usb_mass_storage/lun0/file");
     static char* headers[] = {  "USB Mass Storage device",
                                 "Leaving this menu unmount",
                                 "your SD card from your PC.",
@@ -369,8 +369,8 @@ void show_mount_usb_storage_menu()
             break;
     }
     
-    system("echo '' > /sys/devices/platform/usb_mass_storage/lun0/file");
-    system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
+    __system("echo '' > /sys/devices/platform/usb_mass_storage/lun0/file");
+    __system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
 }
 
 
@@ -382,7 +382,7 @@ void show_mount_menu()
     };
 
     typedef char* string;
-    string mounts[3][3] = { 
+    string mounts[4][3] = { 
         { "mount /system", "unmount /system", "SYSTEM:" },
         { "mount /data", "unmount /data", "DATA:" },
         { "mount /cache", "unmount /cache", "CACHE:" },
@@ -391,17 +391,17 @@ void show_mount_menu()
         
     for (;;)
     {
-        int ismounted[3];
+        int ismounted[4];
         int i;
-        static string options[5];
-        for (i = 0; i < 3; i++)
+        static string options[6];
+        for (i = 0; i < 4; i++)
         {
             ismounted[i] = is_root_path_mounted(mounts[i][2]);
             options[i] = ismounted[i] ? mounts[i][1] : mounts[i][0];
         }
     
-        options[3] = "mount USB storage";
-        options[4] = NULL;
+        options[4] = "mount USB storage";
+        options[5] = NULL;
         
         int chosen_item = get_menu_selection(headers, options, 0);
         if (chosen_item == GO_BACK)

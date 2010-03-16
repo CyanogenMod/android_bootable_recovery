@@ -178,6 +178,13 @@ int nandroid_restore(char* backup_path)
         return print_and_error("MD5 mismatch!\n");
     
     int ret;
+    sprintf(tmp, "flash_image boot %s/boot.img", backup_path);
+    ui_print("Restoring boot image...\n");
+    if (0 != (ret = __system(tmp))) {
+        ui_print("Error while flashing boot image!");
+        return ret;
+    }
+    
     if (0 != (ret = nandroid_restore_partition(backup_path, "SYSTEM:", "system")))
         return ret;
 
