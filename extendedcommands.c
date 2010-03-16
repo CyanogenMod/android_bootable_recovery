@@ -385,7 +385,8 @@ void show_mount_menu()
     string mounts[3][3] = { 
         { "mount /system", "unmount /system", "SYSTEM:" },
         { "mount /data", "unmount /data", "DATA:" },
-        { "mount /cache", "unmount /cache", "CACHE:" }
+        { "mount /cache", "unmount /cache", "CACHE:" },
+        { "mount /sdcard", "unmount /sdcard", "SDCARD:" }
         };
         
     for (;;)
