@@ -50,6 +50,30 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 include $(BUILD_EXECUTABLE)
 
+RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs
+# nc is provided by external/netcat
+SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
+$(SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)
+$(SYMLINKS): $(LOCAL_INSTALLED_MODULE)
+	@echo "Symlink: $@ -> $(RECOVERY_BINARY)"
+	@mkdir -p $(dir $@)
+	@rm -rf $@
+	$(hide) ln -sf $(RECOVERY_BINARY) $@
+
+ALL_DEFAULT_INSTALLED_MODULES += $(SYMLINKS)
+
+# Now let's do recovery symlinks
+BUSYBOX_LINKS := $(shell cat external/busybox/busybox.links)
+SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
+$(SYMLINKS): BUSYBOX_BINARY := busybox
+$(SYMLINKS): $(LOCAL_INSTALLED_MODULE)
+	@echo "Symlink: $@ -> $(BUSYBOX_BINARY)"
+	@mkdir -p $(dir $@)
+	@rm -rf $@
+	$(hide) ln -sf $(BUSYBOX_BINARY) $@
+
+ALL_DEFAULT_INSTALLED_MODULES += $(SYMLINKS)
+
 include $(commands_recovery_local_path)/amend/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk
