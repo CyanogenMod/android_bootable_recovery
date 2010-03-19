@@ -42,7 +42,7 @@ ifeq ($(TARGET_RECOVERY_UI_LIB),)
 else
   LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
 endif
-LOCAL_STATIC_LIBRARIES += libbusybox libclearsilverregex libmkyaffs2image libunyaffs libdump_image libflash_image libmtdutils
+LOCAL_STATIC_LIBRARIES += libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image libmtdutils
 LOCAL_STATIC_LIBRARIES += libamend
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmtdutils libmincrypt
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
@@ -50,7 +50,7 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 include $(BUILD_EXECUTABLE)
 
-RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs
+RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs erase_image
 # nc is provided by external/netcat
 SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
 $(SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)

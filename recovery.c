@@ -480,6 +480,8 @@ main(int argc, char **argv)
 	        return flash_image_main(argc, argv);
 	    if (strstr(argv[0], "dump_image") != NULL)
 	        return dump_image_main(argc, argv);
+	    if (strstr(argv[0], "erase_image") != NULL)
+	        return erase_image_main(argc, argv);
 	    if (strstr(argv[0], "mkyaffs2image") != NULL)
 	        return mkyaffs2image_main(argc, argv);
 	    if (strstr(argv[0], "unyaffs") != NULL)
