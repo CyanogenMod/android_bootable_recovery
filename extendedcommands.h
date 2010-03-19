@@ -33,3 +33,6 @@ install_zip(const char* packagefilepath);
 
 int
 __system(const char *command);
+
+void
+show_advanced_menu();

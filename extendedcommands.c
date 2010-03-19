@@ -594,3 +594,39 @@ void show_nandroid_menu()
             break;
     }
 }
+
+void show_advanced_menu()
+{
+    static char* headers[] = {  "Advanced and Debugging Menu",
+                                "",
+                                NULL
+    };
+
+    static char* list[] = { "Key Test",
+                            NULL
+    };
+
+    for (;;)
+    {
+        int chosen_item = get_menu_selection(headers, list, 0);
+        if (chosen_item == GO_BACK)
+            break;
+        switch (chosen_item)
+        {
+            case 0:
+            {
+                ui_print("Outputting key codes.\n");
+                ui_print("Go back to end debugging.\n");
+                int key;
+                int action;
+                do
+                {
+                    key = ui_wait_key();
+                    action = device_handle_key(key, 1);
+                    ui_print("Key: %d\n", key);
+                }
+                while (action != GO_BACK);
+            }
+        }
+    }
+}

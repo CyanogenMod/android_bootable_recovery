@@ -70,6 +70,7 @@ int device_wipe_data();
 #define ITEM_INSTALL_ZIP     4
 #define ITEM_NANDROID        5
 #define ITEM_PARTITION       6
+#define ITEM_ADVANCED        7
 
 // Header text to display above the main menu.
 extern char* MENU_HEADERS[];
