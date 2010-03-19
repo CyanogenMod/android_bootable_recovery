@@ -445,20 +445,11 @@ prompt_and_wait()
             case ITEM_INSTALL_ZIP:
                 show_install_update_menu();
                 break;
-            case ITEM_BACKUP:
-                {
-                    struct timeval tp;
-                    gettimeofday(&tp, NULL);
-                    char backup_path[PATH_MAX];
-                    sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
-                    nandroid_backup(backup_path);
-                }
+            case ITEM_NANDROID:
+                show_nandroid_menu();
                 break;
-            case ITEM_RESTORE:
-                show_nandroid_restore_menu();
-                break;
-            case ITEM_MOUNT:
-                show_mount_menu();
+            case ITEM_PARTITION:
+                show_partition_menu();
                 break;
                 /*
             case ITEM_MOUNT_SDCARD:

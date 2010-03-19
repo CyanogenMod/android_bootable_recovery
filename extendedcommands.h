@@ -20,7 +20,10 @@ void
 show_nandroid_restore_menu();
 
 void
-show_mount_menu();
+show_nandroid_menu();
+
+void
+show_partition_menu();
 
 void
 show_choose_zip_menu();

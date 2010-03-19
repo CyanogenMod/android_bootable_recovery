@@ -373,8 +373,10 @@ void show_mount_usb_storage_menu()
     __system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
 }
 
+#define MOUNTABLE_COUNT 4
+#define MTD_COUNT 3
 
-void show_mount_menu()
+void show_partition_menu()
 {
     static char* headers[] = {  "Mount and unmount partitions",
                                 "",
@@ -382,46 +384,55 @@ void show_mount_menu()
     };
 
     typedef char* string;
-    string mounts[4][3] = { 
-        { "mount /system", "unmount /system", "SYSTEM:" },
-        { "mount /data", "unmount /data", "DATA:" },
-        { "mount /cache", "unmount /cache", "CACHE:" },
-        { "mount /sdcard", "unmount /sdcard", "SDCARD:" }
+    string mounts[MOUNTABLE_COUNT][4] = { 
+        { "mount /system", "unmount /system", "format SYSTEM:", "SYSTEM:" },
+        { "mount /data", "unmount /data", "format DATA:", "DATA:" },
+        { "mount /cache", "unmount /cache", "format CACHE:", "CACHE:" },
+        { "mount /sdcard", "unmount /sdcard", NULL, "SDCARD:" }
         };
         
     for (;;)
     {
-        int ismounted[4];
+        int ismounted[MOUNTABLE_COUNT];
         int i;
-        static string options[6];
-        for (i = 0; i < 4; i++)
+        static string options[MOUNTABLE_COUNT + MTD_COUNT + 1 + 1]; // mountables, format mtds, usb storage, null
+        for (i = 0; i < MOUNTABLE_COUNT; i++)
         {
-            ismounted[i] = is_root_path_mounted(mounts[i][2]);
+            ismounted[i] = is_root_path_mounted(mounts[i][3]);
             options[i] = ismounted[i] ? mounts[i][1] : mounts[i][0];
         }
+        
+        for (i = 0; i < MTD_COUNT; i++)
+        {
+            options[MOUNTABLE_COUNT + i] = mounts[i][2];
+        }
     
-        options[4] = "mount USB storage";
-        options[5] = NULL;
+        options[MOUNTABLE_COUNT + MTD_COUNT] = "mount USB storage";
+        options[MOUNTABLE_COUNT + MTD_COUNT + 1] = NULL;
         
         int chosen_item = get_menu_selection(headers, options, 0);
         if (chosen_item == GO_BACK)
             break;
-        if (chosen_item == 4)
+        if (chosen_item == MOUNTABLE_COUNT + MTD_COUNT)
         {
             show_mount_usb_storage_menu();
         }
-        else if (chosen_item < 4)
+        else if (chosen_item < MOUNTABLE_COUNT)
         {
             if (ismounted[chosen_item])
             {
-                if (0 != ensure_root_path_unmounted(mounts[chosen_item][2]))
-                    ui_print("Error unmounting %s!\n", mounts[chosen_item][2]);
+                if (0 != ensure_root_path_unmounted(mounts[chosen_item][3]))
+                    ui_print("Error unmounting %s!\n", mounts[chosen_item][3]);
             }
             else
             {
-                if (0 != ensure_root_path_mounted(mounts[chosen_item][2]))
-                    ui_print("Error mounting %s!\n", mounts[chosen_item][2]);
+                if (0 != ensure_root_path_mounted(mounts[chosen_item][3]))
+                    ui_print("Error mounting %s!\n", mounts[chosen_item][3]);
             }
+        }
+        else if (chosen_item < MOUNTABLE_COUNT + MTD_COUNT)
+        {
+            chosen_item = chosen_item - MOUNTABLE_COUNT;
         }
     }
 }
@@ -514,4 +525,34 @@ int amend_main(int argc, char** argv)
         LOGE("Can't install update commands\n");
     }
     return run_script(argv[1], 0);
+}
+
+void show_nandroid_menu()
+{
+    static char* headers[] = {  "Nandroid",
+                                "",
+                                NULL 
+    };
+
+    static char* list[] = { "Backup", 
+                            "Restore",
+                            NULL
+    };
+
+    int chosen_item = get_menu_selection(headers, list, 0);
+    switch (chosen_item)
+    {
+        case 0:
+            {
+                struct timeval tp;
+                gettimeofday(&tp, NULL);
+                char backup_path[PATH_MAX];
+                sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                nandroid_backup(backup_path);
+            }
+            break;
+        case 1:
+            show_nandroid_restore_menu();
+            break;
+    }
 }
