@@ -106,7 +106,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
     const ZipEntry* binary_entry =
             mzFindZipEntry(zip, ASSUMED_UPDATE_BINARY_NAME);
     if (binary_entry == NULL) {
-        return INSTALL_ERROR;
+        return INSTALL_UPDATE_BINARY_MISSING;
     }
 
     char* binary = "/tmp/update_binary";
@@ -242,19 +242,26 @@ handle_update_package(const char *path, ZipArchive *zip)
     // Update should take the rest of the progress bar.
     ui_print("Installing update...\n");
 
-    // Try installing via the update-script first, because we 
-    // have more control over the asserts it may contain.
-    // If it does not exist, try the update-binary.
     if (register_package_root(zip, path) < 0) {
         LOGE("Can't register package root\n");
         return INSTALL_ERROR;
     }
-    const ZipEntry *script_entry;
-    script_entry = find_update_script(zip);
-    int result = handle_update_script(zip, script_entry);
-    if (result == INSTALL_UPDATE_SCRIPT_MISSING)
+    LOGI("Trying update-binary.\n");
+    int result = try_update_binary(path, zip);
+
+    if (result == INSTALL_UPDATE_BINARY_MISSING)
     {
-        result = try_update_binary(path, zip);
+        register_package_root(NULL, NULL);  // Unregister package root
+        if (register_package_root(zip, path) < 0) {
+            LOGE("Can't register package root\n");
+            return INSTALL_ERROR;
+        }
+        const ZipEntry *script_entry;
+        script_entry = find_update_script(zip);
+        LOGI("Trying update-script.\n");
+        result = handle_update_script(zip, script_entry);
+        if (result == INSTALL_UPDATE_SCRIPT_MISSING)
+            result = INSTALL_ERROR;
     }
     
     register_package_root(NULL, NULL);  // Unregister package root

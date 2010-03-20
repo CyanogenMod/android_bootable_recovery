@@ -284,8 +284,7 @@ erase_root(const char *root)
 
 static char**
 prepend_title(char** headers) {
-    char* title[] = { "ClockworkMod Recovery v"
-                          EXPAND(RECOVERY_API_VERSION),
+    char* title[] = { EXPAND(RECOVERY_VERSION),
                       "",
                       NULL };
 
@@ -393,7 +392,7 @@ static void
 prompt_and_wait()
 {
     char** headers = prepend_title(MENU_HEADERS);
-    ui_print("ClockworkMod Recovery v"EXPAND(RECOVERY_API_VERSION)"\n");
+    ui_print(EXPAND(RECOVERY_VERSION)"\n");
     
     for (;;) {
         finish_recovery(NULL);
