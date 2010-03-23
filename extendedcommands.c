@@ -536,6 +536,7 @@ int run_script(char* filename, int delete_file)
 
 int run_and_remove_extendedcommand()
 {
+    __system("touch /tmp/.installscript");
     int i = 0;
     for (i = 20; i > 0; i--) {
         ui_print("Waiting for SD Card to mount (%ds)\n", i);
