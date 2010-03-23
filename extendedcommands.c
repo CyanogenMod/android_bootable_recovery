@@ -522,9 +522,11 @@ int run_script(char* filename, int delete_file)
     }
     
     int script_len = file_info.st_size;
-    char* script_data = (char*)malloc(script_len);
+    char* script_data = (char*)malloc(script_len + 1);
     FILE *file = fopen(filename, "rb");
     fread(script_data, script_len, 1, file);
+    // supposedly not necessary, but let's be safe.
+    script_data[script_len] = '\0';
     fclose(file);
 	if (delete_file)
     	remove(filename);

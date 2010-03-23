@@ -242,10 +242,6 @@ handle_update_package(const char *path, ZipArchive *zip)
     // Update should take the rest of the progress bar.
     ui_print("Installing update...\n");
 
-    if (register_package_root(zip, path) < 0) {
-        LOGE("Can't register package root\n");
-        return INSTALL_ERROR;
-    }
     LOGI("Trying update-binary.\n");
     int result = try_update_binary(path, zip);
 

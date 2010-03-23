@@ -522,8 +522,8 @@ int ui_menu_select(int sel) {
         old_sel = menu_sel;
         menu_sel = sel;
 
-        if (menu_sel < 0) menu_sel = 0;
-        if (menu_sel >= menu_items) menu_sel = menu_items-1;
+        if (menu_sel < 0) menu_sel = menu_items + menu_sel;
+        if (menu_sel >= menu_items) menu_sel = menu_sel - menu_items;
 
 
         if (menu_sel < menu_show_start && menu_show_start > 0) {
