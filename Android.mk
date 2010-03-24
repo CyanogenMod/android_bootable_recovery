@@ -65,7 +65,7 @@ $(SYMLINKS): $(LOCAL_INSTALLED_MODULE)
 ALL_DEFAULT_INSTALLED_MODULES += $(SYMLINKS)
 
 # Now let's do recovery symlinks
-BUSYBOX_LINKS := $(shell cat external/busybox/busybox.links)
+BUSYBOX_LINKS := $(shell cat external/libbusybox/busybox.links)
 SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
 $(SYMLINKS): BUSYBOX_BINARY := busybox
 $(SYMLINKS): $(LOCAL_INSTALLED_MODULE)
