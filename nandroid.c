@@ -123,7 +123,10 @@ int nandroid_backup(char* backup_path)
         return ret;
     
     sprintf(tmp, "cd %s && md5sum *img > nandroid.md5", backup_path);
-    __system(tmp);
+    if (0 != (ret = __system(tmp))) {
+        ui_print("Error while generating md5 sum!\n");
+        return ret;
+    }
     
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);
