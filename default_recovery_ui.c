@@ -64,6 +64,7 @@ int device_handle_key(int key_code, int visible) {
             case KEY_POWER:
             case KEY_END:
             case KEY_BACKSPACE:
+            case KEY_BACK:
                 if (!get_allow_toggle_display())
                     return GO_BACK;
         }
