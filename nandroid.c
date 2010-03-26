@@ -37,6 +37,8 @@
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
 #include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
 
+#include <sys/vfs.h>
+
 #include "extendedcommands.h"
 #include "nandroid.h"
 
@@ -102,11 +104,18 @@ int nandroid_backup(char* backup_path)
     if (ensure_root_path_mounted("SDCARD:") != 0)
         return print_and_error("Can't mount /sdcard\n");
     
+    int ret;
+	struct statfs s;
+    if (0 != (ret = statfs("/sdcard", &s)))
+        return print_and_error("Unable to stat /sdcard\n");
+    int sdcard_free = s.f_bfree * s.f_bsize;
+    if (sdcard_free < 150000000)
+        return print_and_error("There is not enough free space on the SD Card! At least 150MB is required to create a backup.\n");
+    
     char tmp[PATH_MAX];
     sprintf(tmp, "mkdir -p %s", backup_path);
     __system(tmp);
 
-    int ret;
     ui_print("Backing up boot...\n");
     sprintf(tmp, "%s/%s", backup_path, "boot.img");
     ret = dump_image("boot", tmp, NULL);
