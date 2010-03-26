@@ -108,8 +108,8 @@ int nandroid_backup(char* backup_path)
 	struct statfs s;
     if (0 != (ret = statfs("/sdcard", &s)))
         return print_and_error("Unable to stat /sdcard\n");
-    int sdcard_free = s.f_bfree * s.f_bsize;
-    if (sdcard_free < 150000000)
+    long sdcard_free = s.f_bfree * s.f_bsize;
+    if (sdcard_free < 150000000L)
         return print_and_error("There is not enough free space on the SD Card! At least 150MB is required to create a backup.\n");
     
     char tmp[PATH_MAX];
