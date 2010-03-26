@@ -174,7 +174,7 @@ int nandroid_restore_partition(char* backup_path, char* root, char* name) {
     return 0;
 }
 
-int nandroid_restore(char* backup_path)
+int nandroid_restore(char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
@@ -191,20 +191,23 @@ int nandroid_restore(char* backup_path)
         return print_and_error("MD5 mismatch!\n");
     
     int ret;
-    sprintf(tmp, "flash_image boot %s/boot.img", backup_path);
-    ui_print("Restoring boot image...\n");
-    if (0 != (ret = __system(tmp))) {
-        ui_print("Error while flashing boot image!");
-        return ret;
+    if (restore_boot)
+    {
+        sprintf(tmp, "flash_image boot %s/boot.img", backup_path);
+        ui_print("Restoring boot image...\n");
+        if (0 != (ret = __system(tmp))) {
+            ui_print("Error while flashing boot image!");
+            return ret;
+        }
     }
     
-    if (0 != (ret = nandroid_restore_partition(backup_path, "SYSTEM:", "system")))
+    if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "SYSTEM:", "system")))
         return ret;
 
-    if (0 != (ret = nandroid_restore_partition(backup_path, "DATA:", "data")))
+    if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "DATA:", "data")))
         return ret;
 
-    if (0 != (ret = nandroid_restore_partition(backup_path, "CACHE:", "cache")))
+    if (restore_cache && 0 != (ret = nandroid_restore_partition(backup_path, "CACHE:", "cache")))
         return ret;
 
     sync();

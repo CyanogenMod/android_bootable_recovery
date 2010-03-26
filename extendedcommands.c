@@ -347,7 +347,7 @@ void show_nandroid_restore_menu()
     char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, headers);
     if (file == NULL)
         return;
-    nandroid_restore(file);
+    nandroid_restore(file, 1, 1, 1, 1);
 }
 
 void show_mount_usb_storage_menu()
@@ -568,6 +568,56 @@ int amend_main(int argc, char** argv)
     return run_script(argv[1], 0);
 }
 
+void show_nandroid_advanced_restore_menu()
+{
+    if (ensure_root_path_mounted("SDCARD:") != 0) {
+        LOGE ("Can't mount /sdcard\n");
+        return;
+    }
+
+    static char* advancedheaders[] = {  "Choose an image to restore",
+                                "",
+                                "Choose an image to restore",
+                                "first. The next menu will",
+                                "you more options.",
+                                "",
+                                NULL
+    };
+
+    char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, advancedheaders);
+    if (file == NULL)
+        return;
+
+    static char* headers[] = {  "Nandroid Advanced Restore",
+                                "",
+                                NULL
+    };
+
+    static char* list[] = { "Restore boot",
+                            "Restore system",
+                            "Restore data",
+                            "Restore cache",
+                            NULL
+    };
+
+    int chosen_item = get_menu_selection(headers, list, 0);
+    switch (chosen_item)
+    {
+        case 0:
+            nandroid_restore(file, 1, 0, 0, 0);
+            break;
+        case 1:
+            nandroid_restore(file, 0, 1, 0, 0);
+            break;
+        case 2:
+            nandroid_restore(file, 0, 0, 1, 0);
+            break;
+        case 3:
+            nandroid_restore(file, 0, 0, 0, 1);
+            break;
+    }
+}
+
 void show_nandroid_menu()
 {
     static char* headers[] = {  "Nandroid",
@@ -577,6 +627,7 @@ void show_nandroid_menu()
 
     static char* list[] = { "Backup", 
                             "Restore",
+                            "Advanced Restore",
                             NULL
     };
 
@@ -594,6 +645,9 @@ void show_nandroid_menu()
             break;
         case 1:
             show_nandroid_restore_menu();
+            break;
+        case 2:
+            show_nandroid_advanced_restore_menu();
             break;
     }
 }

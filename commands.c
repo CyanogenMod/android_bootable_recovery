@@ -801,7 +801,7 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
         return 1;
     }
 
-    return nandroid_restore(argv[0]);
+    return nandroid_restore(argv[0], 1, 1, 1, 1);
 }
 
 static int
