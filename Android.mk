@@ -8,8 +8,8 @@ commands_recovery_local_path := $(LOCAL_PATH)
 # LOCAL_CPP_EXTENSION := .c
 
 LOCAL_SRC_FILES := \
-  extendedcommands.c \
-  nandroid.c \
+    extendedcommands.c \
+    nandroid.c \
 	legacy.c \
 	commands.c \
 	recovery.c \
@@ -26,7 +26,7 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v1.7.8.3
+RECOVERY_VERSION := ClockworkMod Recovery v1.7.8.4
 LOCAL_CFLAGS := -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)

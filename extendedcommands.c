@@ -399,7 +399,7 @@ int confirm_format()
 }
 
 #define MOUNTABLE_COUNT 4
-#define MTD_COUNT 4
+#define MTD_COUNT 1
 
 void show_partition_menu()
 {
@@ -417,10 +417,10 @@ void show_partition_menu()
         };
         
     string mtds[MTD_COUNT][2] = {
+        { "format boot", "boot" },
         { "format system", "system" },
         { "format data", "data" },
         { "format cache", "cache" },
-        { "format boot", "boot" }
     };
         
     for (;;)
@@ -636,10 +636,19 @@ void show_nandroid_menu()
     {
         case 0:
             {
-                struct timeval tp;
-                gettimeofday(&tp, NULL);
                 char backup_path[PATH_MAX];
-                sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                time_t t = time(NULL);
+                struct tm *tmp = localtime(&t);
+                if (tmp == NULL)
+                {
+                    struct timeval tp;
+                    gettimeofday(&tp, NULL);
+                    sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                }
+                else
+                {
+                    strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                }
                 nandroid_backup(backup_path);
             }
             break;
