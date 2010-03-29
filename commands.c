@@ -806,12 +806,24 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
     UNUSED(cookie);
     CHECK_WORDS();
 
-    if (argc != 1) {
-        LOGE("Command %s requires exactly one argument\n", name);
-        return 1;
+    int restoreboot = 1;
+    int restoresystem = 1;
+    int restoredata = 1;
+    int restorecache = 1;
+    int i;
+    for (i = 0; i < argc; i++)
+    {
+        if (strcmp(argv[i], "noboot") == 0)
+            restoreboot = 0;
+        else if (strcmp(argv[i], "nosystem") == 0)
+            restoresystem = 0;
+        else if (strcmp(argv[i], "nodata") == 0)
+            restoredata = 0;
+        else if (strcmp(argv[i], "nocache") == 0)
+            restorecache = 0;
     }
 
-    return nandroid_restore(argv[0], 1, 1, 1, 1);
+    return nandroid_restore(argv[0], restoreboot, restoresystem, restoredata, restorecache);
 }
 
 static int
