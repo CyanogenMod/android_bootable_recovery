@@ -348,39 +348,40 @@ cmd_run_program(const char *name, void *cookie, int argc, const char *argv[],
         return 1;
     }
 
-    // Copy the program file to temporary storage.
-    if (!is_package_root_path(argv[0])) {
-        LOGE("Command %s: non-package program file \"%s\" not supported\n",
-                name, argv[0]);
-        return 1;
-    }
-
-    char path[PATH_MAX];
-    const ZipArchive *package;
-    if (!translate_package_root_path(argv[0], path, sizeof(path), &package)) {
-        LOGE("Command %s: bad source path \"%s\"\n", name, argv[0]);
-        return 1;
-    }
-
-    const ZipEntry *entry = mzFindZipEntry(package, path);
-    if (entry == NULL) {
-        LOGE("Can't find %s\n", path);
-        return 1;
-    }
-
     static const char *binary = "/tmp/run_program_binary";
-    unlink(binary);  // just to be sure
-    int fd = creat(binary, 0755);
-    if (fd < 0) {
-        LOGE("Can't make %s\n", binary);
-        return 1;
+    char path[PATH_MAX];
+    if (!is_package_root_path(argv[0])) {
+        // Copy the program file to temporary storage.
+        binary = argv[0];
+        strcpy(path, binary);
     }
-    bool ok = mzExtractZipEntryToFile(package, entry, fd);
-    close(fd);
+    else
+    {
+        const ZipArchive *package;
+        if (!translate_package_root_path(argv[0], path, sizeof(path), &package)) {
+            LOGE("Command %s: bad source path \"%s\"\n", name, argv[0]);
+            return 1;
+        }
 
-    if (!ok) {
-        LOGE("Can't copy %s\n", path);
-        return 1;
+        const ZipEntry *entry = mzFindZipEntry(package, path);
+        if (entry == NULL) {
+            LOGE("Can't find %s\n", path);
+            return 1;
+        }
+
+        unlink(binary);  // just to be sure
+        int fd = creat(binary, 0755);
+        if (fd < 0) {
+            LOGE("Can't make %s\n", binary);
+            return 1;
+        }
+        bool ok = mzExtractZipEntryToFile(package, entry, fd);
+        close(fd);
+
+        if (!ok) {
+            LOGE("Can't copy %s\n", path);
+            return 1;
+        }
     }
 
     // Create a copy of argv to NULL-terminate it, as execv requires
