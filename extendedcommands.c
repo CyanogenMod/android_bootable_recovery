@@ -398,8 +398,29 @@ int confirm_format()
     return chosen_item == 7;
 }
 
-#define MOUNTABLE_COUNT 4
-#define MTD_COUNT 1
+int format_mmc_device(char* root)
+{
+    char path[PATH_MAX];
+    translate_root_path(root, path, PATH_MAX);
+    if (0 != ensure_root_path_mounted(root))
+    {
+        ui_print("Error mounting %s!\n", path);
+        return 1;
+    }
+
+    static char tmp[PATH_MAX];
+    sprintf(tmp, "rm -rf %s/*", path);
+    __system(tmp);
+    sprintf(tmp, "rm -rf %s/.*", path);
+    __system(tmp);
+    
+    ensure_root_path_unmounted(root);
+    return 0;
+}
+
+#define MOUNTABLE_COUNT 5
+#define MTD_COUNT 4
+#define MMC_COUNT 2
 
 void show_partition_menu()
 {
@@ -413,21 +434,27 @@ void show_partition_menu()
         { "mount /system", "unmount /system", "SYSTEM:" },
         { "mount /data", "unmount /data", "DATA:" },
         { "mount /cache", "unmount /cache", "CACHE:" },
-        { "mount /sdcard", "unmount /sdcard", "SDCARD:" }
+        { "mount /sdcard", "unmount /sdcard", "SDCARD:" },
+        { "mount /sd-ext", "unmount /sd-ext", "SDEXT:" }
         };
         
     string mtds[MTD_COUNT][2] = {
-        { "format boot", "boot" },
-        { "format system", "system" },
-        { "format data", "data" },
-        { "format cache", "cache" },
+        { "format boot", "BOOT:" },
+        { "format system", "SYSTEM:" },
+        { "format data", "DATA:" },
+        { "format cache", "CACHE:" },
+    };
+    
+    string mmcs[MMC_COUNT][3] = {
+      { "format sdcard", "SDCARD:" },
+      { "format sd-ext", "SDEXT: " }  
     };
         
     for (;;)
     {
         int ismounted[MOUNTABLE_COUNT];
         int i;
-        static string options[MOUNTABLE_COUNT + MTD_COUNT + 1 + 1]; // mountables, format mtds, usb storage, null
+        static string options[MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT + 1 + 1]; // mountables, format mtds, format mmcs, usb storage, null
         for (i = 0; i < MOUNTABLE_COUNT; i++)
         {
             ismounted[i] = is_root_path_mounted(mounts[i][2]);
@@ -438,14 +465,19 @@ void show_partition_menu()
         {
             options[MOUNTABLE_COUNT + i] = mtds[i][0];
         }
+            
+        for (i = 0; i < MMC_COUNT; i++)
+        {
+            options[MOUNTABLE_COUNT + MTD_COUNT + i] = mmcs[i][0];
+        }
     
-        options[MOUNTABLE_COUNT + MTD_COUNT] = "mount USB storage";
-        options[MOUNTABLE_COUNT + MTD_COUNT + 1] = NULL;
+        options[MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT] = "mount USB storage";
+        options[MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT + 1] = NULL;
         
         int chosen_item = get_menu_selection(headers, options, 0);
         if (chosen_item == GO_BACK)
             break;
-        if (chosen_item == MOUNTABLE_COUNT + MTD_COUNT)
+        if (chosen_item == MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT)
         {
             show_mount_usb_storage_menu();
         }
@@ -468,9 +500,21 @@ void show_partition_menu()
             if (!confirm_format())
                 continue;
             ui_print("Formatting %s...\n", mtds[chosen_item][1]);
-            if (0 != erase_image(mtds[chosen_item][1]))
-                ui_print("Error erasing %s!\n", mtds[chosen_item][1]);
-            ui_print("Done.\n");
+            if (0 != format_root_device(mtds[chosen_item][1]))
+                ui_print("Error formatting %s!\n", mtds[chosen_item][1]);
+            else
+                ui_print("Done.\n");
+        }
+        else if (chosen_item < MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT)
+        {
+            chosen_item = chosen_item - MOUNTABLE_COUNT - MTD_COUNT;
+            if (!confirm_format())
+                continue;
+            ui_print("Formatting %s...\n", mmcs[chosen_item][1]);
+            if (0 != format_mmc_device(mmcs[chosen_item][1]))
+                ui_print("Error formatting %s!\n", mmcs[chosen_item][1]);
+            else
+                ui_print("Done.\n");
         }
     }
 }
