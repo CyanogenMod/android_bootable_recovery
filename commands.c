@@ -811,6 +811,7 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
     int restoresystem = 1;
     int restoredata = 1;
     int restorecache = 1;
+    int restoresdext = 1;
     int i;
     for (i = 0; i < argc; i++)
     {
@@ -822,9 +823,11 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
             restoredata = 0;
         else if (strcmp(argv[i], "nocache") == 0)
             restorecache = 0;
+        else if (strcmp(argv[i], "nosd-ext") == 0)
+            restorecache = 0;
     }
 
-    return nandroid_restore(argv[0], restoreboot, restoresystem, restoredata, restorecache);
+    return nandroid_restore(argv[0], restoreboot, restoresystem, restoredata, restorecache, restoresdext);
 }
 
 static int

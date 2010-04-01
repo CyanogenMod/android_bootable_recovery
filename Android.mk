@@ -76,6 +76,14 @@ $(SYMLINKS): $(LOCAL_INSTALLED_MODULE)
 
 ALL_DEFAULT_INSTALLED_MODULES += $(SYMLINKS)
 
+include $(CLEAR_VARS)
+LOCAL_MODULE := nandroid-md5.sh
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_SRC_FILES := nandroid-md5.sh
+include $(BUILD_PREBUILT)
+
 include $(commands_recovery_local_path)/amend/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk

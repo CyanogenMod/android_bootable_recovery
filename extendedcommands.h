@@ -36,3 +36,6 @@ __system(const char *command);
 
 void
 show_advanced_menu();
+
+int
+format_mmc_device(char* root);

@@ -347,7 +347,7 @@ void show_nandroid_restore_menu()
     char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, headers);
     if (file == NULL)
         return;
-    nandroid_restore(file, 1, 1, 1, 1);
+    nandroid_restore(file, 1, 1, 1, 1, 1);
 }
 
 void show_mount_usb_storage_menu()
@@ -641,6 +641,7 @@ void show_nandroid_advanced_restore_menu()
                             "Restore system",
                             "Restore data",
                             "Restore cache",
+                            "Restore sd-ext",
                             NULL
     };
 
@@ -648,16 +649,16 @@ void show_nandroid_advanced_restore_menu()
     switch (chosen_item)
     {
         case 0:
-            nandroid_restore(file, 1, 0, 0, 0);
+            nandroid_restore(file, 1, 0, 0, 0, 0);
             break;
         case 1:
-            nandroid_restore(file, 0, 1, 0, 0);
+            nandroid_restore(file, 0, 1, 0, 0, 0);
             break;
         case 2:
-            nandroid_restore(file, 0, 0, 1, 0);
+            nandroid_restore(file, 0, 0, 1, 0, 0);
             break;
         case 3:
-            nandroid_restore(file, 0, 0, 0, 1);
+            nandroid_restore(file, 0, 0, 0, 1, 0);
             break;
     }
 }
