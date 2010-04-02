@@ -116,6 +116,20 @@ void show_install_update_menu()
     }
 }
 
+void free_string_array(char** array)
+{
+    if (array == NULL)
+        return;
+    char* cursor = array[0];
+    int i = 0;
+    while (cursor != NULL)
+    {
+        free(cursor);
+        cursor = array[++i];
+    }
+    free(array);
+}
+
 char** gather_files(const char* directory, const char* fileExtensionOrDirectory, int* numFiles)
 {
     char path[PATH_MAX] = "";
@@ -159,11 +173,10 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
             else
             {
                 struct stat info;
-                char* fullFileName = (char*)malloc(strlen(de->d_name) + dirLen + 1);
+                char fullFileName[PATH_MAX];
                 strcpy(fullFileName, directory);
                 strcat(fullFileName, de->d_name);
                 stat(fullFileName, &info);
-                free(fullFileName);
                 // make sure it is a directory
                 if (!(S_ISDIR(info.st_mode)))
                     continue;
@@ -203,18 +216,6 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
     return files;
 }
 
-void free_string_array(char** array)
-{
-    char* cursor = array[0];
-    int i = 0;
-    while (cursor != NULL)
-    {
-        free(cursor);
-        cursor = array[++i];
-    }
-    free(array);
-}
-
 // pass in NULL for fileExtensionOrDirectory and you will get a directory chooser
 char* choose_file_menu(const char* directory, const char* fileExtensionOrDirectory, const char* headers[])
 {
@@ -224,7 +225,7 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
     int numFiles = 0;
     int numDirs = 0;
     int i;
-
+    char* return_value = NULL;
     int dir_len = strlen(directory);
 
     char** files = gather_files(directory, fileExtensionOrDirectory, &numFiles);
@@ -235,39 +236,50 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
     if (total == 0)
     {
         ui_print("No files found.\n");
-        return NULL;
     }
-    char** list = (char**) malloc((total + 1) * sizeof(char*));
-    list[total] = NULL;
-
-
-    for (i = 0 ; i < numDirs; i++)
+    else
     {
-        list[i] = strdup(dirs[i] + dir_len);
-    }
+        char** list = (char**) malloc((total + 1) * sizeof(char*));
+        list[total] = NULL;
 
-    for (i = 0 ; i < numFiles; i++)
-    {
-        list[numDirs + i] = strdup(files[i] + dir_len);
-    }
 
-    for (;;)
-    {
-        int chosen_item = get_menu_selection(headers, list, 0);
-        if (chosen_item == GO_BACK)
-            break;
-        if (chosen_item < numDirs)
+        for (i = 0 ; i < numDirs; i++)
         {
-            char* subret = choose_file_menu(dirs[chosen_item], fileExtensionOrDirectory, headers);
-            if (subret != NULL)
-                return subret;
-            continue;
-        } 
-        static char ret[PATH_MAX];
-        strcpy(ret, files[chosen_item - numDirs]);
-        return ret;
+            list[i] = strdup(dirs[i] + dir_len);
+        }
+
+        for (i = 0 ; i < numFiles; i++)
+        {
+            list[numDirs + i] = strdup(files[i] + dir_len);
+        }
+
+        for (;;)
+        {
+            int chosen_item = get_menu_selection(headers, list, 0);
+            if (chosen_item == GO_BACK)
+                break;
+            static char ret[PATH_MAX];
+            if (chosen_item < numDirs)
+            {
+                char* subret = choose_file_menu(dirs[chosen_item], fileExtensionOrDirectory, headers);
+                if (subret != NULL)
+                {
+                    strcpy(ret, subret);
+                    return_value = ret;
+                    break;
+                }
+                continue;
+            } 
+            strcpy(ret, files[chosen_item - numDirs]);
+            return_value = ret;
+            break;
+        }
+        free_string_array(list);
     }
-    return NULL;
+
+    free_string_array(files);
+    free_string_array(dirs);
+    return return_value;
 }
 
 void show_choose_zip_menu()
@@ -575,7 +587,9 @@ int run_script(char* filename, int delete_file)
 	if (delete_file)
     	remove(filename);
 
-	return run_script_from_buffer(script_data, script_len, filename);
+	int ret = run_script_from_buffer(script_data, script_len, filename);
+    free(script_data);
+    return ret;
 }
 
 int run_and_remove_extendedcommand()
