@@ -142,9 +142,10 @@ int nandroid_backup(char* backup_path)
     if (0 != (ret = nandroid_backup_partition(backup_path, "CACHE:")))
         return ret;
 
-    if (0 != ensure_root_path_mounted("SDEXT:"))
-        ui_print("No sd-ext found. Skipping backup.\n");
-    else if (0 != (ret = nandroid_backup_partition(backup_path, "SDEXT:")))
+    struct stat st;
+    if (0 != stat("/dev/block/mmcblk0p2", &st))
+        ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
+    else if (0 != (ret = ensure_root_path_mounted("SDEXT:")) || 0 != (ret = nandroid_backup_partition(backup_path, "SDEXT:")))
         return ret;
     
     ui_print("Generating md5 sum...\n");
