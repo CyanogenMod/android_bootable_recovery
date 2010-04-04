@@ -569,7 +569,7 @@ int run_script_from_buffer(char* script_data, int script_len, char* filename)
     return 0;
 }
 
-int run_script(char* filename, int delete_file)
+int run_script(char* filename)
 {
     struct stat file_info;
     if (0 != stat(filename, &file_info)) {
@@ -584,8 +584,6 @@ int run_script(char* filename, int delete_file)
     // supposedly not necessary, but let's be safe.
     script_data[script_len] = '\0';
     fclose(file);
-	if (delete_file)
-    	remove(filename);
 
 	int ret = run_script_from_buffer(script_data, script_len, filename);
     free(script_data);
@@ -595,6 +593,10 @@ int run_script(char* filename, int delete_file)
 int run_and_remove_extendedcommand()
 {
     __system("touch /tmp/.installscript");
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cp %s /tmp/%s", EXTENDEDCOMMAND_SCRIPT, basename(EXTENDEDCOMMAND_SCRIPT));
+    __system(tmp);
+    remove(EXTENDEDCOMMAND_SCRIPT);
     int i = 0;
     for (i = 20; i > 0; i--) {
         ui_print("Waiting for SD Card to mount (%ds)\n", i);
@@ -608,7 +610,8 @@ int run_and_remove_extendedcommand()
         ui_print("Timed out waiting for SD card... continuing anyways.");
     }
     
-    return run_script(EXTENDEDCOMMAND_SCRIPT, 1);
+    sprintf(tmp, "/tmp/%s", basename(EXTENDEDCOMMAND_SCRIPT));
+    return run_script(tmp);
 }
 
 int amend_main(int argc, char** argv)
@@ -623,7 +626,7 @@ int amend_main(int argc, char** argv)
     if (register_update_commands(&ctx)) {
         LOGE("Can't install update commands\n");
     }
-    return run_script(argv[1], 0);
+    return run_script(argv[1]);
 }
 
 void show_nandroid_advanced_restore_menu()

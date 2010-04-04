@@ -541,6 +541,7 @@ main(int argc, char **argv)
         if (wipe_cache && erase_root("CACHE:")) status = INSTALL_ERROR;
         if (status != INSTALL_SUCCESS) ui_print("Cache wipe failed.\n");
     } else {
+        LOGI("Running extendedcommand...\n");
         status = INSTALL_ERROR;  // No command specified
         // we are starting up in user initiated recovery here
         // let's set up some default options
