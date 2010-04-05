@@ -459,7 +459,7 @@ void show_partition_menu()
     
     string mmcs[MMC_COUNT][3] = {
       { "format sdcard", "SDCARD:" },
-      { "format sd-ext", "SDEXT: " }  
+      { "format sd-ext", "SDEXT:" }  
     };
         
     for (;;)
