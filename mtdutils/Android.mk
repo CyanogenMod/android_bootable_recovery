@@ -54,5 +54,16 @@ LOCAL_MODULE := liberase_image
 LOCAL_CFLAGS += -Dmain=erase_image_main
 include $(BUILD_STATIC_LIBRARY)
 
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := dump_image.c
+LOCAL_MODULE := libdump_image
+LOCAL_MODULE_CLASS := UTILITY_EXECUTABLES
+LOCAL_MODULE_STEM := dump_image
+LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities/
+LOCAL_STATIC_LIBRARIES := libmtdutils libcutils libc
+LOCAL_FORCE_STATIC_EXECUTABLE := true
+include $(BUILD_EXECUTABLE)
+
 endif	# TARGET_ARCH == arm
 endif	# !TARGET_SIMULATOR
