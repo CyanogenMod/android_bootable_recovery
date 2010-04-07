@@ -729,7 +729,8 @@ void show_advanced_menu()
                                 NULL
     };
 
-    static char* list[] = { "Key Test",
+    static char* list[] = { "Reboot Recovery",
+                            "Key Test",
                             NULL
     };
 
@@ -741,6 +742,9 @@ void show_advanced_menu()
         switch (chosen_item)
         {
             case 0:
+                __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, "recovery");
+                break;
+            case 1:
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
