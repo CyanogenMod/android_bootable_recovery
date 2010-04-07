@@ -592,7 +592,6 @@ int run_script(char* filename)
 
 int run_and_remove_extendedcommand()
 {
-    __system("touch /tmp/.installscript");
     char tmp[PATH_MAX];
     sprintf(tmp, "cp %s /tmp/%s", EXTENDEDCOMMAND_SCRIPT, basename(EXTENDEDCOMMAND_SCRIPT));
     __system(tmp);
