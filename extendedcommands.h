@@ -11,7 +11,7 @@ void
 show_choose_zip_menu();
 
 int
-do_nandroid_backup(char* backup_name);
+do_nandroid_backup(const char* backup_name);
 
 int
 do_nandroid_restore();
@@ -38,4 +38,4 @@ void
 show_advanced_menu();
 
 int
-format_mmc_device(char* root);
+format_non_mtd_device(const char* root);

@@ -75,7 +75,7 @@ void compute_directory_stats(char* directory)
     ui_show_progress(1, 0);
 }
 
-int nandroid_backup_partition(char* backup_path, char* root) {
+int nandroid_backup_partition(const char* backup_path, char* root) {
     int ret = 0;
     char mount_point[PATH_MAX];
     translate_root_path(root, mount_point, PATH_MAX);
@@ -98,7 +98,7 @@ int nandroid_backup_partition(char* backup_path, char* root) {
     return 0;
 }
 
-int nandroid_backup(char* backup_path)
+int nandroid_backup(const char* backup_path)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     
@@ -171,7 +171,7 @@ int nandroid_backup(char* backup_path)
 
 typedef int (*format_function)(char* root);
 
-int nandroid_restore_partition_internal(char* backup_path, char* root, format_function formatter) {
+int nandroid_restore_partition(const char* backup_path, const char* root) {
     int ret = 0;
     char mount_point[PATH_MAX];
     translate_root_path(root, mount_point, PATH_MAX);
@@ -182,7 +182,7 @@ int nandroid_restore_partition_internal(char* backup_path, char* root, format_fu
         ui_print("Can't unmount %s!\n", mount_point);
         return ret;
     }
-    if (0 != (ret = formatter(root))) {
+    if (0 != (ret = format_root_device(root))) {
         ui_print("Error while formatting %s!\n", root);
         return ret;
     }
@@ -198,14 +198,14 @@ int nandroid_restore_partition_internal(char* backup_path, char* root, format_fu
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
     }
+
+    if (0 != strcmp(root, "CACHE")) {
+        ensure_root_path_unmounted(root);
+    }
     return 0;
 }
 
-int nandroid_restore_partition(char* backup_path, char* root) {
-    return nandroid_restore_partition_internal(backup_path, root, format_root_device);
-}
-
-int nandroid_restore(char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext)
+int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
@@ -247,7 +247,7 @@ int nandroid_restore(char* backup_path, int restore_boot, int restore_system, in
         sprintf(tmp, "%s/sd-ext.img", backup_path);
         if (0 != (ret = statfs(tmp, &s)))
             ui_print("sd-ext.img not found. Skipping restore of /sd-ext.");
-        else if (0 != (ret = nandroid_restore_partition_internal(backup_path, "SDEXT:", format_mmc_device)))
+        else if (0 != (ret = nandroid_restore_partition(backup_path, "SDEXT:")))
             return ret;
     }
 

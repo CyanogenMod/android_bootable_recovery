@@ -385,6 +385,7 @@ wipe_data(int confirm) {
     device_wipe_data();
     erase_root("DATA:");
     erase_root("CACHE:");
+    erase_root("SDEXT:");
     ui_print("Data wipe complete.\n");
 }
 

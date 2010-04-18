@@ -410,8 +410,19 @@ int confirm_format()
     return chosen_item == 7;
 }
 
-int format_mmc_device(char* root)
+int format_non_mtd_device(const char* root)
 {
+	// if this is SDEXT:, don't worry about it.
+	if (0 == strcmp(root, "SDEXT:"))
+	{
+		struct stat st;
+	    if (0 != stat("/dev/block/mmcblk0p2", &st))
+	    {
+	        ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
+			return 0;
+	    }
+	}
+
     char path[PATH_MAX];
     translate_root_path(root, path, PATH_MAX);
     if (0 != ensure_root_path_mounted(root))
@@ -523,7 +534,7 @@ void show_partition_menu()
             if (!confirm_format())
                 continue;
             ui_print("Formatting %s...\n", mmcs[chosen_item][1]);
-            if (0 != format_mmc_device(mmcs[chosen_item][1]))
+            if (0 != format_non_mtd_device(mmcs[chosen_item][1]))
                 ui_print("Error formatting %s!\n", mmcs[chosen_item][1]);
             else
                 ui_print("Done.\n");
@@ -675,6 +686,9 @@ void show_nandroid_advanced_restore_menu()
             break;
         case 3:
             nandroid_restore(file, 0, 0, 0, 1, 0);
+            break;
+        case 4:
+            nandroid_restore(file, 0, 0, 0, 0, 1);
             break;
     }
 }
