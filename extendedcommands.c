@@ -62,7 +62,7 @@ int install_zip(const char* packagefilepath)
     ui_print("\n-- Installing: %s\n", packagefilepath);
     set_sdcard_update_bootloader_message();
     int status = install_package(packagefilepath);
-	ui_reset_progress();
+    ui_reset_progress();
     if (status != INSTALL_SUCCESS) {
         ui_set_background(BACKGROUND_ICON_ERROR);
         ui_print("Installation aborted.\n");
@@ -412,16 +412,16 @@ int confirm_format()
 
 int format_non_mtd_device(const char* root)
 {
-	// if this is SDEXT:, don't worry about it.
-	if (0 == strcmp(root, "SDEXT:"))
-	{
-		struct stat st;
-	    if (0 != stat("/dev/block/mmcblk0p2", &st))
-	    {
-	        ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
-			return 0;
-	    }
-	}
+    // if this is SDEXT:, don't worry about it.
+    if (0 == strcmp(root, "SDEXT:"))
+    {
+        struct stat st;
+        if (0 != stat("/dev/block/mmcblk0p2", &st))
+        {
+            ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
+            return 0;
+        }
+    }
 
     char path[PATH_MAX];
     translate_root_path(root, path, PATH_MAX);
@@ -596,7 +596,7 @@ int run_script(char* filename)
     script_data[script_len] = '\0';
     fclose(file);
 
-	int ret = run_script_from_buffer(script_data, script_len, filename);
+    int ret = run_script_from_buffer(script_data, script_len, filename);
     free(script_data);
     return ret;
 }

@@ -106,7 +106,7 @@ int nandroid_backup(const char* backup_path)
         return print_and_error("Can't mount /sdcard\n");
     
     int ret;
-	struct statfs s;
+    struct statfs s;
     if (0 != (ret = statfs("/sdcard", &s)))
         return print_and_error("Unable to stat /sdcard\n");
     uint64_t bavail = s.f_bavail;
