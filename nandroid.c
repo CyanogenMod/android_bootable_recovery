@@ -224,6 +224,9 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     int ret;
     if (restore_boot)
     {
+        ui_print("Erasing boot before restore...\n");
+        if (0 != (ret = format_root_device("BOOT:")))
+            return print_and_error("Error while formatting BOOT:!\n");
         sprintf(tmp, "flash_image boot %s/boot.img", backup_path);
         ui_print("Restoring boot image...\n");
         if (0 != (ret = __system(tmp))) {
