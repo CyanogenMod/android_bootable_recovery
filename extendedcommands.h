@@ -39,3 +39,7 @@ show_advanced_menu();
 
 int
 format_non_mtd_device(const char* root);
+
+void
+wipe_battery_stats();
+
