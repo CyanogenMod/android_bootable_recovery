@@ -32,4 +32,4 @@ do
   echo "/dev/block/mtdblock$mtd  /$mount $type rw" >> /etc/fstab
 done
 echo "/dev/block/mmcblk0p1" /sdcard vfat rw >> /etc/fstab
-echo "/dev/block/mmbblk0p2" /sd-ext vfat rw >> /etc/fstab
+echo "/dev/block/mmcblk0p2" /sd-ext ext4 rw >> /etc/fstab
