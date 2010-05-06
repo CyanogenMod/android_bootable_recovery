@@ -66,5 +66,17 @@ LOCAL_STATIC_LIBRARIES := libmtdutils libcutils libc
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 include $(BUILD_EXECUTABLE)
 
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := flash_image.c
+LOCAL_MODULE := utility_flash_image
+LOCAL_MODULE_CLASS := UTILITY_EXECUTABLES
+LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
+LOCAL_UNSTRIPPED_PATH := $(PRODUCT_OUT)/symbols/utilities
+LOCAL_MODULE_STEM := flash_image
+LOCAL_STATIC_LIBRARIES := libmtdutils libcutils libc
+LOCAL_FORCE_STATIC_EXECUTABLE := true
+include $(BUILD_EXECUTABLE)
+
+
 endif	# TARGET_ARCH == arm
 endif	# !TARGET_SIMULATOR
