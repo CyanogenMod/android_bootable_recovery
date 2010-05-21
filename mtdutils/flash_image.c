@@ -121,6 +121,10 @@ int main(int argc, char **argv) {
     size_t block_size;
     if (mtd_partition_info(partition, NULL, &block_size, NULL))
         die("error getting %s block size", argv[1]);
+        
+    // Zinx says this fixes noncongiuous memory allocation issues?
+    if (block_size > 2048)
+        block_size = 2048;
 
     if (lseek(fd, headerlen, SEEK_SET) != headerlen)
         die("error rewinding %s", argv[2]);
