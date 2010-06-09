@@ -80,6 +80,12 @@ int nandroid_backup_partition(const char* backup_path, char* root) {
     char mount_point[PATH_MAX];
     translate_root_path(root, mount_point, PATH_MAX);
     char* name = basename(mount_point);
+
+    struct stat file_info;
+    mkyaffs2image_callback callback = NULL;
+    if (0 != stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info)) {
+        callback = yaffs_callback;
+    }
     
     ui_print("Backing up %s...\n", name);
     if (0 != (ret = ensure_root_path_mounted(root) != 0)) {
@@ -89,7 +95,7 @@ int nandroid_backup_partition(const char* backup_path, char* root) {
     compute_directory_stats(mount_point);
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
-    ret = mkyaffs2image(mount_point, tmp, 0, yaffs_callback);
+    ret = mkyaffs2image(mount_point, tmp, 0, callback);
     ensure_root_path_unmounted(root);
     if (0 != ret) {
         ui_print("Error while making a yaffs2 image of %s!\n", mount_point);
@@ -177,6 +183,12 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
     translate_root_path(root, mount_point, PATH_MAX);
     char* name = basename(mount_point);
     
+    struct stat file_info;
+    unyaffs_callback callback = NULL;
+    if (0 != stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info)) {
+        callback = yaffs_callback;
+    }
+
     ui_print("Restoring %s...\n", name);
     if (0 != (ret = ensure_root_path_unmounted(root))) {
         ui_print("Can't unmount %s!\n", mount_point);
@@ -194,7 +206,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
     
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
-    if (0 != (ret = unyaffs(tmp, mount_point, yaffs_callback))) {
+    if (0 != (ret = unyaffs(tmp, mount_point, callback))) {
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
     }
