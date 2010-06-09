@@ -310,7 +310,7 @@ get_menu_selection(char** headers, char** items, int menu_only) {
     // accidentally trigger menu items.
     ui_clear_key_queue();
 
-    ui_start_menu(headers, items);
+    int item_count = ui_start_menu(headers, items);
     int selected = 0;
     int chosen_item = -1;
 
@@ -332,6 +332,11 @@ get_menu_selection(char** headers, char** items, int menu_only) {
                     break;
                 case SELECT_ITEM:
                     chosen_item = selected;
+#ifdef KEY_POWER_IS_SELECT_ITEM
+                    if (chosen_item == item_count) {
+                        chosen_item = GO_BACK;
+                    }
+#endif
                     break;
                 case NO_ACTION:
                     break;
@@ -544,7 +549,7 @@ main(int argc, char **argv)
         if (wipe_cache && erase_root("CACHE:")) status = INSTALL_ERROR;
         if (status != INSTALL_SUCCESS) ui_print("Cache wipe failed.\n");
     } else {
-        LOGI("Running extendedcommand...\n");
+        LOGI("Checking for extendedcommand...\n");
         status = INSTALL_ERROR;  // No command specified
         // we are starting up in user initiated recovery here
         // let's set up some default options
@@ -554,10 +559,13 @@ main(int argc, char **argv)
         ui_set_show_text(1);
         
         if (extendedcommand_file_exists()) {
+            LOGI("Running extendedcommand...\n");
             if (0 == run_and_remove_extendedcommand()) {
                 status = INSTALL_SUCCESS;
                 ui_set_show_text(0);
             }
+        } else {
+            LOGI("Skipping execution of extendedcommand, file not found...\n");
         }
     }
 

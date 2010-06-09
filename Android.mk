@@ -26,10 +26,14 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v1.8.1.5
+RECOVERY_VERSION := ClockworkMod Recovery v1.8.1.6
 LOCAL_CFLAGS := -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
+
+ifeq $(BOARD_HAS_NO_SELECT_BUTTON,true)
+  LOCAL_CFLAGS += -DKEY_POWER_IS_SELECT_ITEM
+endif
 
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
 # It gets copied there in config/Makefile.  LOCAL_MODULE_TAGS suppresses

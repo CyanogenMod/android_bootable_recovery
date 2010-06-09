@@ -490,7 +490,7 @@ void ui_reset_text_col()
 #define MENU_ITEM_HEADER " - "
 #define MENU_ITEM_HEADER_LENGTH strlen(MENU_ITEM_HEADER)
 
-void ui_start_menu(char** headers, char** items) {
+int ui_start_menu(char** headers, char** items) {
     int i;
     pthread_mutex_lock(&gUpdateMutex);
     if (text_rows > 0 && text_cols > 0) {
@@ -506,6 +506,10 @@ void ui_start_menu(char** headers, char** items) {
             strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, items[i-menu_top], text_cols-1 - MENU_ITEM_HEADER_LENGTH);
             menu[i][text_cols-1] = '\0';
         }
+#ifdef KEY_POWER_IS_SELECT_ITEM
+        strcpy(menu[i], " - +++++Go Back+++++");
+        ++i;
+#endif
 
         menu_items = i - menu_top;
         show_menu = 1;
@@ -513,6 +517,11 @@ void ui_start_menu(char** headers, char** items) {
         update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
+#ifdef KEY_POWER_IS_SELECT_ITEM
+    return menu_items - 1;
+#else
+    return menu_items;
+#endif
 }
 
 int ui_menu_select(int sel) {
