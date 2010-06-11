@@ -21,7 +21,7 @@ do
   elif [ "$partition" = "userdata" ]
   then
     type=yaffs2
-    mount=data
+    mount=firstboot
   elif [ "$partition" == "cache" ]
   then
     type=yaffs2
@@ -31,5 +31,7 @@ do
   
   echo "/dev/block/mtdblock$mtd  /$mount $type rw" >> /etc/fstab
 done
-echo "/dev/block/mmcblk0p1" /sdcard vfat rw >> /etc/fstab
-echo "/dev/block/mmcblk0p2" /sd-ext ext4 rw >> /etc/fstab
+echo "/dev/block/mmcblk1p1" /sdcard vfat rw >> /etc/fstab
+echo "/dev/block/mmcblk1p2" /sd-ext auto rw >> /etc/fstab
+echo "/dev/block/innersd0p5" /cache ext3 rw >> /etc/fstab
+echo "/dev/block/innersd0p6" /data ext3 rw >> /etc/fstab
