@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "bootloader.h"
 #include "common.h"
@@ -166,8 +167,10 @@ get_args(int *argc, char ***argv) {
         LOGI("Boot status: %.*s\n", sizeof(boot.status), boot.status);
     }
 
+    struct stat file_info;
+
     // --- if arguments weren't supplied, look in the bootloader control block
-    if (*argc <= 1) {
+    if (*argc <= 1 && 0 != stat("/tmp/.ignorebootmessage", &file_info)) {
         boot.recovery[sizeof(boot.recovery) - 1] = '\0';  // Ensure termination
         const char *arg = strtok(boot.recovery, "\n");
         if (arg != NULL && !strcmp(arg, "recovery")) {
