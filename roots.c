@@ -45,6 +45,34 @@ static const char g_mtd_device[] = "@\0g_mtd_device";
 static const char g_raw[] = "@\0g_raw";
 static const char g_package_file[] = "@\0g_package_file";
 
+#ifdef SDCARD_MMCBLK1
+#define SDCARD_MMCBLK_SECONDARY "/dev/block/mmcblk1"
+#define SDCARD_MMCBLK_PRIMARY "/dev/block/mmcblk1p1"
+#define SDEXT "/dev/block/mmcblk1p2"
+#else
+#define SDCARD_MMCBLK_SECONDARY "/dev/block/mmcblk0"
+#define SDCARD_MMCBLK_PRIMARY "/dev/block/mmcblk0p1"
+#define SDEXT "/dev/block/mmcblk0p2"
+#endif
+
+#ifdef SD_EXT3
+#define SD_EXT_FILE_SYSTEM "ext3"
+#else
+#define SD_EXT_FILE_SYSTEM "ext4"
+#endif
+
+#ifdef USERDATA_EXT3
+#define SD_EXT_FILE_SYSTEM "ext3"
+#else
+#define SD_EXT_FILE_SYSTEM "ext4"
+#endif
+
+#ifdef CACHE_EXT3
+#define SD_EXT_FILE_SYSTEM "ext3"
+#else
+#define SD_EXT_FILE_SYSTEM "ext4"
+#endif
+
 static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
     { "CACHE:", g_mtd_device, NULL, "cache", "/cache", "yaffs2" },
@@ -52,12 +80,8 @@ static RootInfo g_roots[] = {
     { "MISC:", g_mtd_device, NULL, "misc", NULL, g_raw },
     { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file },
     { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },
-    { "SDCARD:", "/dev/block/mmcblk0p1", "/dev/block/mmcblk0", NULL, "/sdcard", "vfat" },
-#ifndef SD_EXT3
-    { "SDEXT:", "/dev/block/mmcblk0p2", NULL, NULL, "/sd-ext", "ext4" },
-#else
-    { "SDEXT:", "/dev/block/mmcblk0p2", NULL, NULL, "/sd-ext", "ext3" },
-#endif
+    { "SDCARD:", SDCARD_MMCBLK_PRIMARY, SDCARD_MMCBLK_SECONDARY, NULL, "/sdcard", "vfat" },
+    { "SDEXT:", SDEXT, NULL, NULL, "/sd-ext", SD_EXT_FILE_SYSTEM },
     { "SYSTEM:", g_mtd_device, NULL, "system", "/system", "yaffs2" },
     { "MBM:", g_mtd_device, NULL, "mbm", NULL, g_raw },
     { "TMP:", NULL, NULL, NULL, "/tmp", NULL },

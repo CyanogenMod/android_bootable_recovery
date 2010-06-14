@@ -31,5 +31,11 @@ do
   
   echo "/dev/block/mtdblock$mtd  /$mount $type rw" >> /etc/fstab
 done
-echo "/dev/block/mmcblk0p1" /sdcard vfat rw >> /etc/fstab
-echo "/dev/block/mmcblk0p2" /sd-ext auto rw >> /etc/fstab
+if [ ! -z $SDCARD_MMCBLK1 ]
+then
+    echo "/dev/block/mmcblk1p1" /sdcard vfat rw >> /etc/fstab
+    echo "/dev/block/mmcblk1p2" /sd-ext auto rw >> /etc/fstab
+else
+    echo "/dev/block/mmcblk0p1" /sdcard vfat rw >> /etc/fstab
+    echo "/dev/block/mmcblk0p2" /sd-ext auto rw >> /etc/fstab
+fi

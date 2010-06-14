@@ -26,7 +26,7 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v1.8.1.9
+RECOVERY_VERSION := ClockworkMod Recovery v1.8.2.5
 LOCAL_CFLAGS := -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
@@ -35,8 +35,22 @@ ifeq ($(BOARD_HAS_NO_SELECT_BUTTON),true)
   LOCAL_CFLAGS += -DKEY_POWER_IS_SELECT_ITEM
 endif
 
+# This file system specific stuff is in need of some serious cleaning up...
+
+ifeq ($BOARD_SDCARD_MMCBLK1,true)
+  LOCAL_CFLAGS += -DSDCARD_MMCBLK1
+endif
+
 ifeq ($(BOARD_SD_EXT3),true)
   LOCAL_CFLAGS += -DSD_EXT3
+endif
+
+ifeq ($(BOARD_USERDATA_EXT3),true)
+  LOCAL_CFLAGS += -DUSERDATA_EXT3
+endif
+
+ifeq ($(BOARD_CACHE_EXT3),true)
+  LOCAL_CFLAGS += -DCACHE_EXT3
 endif
 
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
