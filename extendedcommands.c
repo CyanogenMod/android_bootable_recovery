@@ -33,6 +33,7 @@
 #include "commands.h"
 #include "amend/amend.h"
 
+#include "mtdutils/mtdutils.h"
 #include "mtdutils/dump_image.h"
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
 #include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
@@ -785,4 +786,32 @@ void show_advanced_menu()
             }
         }
     }
+}
+
+void write_fstab_root(char *root_path, FILE *file)
+{
+    RootInfo *info = get_root_info_for_path(root_path);
+    MtdPartition *mtd = get_root_mtd_partition(root_path);
+    if (mtd != NULL)
+    {
+        fprintf(file, "/dev/block/mtdblock%d ", mtd->device_index);
+    }
+    else
+    {
+        fprintf(file, "%s ", info->device);
+    }
+    
+    fprintf(file, "%s ", info->mount_point);
+    fprintf(file, "%s rw\n", info->filesystem); 
+}
+
+void create_fstab()
+{
+    FILE *file = fopen("/etc/fstab", "w");
+    write_fstab_root("CACHE:", file);
+    write_fstab_root("DATA:", file);
+    write_fstab_root("SYSTEM:", file);
+    write_fstab_root("SDCARD:", file);
+    write_fstab_root("SDEXT:", file);
+    fclose(file);
 }

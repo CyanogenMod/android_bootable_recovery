@@ -491,11 +491,7 @@ main(int argc, char **argv)
             return amend_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
-#ifdef SDCARD_MMCBLK1
-    __system("SDCARD_MMCBLK1=true /sbin/mkfstab.sh");
-#else
-    __system("/sbin/mkfstab.sh");
-#endif
+    //create_fstab();
     __system("/sbin/postrecoveryboot.sh");
     
     int is_user_initiated_recovery = 0;

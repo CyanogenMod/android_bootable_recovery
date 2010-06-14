@@ -60,4 +60,13 @@ const MtdPartition *get_root_mtd_partition(const char *root_path);
  */
 int format_root_device(const char *root);
 
+typedef struct {
+    const char *name;
+    const char *device;
+    const char *device2;  // If the first one doesn't work (may be NULL)
+    const char *partition_name;
+    const char *mount_point;
+    const char *filesystem;
+} RootInfo;
+
 #endif  // RECOVERY_ROOTS_H_

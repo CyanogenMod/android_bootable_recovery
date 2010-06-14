@@ -29,15 +29,6 @@
 
 #include "extendedcommands.h"
 
-typedef struct {
-    const char *name;
-    const char *device;
-    const char *device2;  // If the first one doesn't work (may be NULL)
-    const char *partition_name;
-    const char *mount_point;
-    const char *filesystem;
-} RootInfo;
-
 /* Canonical pointers.
 xxx may just want to use enums
  */
@@ -45,43 +36,47 @@ static const char g_mtd_device[] = "@\0g_mtd_device";
 static const char g_raw[] = "@\0g_raw";
 static const char g_package_file[] = "@\0g_package_file";
 
-#ifdef SDCARD_MMCBLK1
-#define SDCARD_MMCBLK_SECONDARY "/dev/block/mmcblk1"
-#define SDCARD_MMCBLK_PRIMARY "/dev/block/mmcblk1p1"
-#define SDEXT "/dev/block/mmcblk1p2"
-#else
-#define SDCARD_MMCBLK_SECONDARY "/dev/block/mmcblk0"
-#define SDCARD_MMCBLK_PRIMARY "/dev/block/mmcblk0p1"
-#define SDEXT "/dev/block/mmcblk0p2"
+#ifndef SDCARD_DEVICE_PRIMARY
+#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0p1"
 #endif
 
-#ifdef SD_EXT3
-#define SD_EXT_FILE_SYSTEM "ext3"
-#else
-#define SD_EXT_FILE_SYSTEM "ext4"
+#ifndef SDCARD_DEVICE_SECONDARY
+#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0p2"
 #endif
 
-#ifdef USERDATA_EXT3
-#define SD_EXT_FILE_SYSTEM "ext3"
-#else
-#define SD_EXT_FILE_SYSTEM "ext4"
+#ifndef SDEXT_DEVICE
+#define SDEXT_DEVICE "/dev/block/mmcblk0p2"
 #endif
 
-#ifdef CACHE_EXT3
-#define SD_EXT_FILE_SYSTEM "ext3"
-#else
-#define SD_EXT_FILE_SYSTEM "ext4"
+#ifndef SDEXT_FILESYSTEM
+#define SDEXT_FILESYSTEM "ext4"
+#endif
+
+#ifndef DATA_DEVICE
+#define DATA_DEVICE g_mtd_device
+#endif
+
+#ifndef DATA_FILESYSTEM
+#define DATA_FILESYSTEM "yaffs2"
+#endif
+
+#ifndef CACHE_DEVICE
+#define CACHE_DEVICE g_mtd_device
+#endif
+
+#ifndef CACHE_FILESYSTEM
+#define CACHE_FILESYSTEM "yaffs2"
 #endif
 
 static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
-    { "CACHE:", g_mtd_device, NULL, "cache", "/cache", "yaffs2" },
-    { "DATA:", g_mtd_device, NULL, "userdata", "/data", "yaffs2" },
+    { "CACHE:", CACHE_DEVICE, NULL, "cache", "/cache", CACHE_FILESYSTEM },
+    { "DATA:", DATA_DEVICE, NULL, "userdata", "/data", DATA_FILESYSTEM },
     { "MISC:", g_mtd_device, NULL, "misc", NULL, g_raw },
     { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file },
     { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },
-    { "SDCARD:", SDCARD_MMCBLK_PRIMARY, SDCARD_MMCBLK_SECONDARY, NULL, "/sdcard", "vfat" },
-    { "SDEXT:", SDEXT, NULL, NULL, "/sd-ext", SD_EXT_FILE_SYSTEM },
+    { "SDCARD:", SDCARD_DEVICE_PRIMARY, SDCARD_DEVICE_SECONDARY, NULL, "/sdcard", "vfat" },
+    { "SDEXT:", SDEXT_DEVICE, NULL, NULL, "/sd-ext", SDEXT_FILESYSTEM },
     { "SYSTEM:", g_mtd_device, NULL, "system", "/system", "yaffs2" },
     { "MBM:", g_mtd_device, NULL, "mbm", NULL, g_raw },
     { "TMP:", NULL, NULL, NULL, "/tmp", NULL },
@@ -90,7 +85,7 @@ static RootInfo g_roots[] = {
 
 // TODO: for SDCARD:, try /dev/block/mmcblk0 if mmcblk0p1 fails
 
-static const RootInfo *
+const RootInfo *
 get_root_info_for_path(const char *root_path)
 {
     const char *c;

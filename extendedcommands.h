@@ -43,3 +43,4 @@ format_non_mtd_device(const char* root);
 void
 wipe_battery_stats();
 
+void create_fstab();
