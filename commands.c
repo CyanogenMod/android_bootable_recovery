@@ -145,7 +145,15 @@ cmd_format(const char *name, void *cookie, int argc, const char *argv[],
         LOGE("Can't format %s\n", root);
         return 1;
     }
-
+#ifdef HAS_DATADATA
+    if (0 == strcmp(root, "DATA:")) {
+        ret = format_root_device("DATADATA:");
+        if (ret != 0) {
+            LOGE("Can't format %s\n", root);
+            return 1;
+        }
+    }
+#endif
     return 0;
 }
 
