@@ -60,6 +60,14 @@ static const char g_package_file[] = "@\0g_package_file";
 #define DATA_FILESYSTEM "yaffs2"
 #endif
 
+#ifndef DATADATA_DEVICE
+#define DATADATA_DEVICE g_mtd_device
+#endif
+
+#ifndef DATADATA_FILESYSTEM
+#define DATADATA_FILESYSTEM "yaffs2"
+#endif
+
 #ifndef CACHE_DEVICE
 #define CACHE_DEVICE g_mtd_device
 #endif
@@ -72,6 +80,9 @@ static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
     { "CACHE:", CACHE_DEVICE, NULL, "cache", "/cache", CACHE_FILESYSTEM },
     { "DATA:", DATA_DEVICE, NULL, "userdata", "/data", DATA_FILESYSTEM },
+#ifdef HAS_DATADATA
+    { "DATADATA:", DATADATA_DEVICE, NULL, "datadata", "/datadata", DATADATA_FILESYSTEM },
+#endif
     { "MISC:", g_mtd_device, NULL, "misc", NULL, g_raw },
     { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file },
     { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },

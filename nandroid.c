@@ -145,6 +145,11 @@ int nandroid_backup(const char* backup_path)
     if (0 != (ret = nandroid_backup_partition(backup_path, "DATA:")))
         return ret;
 
+#ifdef HAS_DATADATA
+    if (0 != (ret = nandroid_backup_partition(backup_path, "DATADATA:")))
+        return ret;
+#endif
+
     if (0 != (ret = nandroid_backup_partition(backup_path, "CACHE:")))
         return ret;
 
@@ -156,7 +161,7 @@ int nandroid_backup(const char* backup_path)
     else
     {
         if (0 != ensure_root_path_mounted("SDEXT:"))
-            ui_print("Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.");
+            ui_print("Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n");
         else if (0 != (ret = nandroid_backup_partition(backup_path, "SDEXT:")))
             return ret;
     }
@@ -252,6 +257,11 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "DATA:")))
         return ret;
+        
+#ifdef HAS_DATADATA
+    if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "DATADATA:")))
+        return ret;
+#endif
 
     if (restore_cache && 0 != (ret = nandroid_restore_partition(backup_path, "CACHE:")))
         return ret;

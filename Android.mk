@@ -26,7 +26,7 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v1.8.2.8
+RECOVERY_VERSION := ClockworkMod Recovery v2.0.0.0
 LOCAL_CFLAGS := -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
@@ -65,6 +65,10 @@ endif
 
 ifdef BOARD_CACHE_FILESYSTEM
   LOCAL_CFLAGS += -DCACHE_FILESYSTEM=\"$(BOARD_CACHE_FILESYSTEM)\"
+endif
+
+ifdef BOARD_HAS_DATADATA
+  LOCAL_CFLAGS += -DHAS_DATADATA
 endif
 
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
