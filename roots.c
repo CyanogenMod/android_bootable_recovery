@@ -37,11 +37,11 @@ static const char g_raw[] = "@\0g_raw";
 static const char g_package_file[] = "@\0g_package_file";
 
 #ifndef SDCARD_DEVICE_PRIMARY
-#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0p1"
+#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0"
 #endif
 
 #ifndef SDCARD_DEVICE_SECONDARY
-#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0p2"
+#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0p1"
 #endif
 
 #ifndef SDEXT_DEVICE
