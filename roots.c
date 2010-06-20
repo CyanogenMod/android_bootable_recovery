@@ -36,46 +36,6 @@ static const char g_mtd_device[] = "@\0g_mtd_device";
 static const char g_raw[] = "@\0g_raw";
 static const char g_package_file[] = "@\0g_package_file";
 
-#ifndef SDCARD_DEVICE_PRIMARY
-#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0"
-#endif
-
-#ifndef SDCARD_DEVICE_SECONDARY
-#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0p1"
-#endif
-
-#ifndef SDEXT_DEVICE
-#define SDEXT_DEVICE "/dev/block/mmcblk0p2"
-#endif
-
-#ifndef SDEXT_FILESYSTEM
-#define SDEXT_FILESYSTEM "ext4"
-#endif
-
-#ifndef DATA_DEVICE
-#define DATA_DEVICE g_mtd_device
-#endif
-
-#ifndef DATA_FILESYSTEM
-#define DATA_FILESYSTEM "yaffs2"
-#endif
-
-#ifndef DATADATA_DEVICE
-#define DATADATA_DEVICE g_mtd_device
-#endif
-
-#ifndef DATADATA_FILESYSTEM
-#define DATADATA_FILESYSTEM "yaffs2"
-#endif
-
-#ifndef CACHE_DEVICE
-#define CACHE_DEVICE g_mtd_device
-#endif
-
-#ifndef CACHE_FILESYSTEM
-#define CACHE_FILESYSTEM "yaffs2"
-#endif
-
 static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
     { "CACHE:", CACHE_DEVICE, NULL, "cache", "/cache", CACHE_FILESYSTEM },

@@ -797,8 +797,10 @@ void show_advanced_menu()
 void write_fstab_root(char *root_path, FILE *file)
 {
     RootInfo *info = get_root_info_for_path(root_path);
-    if (info == NULL)
+    if (info == NULL) {
+        LOGW("Unable to get root info for %s during fstab generation!", root_path);
         return;
+    }
     MtdPartition *mtd = get_root_mtd_partition(root_path);
     if (mtd != NULL)
     {
@@ -816,10 +818,15 @@ void write_fstab_root(char *root_path, FILE *file)
 void create_fstab()
 {
     FILE *file = fopen("/etc/fstab", "w");
-    if (file == NULL)
+    if (file == NULL) {
+        LOGW("Unable to create /etc/fstab!");
         return;
+    }
     write_fstab_root("CACHE:", file);
     write_fstab_root("DATA:", file);
+#ifdef HAS_DATADATA
+    write_fstab_root("DATADATA:", file);
+#endif
     write_fstab_root("SYSTEM:", file);
     write_fstab_root("SDCARD:", file);
     write_fstab_root("SDEXT:", file);
@@ -832,7 +839,7 @@ void handle_failure(int ret)
         return;
     if (0 != ensure_root_path_mounted("SDCARD:"))
         return;
-    mkdir("/sdcard/clockworkmod");
-    copyfile("/tmp/recovery.log", "/sdcard/clockworkmod/recovery.log");
+    mkdir("/sdcard/clockworkmod", S_IRWXU);
+    __system("cp /tmp/recovery.log /sdcard/clockworkmod/recovery.log");
     ui_print("/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.");
 }

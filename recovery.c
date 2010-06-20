@@ -494,7 +494,7 @@ main(int argc, char **argv)
             return amend_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
-    //create_fstab();
+    create_fstab();
     __system("/sbin/postrecoveryboot.sh");
     
     int is_user_initiated_recovery = 0;

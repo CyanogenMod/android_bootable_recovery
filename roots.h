@@ -20,6 +20,46 @@
 #include "minzip/Zip.h"
 #include "mtdutils/mtdutils.h"
 
+#ifndef SDCARD_DEVICE_PRIMARY
+#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0"
+#endif
+
+#ifndef SDCARD_DEVICE_SECONDARY
+#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0p1"
+#endif
+
+#ifndef SDEXT_DEVICE
+#define SDEXT_DEVICE "/dev/block/mmcblk0p2"
+#endif
+
+#ifndef SDEXT_FILESYSTEM
+#define SDEXT_FILESYSTEM "ext4"
+#endif
+
+#ifndef DATA_DEVICE
+#define DATA_DEVICE g_mtd_device
+#endif
+
+#ifndef DATA_FILESYSTEM
+#define DATA_FILESYSTEM "yaffs2"
+#endif
+
+#ifndef DATADATA_DEVICE
+#define DATADATA_DEVICE g_mtd_device
+#endif
+
+#ifndef DATADATA_FILESYSTEM
+#define DATADATA_FILESYSTEM "yaffs2"
+#endif
+
+#ifndef CACHE_DEVICE
+#define CACHE_DEVICE g_mtd_device
+#endif
+
+#ifndef CACHE_FILESYSTEM
+#define CACHE_FILESYSTEM "yaffs2"
+#endif
+
 /* Any of the "root_path" arguments can be paths with relative
  * components, like "SYSTEM:a/b/c".
  */
