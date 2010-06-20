@@ -365,7 +365,9 @@ void show_nandroid_restore_menu()
 
 void show_mount_usb_storage_menu()
 {
-    __system("echo /dev/block/mmcblk0 > /sys/devices/platform/usb_mass_storage/lun0/file");
+    char command[PATH_MAX];
+    sprintf(command, "echo %s > /sys/devices/platform/usb_mass_storage/lun0/file", SDCARD_DEVICE_PRIMARY);
+    __system(command);
     static char* headers[] = {  "USB Mass Storage device",
                                 "Leaving this menu unmount",
                                 "your SD card from your PC.",
@@ -417,7 +419,7 @@ int format_non_mtd_device(const char* root)
     if (0 == strcmp(root, "SDEXT:"))
     {
         struct stat st;
-        if (0 != stat("/dev/block/mmcblk0p2", &st))
+        if (0 != stat(SDEXT_DEVICE, &st))
         {
             ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
             return 0;
@@ -753,6 +755,7 @@ void show_advanced_menu()
 
     static char* list[] = { "Reboot Recovery",
                             "Wipe Battery Stats",
+                            "Report Error",
                             "Key Test",
                             NULL
     };
@@ -771,6 +774,9 @@ void show_advanced_menu()
                 wipe_battery_stats();
                 break;
             case 2:
+                handle_failure(1);
+                break;
+            case 3:
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
@@ -791,6 +797,8 @@ void show_advanced_menu()
 void write_fstab_root(char *root_path, FILE *file)
 {
     RootInfo *info = get_root_info_for_path(root_path);
+    if (info == NULL)
+        return;
     MtdPartition *mtd = get_root_mtd_partition(root_path);
     if (mtd != NULL)
     {
@@ -808,10 +816,23 @@ void write_fstab_root(char *root_path, FILE *file)
 void create_fstab()
 {
     FILE *file = fopen("/etc/fstab", "w");
+    if (file == NULL)
+        return;
     write_fstab_root("CACHE:", file);
     write_fstab_root("DATA:", file);
     write_fstab_root("SYSTEM:", file);
     write_fstab_root("SDCARD:", file);
     write_fstab_root("SDEXT:", file);
     fclose(file);
+}
+
+void handle_failure(int ret)
+{
+    if (ret == 0)
+        return;
+    if (0 != ensure_root_path_mounted("SDCARD:"))
+        return;
+    mkdir("/sdcard/clockworkmod");
+    copyfile("/tmp/recovery.log", "/sdcard/clockworkmod/recovery.log");
+    ui_print("/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.");
 }

@@ -567,9 +567,13 @@ main(int argc, char **argv)
         
         if (extendedcommand_file_exists()) {
             LOGI("Running extendedcommand...\n");
-            if (0 == run_and_remove_extendedcommand()) {
+            int ret;
+            if (0 == (ret = run_and_remove_extendedcommand())) {
                 status = INSTALL_SUCCESS;
                 ui_set_show_text(0);
+            }
+            else {
+                handle_failure(ret);
             }
         } else {
             LOGI("Skipping execution of extendedcommand, file not found...\n");
