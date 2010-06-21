@@ -154,7 +154,7 @@ int nandroid_backup(const char* backup_path)
         return ret;
 
     struct stat st;
-    if (0 == stat(SDEXT_DEVICE, &st))
+    if (0 != stat(SDEXT_DEVICE, &st))
     {
         ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
     }
