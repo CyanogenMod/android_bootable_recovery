@@ -756,6 +756,7 @@ void show_advanced_menu()
     };
 
     static char* list[] = { "Reboot Recovery",
+                            "Wipe Dalvik Cache",
                             "Wipe Battery Stats",
                             "Report Error",
                             "Key Test",
@@ -773,12 +774,18 @@ void show_advanced_menu()
                 __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, "recovery");
                 break;
             case 1:
-                wipe_battery_stats();
+                if (0 != ensure_root_path_mounted("DATA:"))
+                    break;
+                __system("rm -r /data/dalvik-cache");
+                ensure_root_path_unmounted("DATA:");
                 break;
             case 2:
-                handle_failure(1);
+                wipe_battery_stats();
                 break;
             case 3:
+                handle_failure(1);
+                break;
+            case 4:
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
