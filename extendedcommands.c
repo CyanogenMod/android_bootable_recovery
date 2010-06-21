@@ -598,6 +598,8 @@ int run_script(char* filename)
     // supposedly not necessary, but let's be safe.
     script_data[script_len] = '\0';
     fclose(file);
+    LOGI("Running script:\n");
+    LOGI("\n%s\n", script_data);
 
     int ret = run_script_from_buffer(script_data, script_len, filename);
     free(script_data);

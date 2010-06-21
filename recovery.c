@@ -478,6 +478,8 @@ print_property(const char *key, const char *name, void *cookie)
 int
 main(int argc, char **argv)
 {
+    LOGI(EXPAND(RECOVERY_VERSION)"\n");
+
 	if (strstr(argv[0], "recovery") == NULL)
 	{
 	    if (strstr(argv[0], "flash_image") != NULL)
