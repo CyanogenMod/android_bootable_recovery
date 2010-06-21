@@ -810,7 +810,14 @@ void write_fstab_root(char *root_path, FILE *file)
     }
     else
     {
-        fprintf(file, "%s ", info->device);
+        // only SDCARD: seems to be using device2. 
+        // and mmcblkXp1 is the fallback/device2.
+        // However, generally, mmcblkXp1 is usually where the
+        // FAT partition is located... so favor that.
+        if (NULL == info->device2)
+            fprintf(file, "%s ", info->device);
+        else
+            fprintf(file, "%s ", info->device2);
     }
     
     fprintf(file, "%s ", info->mount_point);
