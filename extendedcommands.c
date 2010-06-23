@@ -431,7 +431,9 @@ int format_non_mtd_device(const char* root)
     if (0 != ensure_root_path_mounted(root))
     {
         ui_print("Error mounting %s!\n", path);
-        return 1;
+        ui_print("Skipping format...\n");
+        return 0;
+
     }
 
     static char tmp[PATH_MAX];
@@ -833,6 +835,7 @@ void write_fstab_root(char *root_path, FILE *file)
 
 void create_fstab()
 {
+    __system("touch /etc/mtab");
     FILE *file = fopen("/etc/fstab", "w");
     if (file == NULL) {
         LOGW("Unable to create /etc/fstab!");
