@@ -33,15 +33,23 @@
 #define SCRIPT_NAME "META-INF/com/google/android/updater-script"
 
 int main(int argc, char** argv) {
+    // Various things log information to stdout or stderr more or less
+    // at random.  The log file makes more sense if buffering is
+    // turned off so things appear in the right order.
+    setbuf(stdout, NULL);
+    setbuf(stderr, NULL);
+
     if (argc != 4) {
         fprintf(stderr, "unexpected number of arguments (%d)\n", argc);
         return 1;
     }
 
     char* version = argv[1];
-    if ((version[0] != '1' && version[0] != '2') || version[1] != '\0') {
-        // We support version "1" or "2".
-        fprintf(stderr, "wrong updater binary API; expected 1 or 2, got %s\n",
+    if ((version[0] != '1' && version[0] != '2' && version[0] != '3') ||
+        version[1] != '\0') {
+        // We support version 1, 2, or 3.
+        fprintf(stderr, "wrong updater binary API; expected 1, 2, or 3; "
+                        "got %s\n",
                 argv[1]);
         return 2;
     }
@@ -100,6 +108,7 @@ int main(int argc, char** argv) {
     UpdaterInfo updater_info;
     updater_info.cmd_pipe = cmd_pipe;
     updater_info.package_zip = &za;
+    updater_info.version = atoi(version);
 
     State state;
     state.cookie = &updater_info;

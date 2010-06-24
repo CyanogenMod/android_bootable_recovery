@@ -32,7 +32,6 @@
 #include "bootloader.h"
 #include "common.h"
 #include "cutils/properties.h"
-#include "firmware.h"
 #include "install.h"
 #include "minui/minui.h"
 #include "minzip/DirUtil.h"
@@ -69,6 +68,7 @@ static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
  *   --update_package=root:path - verify install an OTA package file
  *   --wipe_data - erase user data (and cache), then reboot
  *   --wipe_cache - wipe cache (but not user data), then reboot
+ *   --set_encrypted_filesystem=on|off - enables / diasables encrypted fs
  *
  * After completing, we remove /cache/recovery/command and reboot.
  * Arguments may also be supplied in the bootloader control block (BCB).
@@ -113,6 +113,26 @@ static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
  *    8g. finish_recovery() erases BCB
  *        -- after this, rebooting will (try to) restart the main system --
  * 9. main() calls reboot() to boot main system
+ *
+ * ENCRYPTED FILE SYSTEMS ENABLE/DISABLE
+ * 1. user selects "enable encrypted file systems"
+ * 2. main system writes "--set_encrypted_filesystem=on|off" to
+ *    /cache/recovery/command
+ * 3. main system reboots into recovery
+ * 4. get_args() writes BCB with "boot-recovery" and
+ *    "--set_encrypted_filesystems=on|off"
+ *    -- after this, rebooting will restart the transition --
+ * 5. read_encrypted_fs_info() retrieves encrypted file systems settings from /data
+ *    Settings include: property to specify the Encrypted FS istatus and
+ *    FS encryption key if enabled (not yet implemented)
+ * 6. erase_root() reformats /data
+ * 7. erase_root() reformats /cache
+ * 8. restore_encrypted_fs_info() writes required encrypted file systems settings to /data
+ *    Settings include: property to specify the Encrypted FS status and
+ *    FS encryption key if enabled (not yet implemented)
+ * 9. finish_recovery() erases BCB
+ *    -- after this, rebooting will restart the main system --
+ * 10. main() calls reboot() to boot main system
  */
 
 static const int MAX_ARG_LENGTH = 4096;
@@ -218,8 +238,7 @@ get_args(int *argc, char ***argv) {
 }
 
 void
-set_sdcard_update_bootloader_message()
-{
+set_sdcard_update_bootloader_message() {
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
     strlcpy(boot.command, "boot-recovery", sizeof(boot.command));
@@ -232,12 +251,13 @@ set_sdcard_update_bootloader_message()
 // record any intent we were asked to communicate back to the system.
 // this function is idempotent: call it as many times as you like.
 static void
-finish_recovery(const char *send_intent)
-{
+finish_recovery(const char *send_intent) {
     // By this point, we're ready to return to the main system...
     if (send_intent != NULL) {
         FILE *fp = fopen_root_path(INTENT_FILE, "w");
-        if (fp != NULL) {
+        if (fp == NULL) {
+            LOGE("Can't open %s\n", INTENT_FILE);
+        } else {
             fputs(send_intent, fp);
             check_and_fclose(fp, INTENT_FILE);
         }
@@ -245,7 +265,9 @@ finish_recovery(const char *send_intent)
 
     // Copy logs to cache so the system can find out what happened.
     FILE *log = fopen_root_path(LOG_FILE, "a");
-    if (log != NULL) {
+    if (log == NULL) {
+        LOGE("Can't open %s\n", LOG_FILE);
+    } else {
         FILE *tmplog = fopen(TEMPORARY_LOG_FILE, "r");
         if (tmplog == NULL) {
             LOGE("Can't open %s\n", TEMPORARY_LOG_FILE);
@@ -260,7 +282,7 @@ finish_recovery(const char *send_intent)
         check_and_fclose(log, LOG_FILE);
     }
 
-    // Reset the bootloader message to revert to a normal main system boot.
+    // Reset to mormal system boot so recovery won't cycle indefinitely.
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
     set_bootloader_message(&boot);
@@ -277,8 +299,7 @@ finish_recovery(const char *send_intent)
 }
 
 static int
-erase_root(const char *root)
-{
+erase_root(const char *root) {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
     ui_print("Formatting %s...\n", root);
@@ -401,8 +422,7 @@ wipe_data(int confirm) {
 }
 
 static void
-prompt_and_wait()
-{
+prompt_and_wait() {
     char** headers = prepend_title(MENU_HEADERS);
     ui_print(EXPAND(RECOVERY_VERSION)"\n");
     
@@ -445,12 +465,7 @@ prompt_and_wait()
                 } else if (!ui_text_visible()) {
                     return;  // reboot if logs aren't visible
                 } else {
-                    if (firmware_update_pending()) {
-                        ui_print("\nReboot via menu to complete\n"
-                                 "installation.\n");
-                    } else {
-                        ui_print("\nInstall from sdcard complete.\n");
-                    }
+                    ui_print("\nInstall from sdcard complete.\n");
                 }
                 break;
             case ITEM_INSTALL_ZIP:
@@ -470,14 +485,12 @@ prompt_and_wait()
 }
 
 static void
-print_property(const char *key, const char *name, void *cookie)
-{
+print_property(const char *key, const char *name, void *cookie) {
     fprintf(stderr, "%s=%s\n", key, name);
 }
 
 int
-main(int argc, char **argv)
-{
+main(int argc, char **argv) {
 	if (strstr(argv[0], "recovery") == NULL)
 	{
 	    if (strstr(argv[0], "flash_image") != NULL)
@@ -527,6 +540,8 @@ main(int argc, char **argv)
             continue;
         }
     }
+
+    device_recovery_start();
 
     fprintf(stderr, "Command:");
     for (arg = 0; arg < argc; arg++) {
@@ -583,9 +598,6 @@ main(int argc, char **argv)
 
     if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) ui_set_background(BACKGROUND_ICON_ERROR);
     if (status != INSTALL_SUCCESS || ui_text_visible()) prompt_and_wait();
-
-    // If there is a radio image pending, reboot now to install it.
-    maybe_install_firmware_update(send_intent);
 
     // Otherwise, get ready to boot the main system...
     finish_recovery(send_intent);

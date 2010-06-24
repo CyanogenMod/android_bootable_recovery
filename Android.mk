@@ -8,17 +8,17 @@ commands_recovery_local_path := $(LOCAL_PATH)
 # LOCAL_CPP_EXTENSION := .c
 
 LOCAL_SRC_FILES := \
-	extendedcommands.c \
-	nandroid.c \
-	legacy.c \
-	commands.c \
-	recovery.c \
-	bootloader.c \
-	firmware.c \
-	install.c \
-	roots.c \
-	ui.c \
-	verifier.c
+    extendedcommands.c \
+    nandroid.c \
+    legacy.c \
+    commands.c \
+    recovery.c \
+    bootloader.c \
+    firmware.c \
+    install.c \
+    roots.c \
+    ui.c \
+    verifier.c
 
 LOCAL_SRC_FILES += test_roots.c
 
@@ -28,7 +28,7 @@ LOCAL_FORCE_STATIC_EXECUTABLE := true
 
 RECOVERY_VERSION := ClockworkMod Recovery v2.0.1.3
 LOCAL_CFLAGS := -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
-RECOVERY_API_VERSION := 2
+RECOVERY_API_VERSION := 3
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
 
 ifeq ($(BOARD_HAS_NO_SELECT_BUTTON),true)
@@ -133,14 +133,31 @@ LOCAL_SRC_FILES := killrecovery.sh
 include $(BUILD_PREBUILT)
 
 include $(commands_recovery_local_path)/amend/Android.mk
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := verifier_test.c verifier.c
+
+LOCAL_MODULE := verifier_test
+
+LOCAL_FORCE_STATIC_EXECUTABLE := true
+
+LOCAL_MODULE_TAGS := tests
+
+LOCAL_STATIC_LIBRARIES := libmincrypt libcutils libstdc++ libc
+
+include $(BUILD_EXECUTABLE)
+
+
 include $(commands_recovery_local_path)/minui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk
 include $(commands_recovery_local_path)/mtdutils/Android.mk
 include $(commands_recovery_local_path)/tools/Android.mk
 include $(commands_recovery_local_path)/edify/Android.mk
 include $(commands_recovery_local_path)/updater/Android.mk
+include $(commands_recovery_local_path)/applypatch/Android.mk
 commands_recovery_local_path :=
 
 endif   # TARGET_ARCH == arm
-endif	# !TARGET_SIMULATOR
+endif    # !TARGET_SIMULATOR
 

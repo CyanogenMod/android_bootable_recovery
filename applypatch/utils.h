@@ -14,25 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef _YYDEFS_H_
-#define _YYDEFS_H_
+#ifndef _BUILD_TOOLS_APPLYPATCH_UTILS_H
+#define _BUILD_TOOLS_APPLYPATCH_UTILS_H
 
-#define YYLTYPE YYLTYPE
-typedef struct {
-    int start, end;
-} YYLTYPE;
+#include <stdio.h>
 
-#define YYLLOC_DEFAULT(Current, Rhs, N) \
-    do { \
-        if (N) { \
-            (Current).start = YYRHSLOC(Rhs, 1).start; \
-            (Current).end = YYRHSLOC(Rhs, N).end; \
-        } else { \
-            (Current).start = YYRHSLOC(Rhs, 0).start; \
-            (Current).end = YYRHSLOC(Rhs, 0).end; \
-        } \
-    } while (0)
+// Read and write little-endian values of various sizes.
 
-int yylex();
+void Write4(int value, FILE* f);
+void Write8(long long value, FILE* f);
+int Read2(void* p);
+int Read4(void* p);
+long long Read8(void* p);
 
-#endif
+#endif //  _BUILD_TOOLS_APPLYPATCH_UTILS_H

@@ -32,6 +32,10 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "advanced",
                        NULL };
 
+int device_recovery_start() {
+    return 0;
+}
+
 int device_toggle_display(volatile char* key_pressed, int key_code) {
     int alt = key_pressed[KEY_LEFTALT] || key_pressed[KEY_RIGHTALT];
     if (alt && key_code == KEY_L)
