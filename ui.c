@@ -48,6 +48,7 @@ static gr_surface gBackgroundIcon[NUM_BACKGROUND_ICONS];
 static gr_surface gProgressBarIndeterminate[PROGRESSBAR_INDETERMINATE_STATES];
 static gr_surface gProgressBarEmpty[NUM_SIDES];
 static gr_surface gProgressBarFill[NUM_SIDES];
+static int ui_has_initialized = 0;
 
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING], "icon_installing" },
@@ -176,6 +177,7 @@ static void draw_text_line(int row, const char* t) {
 // Should only be called with gUpdateMutex locked.
 static void draw_screen_locked(void)
 {
+    if (!ui_has_initialized) return;
     draw_background_locked(gCurrentIcon);
     draw_progress_locked();
 
@@ -229,6 +231,7 @@ static void draw_screen_locked(void)
 // Should only be called with gUpdateMutex locked.
 static void update_screen_locked(void)
 {
+    if (!ui_has_initialized) return;
     draw_screen_locked();
     gr_flip();
 }
@@ -237,6 +240,7 @@ static void update_screen_locked(void)
 // Should only be called with gUpdateMutex locked.
 static void update_progress_locked(void)
 {
+    if (!ui_has_initialized) return;
     if (show_text || !gPagesIdentical) {
         draw_screen_locked();    // Must redraw the whole screen
         gPagesIdentical = 1;
@@ -346,6 +350,7 @@ static void *input_thread(void *cookie)
 
 void ui_init(void)
 {
+    ui_has_initialized = 1;
     gr_init();
     ev_init();
 

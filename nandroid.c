@@ -282,3 +282,51 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     ui_print("\nRestore complete!\n");
     return 0;
 }
+
+void nandroid_generate_timestamp_path(char* backup_path)
+{
+    time_t t = time(NULL);
+    struct tm *tmp = localtime(&t);
+    if (tmp == NULL)
+    {
+        struct timeval tp;
+        gettimeofday(&tp, NULL);
+        sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+    }
+    else
+    {
+        strftime(backup_path, PATH_MAX, "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+    }
+}
+
+int nandroid_usage()
+{
+    printf("Usage: nandroid backup\n");
+    printf("Usage: nandroid restore <directory>\n");
+    return 1;
+}
+
+int nandroid_main(int argc, char** argv)
+{
+    if (argc > 3 || argc < 2)
+        return nandroid_usage();
+    
+    if (strcmp("backup", argv[1]) == 0)
+    {
+        if (argc != 2)
+            return nandroid_usage();
+        
+        char backup_path[PATH_MAX];
+        nandroid_generate_timestamp_path(backup_path);
+        return nandroid_backup(backup_path);
+    }
+
+    if (strcmp("restore", argv[1]) == 0)
+    {
+        if (argc != 3)
+            return nandroid_usage();
+        return nandroid_restore(argv[2], 1, 1, 1, 1, 1);
+    }
+    
+    return nandroid_usage();
+}

@@ -492,6 +492,8 @@ main(int argc, char **argv)
 	        return unyaffs_main(argc, argv);
         if (strstr(argv[0], "amend"))
             return amend_main(argc, argv);
+        if (strstr(argv[0], "nandroid"))
+            return nandroid_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
     LOGI(EXPAND(RECOVERY_VERSION)"\n");
