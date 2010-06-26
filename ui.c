@@ -44,8 +44,13 @@
 static pthread_mutex_t gUpdateMutex = PTHREAD_MUTEX_INITIALIZER;
 static gr_surface gBackgroundIcon[NUM_BACKGROUND_ICONS];
 static gr_surface gProgressBarIndeterminate[PROGRESSBAR_INDETERMINATE_STATES];
+<<<<<<< HEAD
 static gr_surface gProgressBarEmpty;
 static gr_surface gProgressBarFill;
+=======
+static gr_surface gProgressBarEmpty[NUM_SIDES];
+static gr_surface gProgressBarFill[NUM_SIDES];
+>>>>>>> command line nandroid
 static int ui_has_initialized = 0;
 
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
