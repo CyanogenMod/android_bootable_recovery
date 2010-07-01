@@ -509,7 +509,6 @@ main(int argc, char **argv) {
             return nandroid_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
-    ui_print(EXPAND(RECOVERY_VERSION)"\n");
     create_fstab();
     __system("/sbin/postrecoveryboot.sh");
     
@@ -522,6 +521,7 @@ main(int argc, char **argv) {
     fprintf(stderr, "Starting recovery on %s", ctime(&start));
 
     ui_init();
+    ui_print(EXPAND(RECOVERY_VERSION)"\n");
     get_args(&argc, &argv);
 
     int previous_runs = 0;
