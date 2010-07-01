@@ -133,8 +133,6 @@ LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 LOCAL_SRC_FILES := killrecovery.sh
 include $(BUILD_PREBUILT)
 
-include $(commands_recovery_local_path)/amend/Android.mk
-
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := verifier_test.c verifier.c
@@ -150,6 +148,7 @@ LOCAL_STATIC_LIBRARIES := libmincrypt libcutils libstdc++ libc
 include $(BUILD_EXECUTABLE)
 
 
+include $(commands_recovery_local_path)/amend/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk
 include $(commands_recovery_local_path)/mtdutils/Android.mk
