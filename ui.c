@@ -359,6 +359,23 @@ void ui_init(void)
     pthread_create(&t, NULL, input_thread, NULL);
 }
 
+char *ui_copy_image(int icon, int *width, int *height, int *bpp) {
+    pthread_mutex_lock(&gUpdateMutex);
+    draw_background_locked(gBackgroundIcon[icon]);
+    *width = gr_fb_width();
+    *height = gr_fb_height();
+    *bpp = sizeof(gr_pixel) * 8;
+    int size = *width * *height * sizeof(gr_pixel);
+    char *ret = malloc(size);
+    if (ret == NULL) {
+        LOGE("Can't allocate %d bytes for image\n", size);
+    } else {
+        memcpy(ret, gr_fb_data(), size);
+    }
+    pthread_mutex_unlock(&gUpdateMutex);
+    return ret;
+}
+
 void ui_set_background(int icon)
 {
     pthread_mutex_lock(&gUpdateMutex);
