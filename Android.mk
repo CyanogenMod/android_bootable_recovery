@@ -81,7 +81,7 @@ LOCAL_MODULE_TAGS := eng
 LOCAL_STATIC_LIBRARIES :=
 #ifeq ($(TARGET_RECOVERY_UI_LIB),)
 #  LOCAL_SRC_FILES += default_recovery_ui.c
-else
+#else
 #  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
 #endif
 LOCAL_SRC_FILES += default_recovery_ui.c
