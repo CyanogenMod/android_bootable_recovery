@@ -425,7 +425,6 @@ wipe_data(int confirm) {
 static void
 prompt_and_wait() {
     char** headers = prepend_title(MENU_HEADERS);
-    ui_print(EXPAND(RECOVERY_VERSION)"\n");
     
     for (;;) {
         finish_recovery(NULL);
@@ -510,7 +509,7 @@ main(int argc, char **argv) {
             return nandroid_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
-    LOGI(EXPAND(RECOVERY_VERSION)"\n");
+    ui_print(EXPAND(RECOVERY_VERSION)"\n");
     create_fstab();
     __system("/sbin/postrecoveryboot.sh");
     
