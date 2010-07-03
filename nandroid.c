@@ -75,7 +75,7 @@ void compute_directory_stats(char* directory)
     ui_show_progress(1, 0);
 }
 
-int nandroid_backup_partition(const char* backup_path, char* root) {
+int nandroid_backup_partition_extended(const char* backup_path, char* root, int umount_when_finished) {
     int ret = 0;
     char mount_point[PATH_MAX];
     translate_root_path(root, mount_point, PATH_MAX);
@@ -96,12 +96,18 @@ int nandroid_backup_partition(const char* backup_path, char* root) {
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
     ret = mkyaffs2image(mount_point, tmp, 0, callback);
-    ensure_root_path_unmounted(root);
+    if (umount_when_finished) {
+        ensure_root_path_unmounted(root);
+    }
     if (0 != ret) {
         ui_print("Error while making a yaffs2 image of %s!\n", mount_point);
         return ret;
     }
     return 0;
+}
+
+int nandroid_backup_partition(const char* backup_path, char* root) {
+    return nandroid_backup_partition_extended(backup_path, root, 1);
 }
 
 int nandroid_backup(const char* backup_path)
@@ -150,10 +156,20 @@ int nandroid_backup(const char* backup_path)
         return ret;
 #endif
 
-    if (0 != (ret = nandroid_backup_partition(backup_path, "CACHE:")))
+    struct stat st;
+    if (0 != stat("/sdcard/.android_secure", &st))
+    {
+        ui_print("No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n");
+    }
+    else
+    {
+        if (0 != (ret = nandroid_backup_partition_extended(backup_path, "SDCARD:/.android_secure", 0)))
+            return ret;
+    }
+
+    if (0 != (ret = nandroid_backup_partition_extended(backup_path, "CACHE:", 0)))
         return ret;
 
-    struct stat st;
     if (0 != stat(SDEXT_DEVICE, &st))
     {
         ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
@@ -165,7 +181,7 @@ int nandroid_backup(const char* backup_path)
         else if (0 != (ret = nandroid_backup_partition(backup_path, "SDEXT:")))
             return ret;
     }
-    
+
     ui_print("Generating md5 sum...\n");
     sprintf(tmp, "nandroid-md5.sh %s", backup_path);
     if (0 != (ret = __system(tmp))) {
@@ -182,7 +198,7 @@ int nandroid_backup(const char* backup_path)
 
 typedef int (*format_function)(char* root);
 
-int nandroid_restore_partition(const char* backup_path, const char* root) {
+int nandroid_restore_partition_extended(const char* backup_path, const char* root, int umount_when_finished) {
     int ret = 0;
     char mount_point[PATH_MAX];
     translate_root_path(root, mount_point, PATH_MAX);
@@ -216,10 +232,15 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
         return ret;
     }
 
-    if (0 != strcmp(root, "CACHE")) {
+    if (umount_when_finished) {
         ensure_root_path_unmounted(root);
     }
+    
     return 0;
+}
+
+int nandroid_restore_partition(const char* backup_path, const char* root) {
+    return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
 int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext)
@@ -263,7 +284,23 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         return ret;
 #endif
 
-    if (restore_cache && 0 != (ret = nandroid_restore_partition(backup_path, "CACHE:")))
+    if (restore_data)
+    {
+        struct statfs s;
+        sprintf(tmp, "%s/.android_secure.img", backup_path);
+        if (0 != (ret = statfs(tmp, &s)))
+        {
+            ui_print(".android_secure.img not found. Skipping restore of applications on external storage.");
+        }
+        else
+        {
+            __system("mkdir -p /sdcard/.android_secure");
+            if (0 != (ret = nandroid_restore_partition_extended(backup_path, "SDCARD:/.android_secure", 0)))
+                return ret;
+        }
+    }
+
+    if (restore_cache && 0 != (ret = nandroid_restore_partition_extended(backup_path, "CACHE:", 0)))
         return ret;
 
     if (restore_sdext)

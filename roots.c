@@ -314,10 +314,12 @@ format_root_device(const char *root)
     while (*c != '\0' && *c != ':') {
         c++;
     }
+    /*
     if (c[0] != ':' || c[1] != '\0') {
         LOGW("format_root_device: bad root name \"%s\"\n", root);
         return -1;
     }
+    */
 
     const RootInfo *info = get_root_info_for_path(root);
     if (info == NULL || info->device == NULL) {
