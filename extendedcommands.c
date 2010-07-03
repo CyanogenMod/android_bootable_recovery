@@ -448,7 +448,6 @@ int format_non_mtd_device(const char* root)
         ui_print("Error mounting %s!\n", path);
         ui_print("Skipping format...\n");
         return 0;
-
     }
 
     static char tmp[PATH_MAX];
