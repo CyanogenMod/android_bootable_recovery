@@ -363,11 +363,11 @@ get_menu_selection(char** headers, char** items, int menu_only) {
             if (wrap_count == 3) {
                 wrap_count = 0;
                 if (ui_get_showing_back_button()) {
-                    ui_print("Back button disabled.\n");
+                    ui_print("Back menu button disabled.\n");
                     ui_set_showing_back_button(0);
                 }
                 else {
-                    ui_print("Back button enabled.\n");
+                    ui_print("Back menu button enabled.\n");
                     ui_set_showing_back_button(1);
                 }
             }
@@ -451,27 +451,33 @@ prompt_and_wait()
                 break;
 
             case ITEM_WIPE_CACHE:
-                ui_print("\n-- Wiping cache...\n");
-                erase_root("CACHE:");
-                ui_print("Cache wipe complete.\n");
-                if (!ui_text_visible()) return;
+                if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
+                {
+                    ui_print("\n-- Wiping cache...\n");
+                    erase_root("CACHE:");
+                    ui_print("Cache wipe complete.\n");
+                    if (!ui_text_visible()) return;
+                }
                 break;
 
             case ITEM_APPLY_SDCARD:
-                ui_print("\n-- Install from sdcard...\n");
-                set_sdcard_update_bootloader_message();
-                int status = install_package(SDCARD_PACKAGE_FILE);
-                if (status != INSTALL_SUCCESS) {
-                    ui_set_background(BACKGROUND_ICON_ERROR);
-                    ui_print("Installation aborted.\n");
-                } else if (!ui_text_visible()) {
-                    return;  // reboot if logs aren't visible
-                } else {
-                    if (firmware_update_pending()) {
-                        ui_print("\nReboot via menu to complete\n"
-                                 "installation.\n");
+                if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
+                {
+                    ui_print("\n-- Install from sdcard...\n");
+                    set_sdcard_update_bootloader_message();
+                    int status = install_package(SDCARD_PACKAGE_FILE);
+                    if (status != INSTALL_SUCCESS) {
+                        ui_set_background(BACKGROUND_ICON_ERROR);
+                        ui_print("Installation aborted.\n");
+                    } else if (!ui_text_visible()) {
+                        return;  // reboot if logs aren't visible
                     } else {
-                        ui_print("\nInstall from sdcard complete.\n");
+                        if (firmware_update_pending()) {
+                            ui_print("\nReboot via menu to complete\n"
+                                     "installation.\n");
+                        } else {
+                            ui_print("\nInstall from sdcard complete.\n");
+                        }
                     }
                 }
                 break;
