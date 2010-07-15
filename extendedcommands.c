@@ -634,7 +634,6 @@ int run_and_remove_extendedcommand()
     char tmp[PATH_MAX];
     sprintf(tmp, "cp %s /tmp/%s", EXTENDEDCOMMAND_SCRIPT, basename(EXTENDEDCOMMAND_SCRIPT));
     __system(tmp);
-    __system("rm /sdcard/clockworkmod/.recoverycheckpoint");
     remove(EXTENDEDCOMMAND_SCRIPT);
     int i = 0;
     for (i = 20; i > 0; i--) {
@@ -645,6 +644,7 @@ int run_and_remove_extendedcommand()
         }
         sleep(1);
     }
+    remove("/sdcard/clockworkmod/.recoverycheckpoint");
     if (i == 0) {
         ui_print("Timed out waiting for SD card... continuing anyways.");
     }
