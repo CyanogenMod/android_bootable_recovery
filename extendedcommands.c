@@ -403,14 +403,8 @@ void show_mount_usb_storage_menu()
     __system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
 }
 
-int confirm_format()
+int confirm_selection(char* title_headers[], char* confirm)
 {
-    static char* title_headers[] = { "Confirm format?",
-                            "  THIS CAN NOT BE UNDONE.",
-                            "",
-                            NULL,
-                        };
-
     char* items[] = { " No",
                       " No",
                       " No",
@@ -418,7 +412,7 @@ int confirm_format()
                       " No",
                       " No",
                       " No",
-                      " Yes -- wipe partition",   // [7]
+                      confirm, //" Yes -- wipe partition",   // [7
                       " No",
                       " No",
                       " No",
@@ -491,6 +485,13 @@ void show_partition_menu()
       { "format sdcard", "SDCARD:" },
       { "format sd-ext", "SDEXT:" }  
     };
+    
+    static char* confirm_format[]  = {  "Confirm format?",
+                                        "  THIS CAN NOT BE UNDONE.",
+                                        "",
+                                        NULL,
+                                    };
+    static char* confirm = "Yes - Format";
         
     for (;;)
     {
@@ -539,7 +540,7 @@ void show_partition_menu()
         else if (chosen_item < MOUNTABLE_COUNT + MTD_COUNT)
         {
             chosen_item = chosen_item - MOUNTABLE_COUNT;
-            if (!confirm_format())
+            if (!confirm_selection(confirm_format, confirm))
                 continue;
             ui_print("Formatting %s...\n", mtds[chosen_item][1]);
             if (0 != format_root_device(mtds[chosen_item][1]))
@@ -550,7 +551,7 @@ void show_partition_menu()
         else if (chosen_item < MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT)
         {
             chosen_item = chosen_item - MOUNTABLE_COUNT - MTD_COUNT;
-            if (!confirm_format())
+            if (!confirm_selection(confirm_format, confirm))
                 continue;
             ui_print("Formatting %s...\n", mmcs[chosen_item][1]);
             if (0 != format_non_mtd_device(mmcs[chosen_item][1]))
