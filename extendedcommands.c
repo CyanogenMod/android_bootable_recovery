@@ -105,8 +105,11 @@ void show_install_update_menu()
                 toggle_signature_check();
                 break;
             case ITEM_APPLY_SDCARD:
-                install_zip(SDCARD_PACKAGE_FILE);
+            {
+                if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
+                    install_zip(SDCARD_PACKAGE_FILE);
                 break;
+            }
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu();
                 break;
@@ -316,7 +319,11 @@ void show_choose_zip_menu()
     char sdcard_package_file[1024];
     strcpy(sdcard_package_file, "SDCARD:");
     strcat(sdcard_package_file,  file + strlen("/sdcard/"));
-    install_zip(sdcard_package_file);
+    static char* confirm_install  = "Confirm install?";
+    static char confirm[PATH_MAX];
+    sprintf(confirm, "Yes - Install %s", basename(file));
+    if (confirm_selection(confirm_install, confirm))
+        install_zip(sdcard_package_file);
 }
 
 // This was pulled from bionic: The default system command always looks
@@ -375,7 +382,9 @@ void show_nandroid_restore_menu()
     char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, headers);
     if (file == NULL)
         return;
-    nandroid_restore(file, 1, 1, 1, 1, 1);
+
+    if (confirm_selection("Confirm restore?", "Yes - Restore"))
+        nandroid_restore(file, 1, 1, 1, 1, 1);
 }
 
 void show_mount_usb_storage_menu()
@@ -403,22 +412,23 @@ void show_mount_usb_storage_menu()
     __system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
 }
 
-int confirm_selection(char* title_headers[], char* confirm)
+int confirm_selection(const char* title, const char* confirm)
 {
-    char* items[] = { " No",
-                      " No",
-                      " No",
-                      " No",
-                      " No",
-                      " No",
-                      " No",
+    char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
+    char* items[] = { "No",
+                      "No",
+                      "No",
+                      "No",
+                      "No",
+                      "No",
+                      "No",
                       confirm, //" Yes -- wipe partition",   // [7
-                      " No",
-                      " No",
-                      " No",
+                      "No",
+                      "No",
+                      "No",
                       NULL };
 
-    int chosen_item = get_menu_selection(title_headers, items, 0);
+    int chosen_item = get_menu_selection(confirm_headers, items, 0);
     return chosen_item == 7;
 }
 
@@ -486,11 +496,7 @@ void show_partition_menu()
       { "format sd-ext", "SDEXT:" }  
     };
     
-    static char* confirm_format[]  = {  "Confirm format?",
-                                        "  THIS CAN NOT BE UNDONE.",
-                                        "",
-                                        NULL,
-                                    };
+    static char* confirm_format  = "Confirm format?";
     static char* confirm = "Yes - Format";
         
     for (;;)
@@ -695,23 +701,31 @@ void show_nandroid_advanced_restore_menu()
                             NULL
     };
 
+
+    static char* confirm_restore  = "Confirm restore?";
+
     int chosen_item = get_menu_selection(headers, list, 0);
     switch (chosen_item)
     {
         case 0:
-            nandroid_restore(file, 1, 0, 0, 0, 0);
+            if (confirm_selection(confirm_restore, "Yes - Restore boot"))
+                nandroid_restore(file, 1, 0, 0, 0, 0);
             break;
         case 1:
-            nandroid_restore(file, 0, 1, 0, 0, 0);
+            if (confirm_selection(confirm_restore, "Yes - Restore system"))
+                nandroid_restore(file, 0, 1, 0, 0, 0);
             break;
         case 2:
-            nandroid_restore(file, 0, 0, 1, 0, 0);
+            if (confirm_selection(confirm_restore, "Yes - Restore data"))
+                nandroid_restore(file, 0, 0, 1, 0, 0);
             break;
         case 3:
-            nandroid_restore(file, 0, 0, 0, 1, 0);
+            if (confirm_selection(confirm_restore, "Yes - Restore cache"))
+                nandroid_restore(file, 0, 0, 0, 1, 0);
             break;
         case 4:
-            nandroid_restore(file, 0, 0, 0, 0, 1);
+            if (confirm_selection(confirm_restore, "Yes - Restore sd-ext"))
+                nandroid_restore(file, 0, 0, 0, 0, 1);
             break;
     }
 }
@@ -792,14 +806,20 @@ void show_advanced_menu()
                 __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, "recovery");
                 break;
             case 1:
+            {
                 if (0 != ensure_root_path_mounted("DATA:"))
                     break;
-                __system("rm -r /data/dalvik-cache");
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe Dalvik Cache"))
+                    __system("rm -r /data/dalvik-cache");
                 ensure_root_path_unmounted("DATA:");
                 break;
+            }
             case 2:
-                wipe_battery_stats();
+            {
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe Battery Stats"))
+                    wipe_battery_stats();
                 break;
+            }
             case 3:
                 handle_failure(1);
                 break;
