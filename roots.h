@@ -33,7 +33,7 @@
 #endif
 
 #ifndef SDEXT_FILESYSTEM
-#define SDEXT_FILESYSTEM "ext4"
+#define SDEXT_FILESYSTEM "auto"
 #endif
 
 #ifndef DATA_DEVICE

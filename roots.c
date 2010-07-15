@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <limits.h>
+
 #include "mtdutils/mtdutils.h"
 #include "mtdutils/mounts.h"
 #include "minzip/Zip.h"
@@ -205,6 +207,18 @@ is_root_path_mounted(const char *root_path)
     return internal_root_mounted(info) >= 0;
 }
 
+static int mount_internal(const char* device, const char* mount_point, const char* filesystem)
+{
+    if (strcmp(filesystem, "auto") != 0) {
+        return mount(device, mount_point, filesystem, MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
+    }
+    else {
+        char mount_cmd[PATH_MAX];
+        sprintf(mount_cmd, "mount -onoatime,nodiratime,nodev %s %s", device, mount_point);
+        return __system(mount_cmd);
+    }
+}
+
 int
 ensure_root_path_mounted(const char *root_path)
 {
@@ -245,8 +259,7 @@ ensure_root_path_mounted(const char *root_path)
     }
 
     mkdir(info->mount_point, 0755);  // in case it doesn't already exist
-    if (mount(info->device, info->mount_point, info->filesystem,
-            MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
+    if (mount_internal(info->device, info->mount_point, info->filesystem)) {
         if (info->device2 == NULL) {
             LOGE("Can't mount %s\n(%s)\n", info->device, strerror(errno));
             return -1;
