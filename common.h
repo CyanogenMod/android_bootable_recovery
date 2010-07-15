@@ -47,6 +47,9 @@ int ui_menu_select(int sel);
 // statements will be displayed.
 void ui_end_menu();
 
+int ui_get_showing_back_button();
+void ui_set_showing_back_button(int showBackButton);
+
 // Set the icon (normally the only thing visible besides the progress bar).
 enum {
   BACKGROUND_ICON_NONE,

@@ -29,6 +29,12 @@
 #include "minui/minui.h"
 #include "recovery_ui.h"
 
+#ifdef KEY_POWER_IS_SELECT_ITEM
+static int gShowBackButton = 1;
+#else
+static int gShowBackButton = 0;
+#endif
+
 #define MAX_COLS 64
 #define MAX_ROWS 32 
 
@@ -500,10 +506,11 @@ int ui_start_menu(char** headers, char** items) {
             strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, items[i-menu_top], text_cols-1 - MENU_ITEM_HEADER_LENGTH);
             menu[i][text_cols-1] = '\0';
         }
-#ifdef KEY_POWER_IS_SELECT_ITEM
-        strcpy(menu[i], " - +++++Go Back+++++");
-        ++i;
-#endif
+
+        if (gShowBackButton) {
+            strcpy(menu[i], " - +++++Go Back+++++");
+            ++i;
+        }
 
         menu_items = i - menu_top;
         show_menu = 1;
@@ -511,11 +518,10 @@ int ui_start_menu(char** headers, char** items) {
         update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
-#ifdef KEY_POWER_IS_SELECT_ITEM
-    return menu_items - 1;
-#else
+    if (gShowBackButton) {
+        return menu_items - 1;
+    }
     return menu_items;
-#endif
 }
 
 int ui_menu_select(int sel) {
@@ -590,4 +596,12 @@ void ui_clear_key_queue() {
 
 void ui_set_show_text(int value) {
     show_text = value;
+}
+
+void ui_set_showing_back_button(int showBackButton) {
+    gShowBackButton = showBackButton;
+}
+
+int ui_get_showing_back_button() {
+    return gShowBackButton;
 }
