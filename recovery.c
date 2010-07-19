@@ -493,6 +493,7 @@ prompt_and_wait() {
                         return;  // reboot if logs aren't visible
                     } else {
                         ui_print("\nInstall from sdcard complete.\n");
+                    }
                 }
                 break;
             case ITEM_INSTALL_ZIP:
