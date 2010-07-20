@@ -6,5 +6,5 @@ touch /tmp/.ignorebootmessage
 kill $(ps | grep /sbin/adbd)
 kill $(ps | grep /sbin/recovery)
 
-/sbin/recovery
+/sbin/recovery &
 exit 1
