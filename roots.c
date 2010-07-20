@@ -50,7 +50,7 @@ static RootInfo g_roots[] = {
     { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },
     { "SDCARD:", SDCARD_DEVICE_PRIMARY, SDCARD_DEVICE_SECONDARY, NULL, "/sdcard", "vfat" },
     { "SDEXT:", SDEXT_DEVICE, NULL, NULL, "/sd-ext", SDEXT_FILESYSTEM },
-    { "SYSTEM:", g_mtd_device, NULL, "system", "/system", "yaffs2" },
+    { "SYSTEM:", SYSTEM_DEVICE, NULL, "system", "/system", SYSTEM_FILESYSTEM },
     { "MBM:", g_mtd_device, NULL, "mbm", NULL, g_raw },
     { "TMP:", NULL, NULL, NULL, "/tmp", NULL },
 };
@@ -377,6 +377,14 @@ format_root_device(const char *root)
             }
         }
     }
+
+#ifdef BOARD_USES_FFORMAT
+    if (info->filesystem != NULL && strcmp("rfs", info->filesystem) == 0) {
+        char cmd[PATH_MAX];
+        sprintf("/sbin/fformat %s", info->device);
+        return __system(cmd);
+    }
+#endif
 
     return format_non_mtd_device(root);
 }

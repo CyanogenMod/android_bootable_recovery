@@ -157,7 +157,9 @@ static void
 get_args(int *argc, char ***argv) {
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     get_bootloader_message(&boot);  // this may fail, leaving a zeroed structure
+#endif
 
     if (boot.command[0] != 0 && boot.command[0] != 255) {
         LOGI("Boot command: %.*s\n", sizeof(boot.command), boot.command);
@@ -214,9 +216,12 @@ get_args(int *argc, char ***argv) {
         strlcat(boot.recovery, (*argv)[i], sizeof(boot.recovery));
         strlcat(boot.recovery, "\n", sizeof(boot.recovery));
     }
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     set_bootloader_message(&boot);
+#endif
 }
 
+#ifndef BOARD_HAS_NO_MISC_PARTITION
 void
 set_sdcard_update_bootloader_message()
 {
@@ -226,6 +231,7 @@ set_sdcard_update_bootloader_message()
     strlcpy(boot.recovery, "recovery\n", sizeof(boot.recovery));
     set_bootloader_message(&boot);
 }
+#endif
 
 // clear the recovery command and prepare to boot a (hopefully working) system,
 // copy our log file to cache as well (for the system to read), and
@@ -260,10 +266,12 @@ finish_recovery(const char *send_intent)
         check_and_fclose(log, LOG_FILE);
     }
 
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     // Reset the bootloader message to revert to a normal main system boot.
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
     set_bootloader_message(&boot);
+#endif
 
     // Remove the command file, so recovery won't repeat indefinitely.
     char path[PATH_MAX] = "";
@@ -464,7 +472,9 @@ prompt_and_wait()
                 if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
                 {
                     ui_print("\n-- Install from sdcard...\n");
+#ifndef BOARD_HAS_NO_MISC_PARTITION
                     set_sdcard_update_bootloader_message();
+#endif
                     int status = install_package(SDCARD_PACKAGE_FILE);
                     if (status != INSTALL_SUCCESS) {
                         ui_set_background(BACKGROUND_ICON_ERROR);
@@ -472,12 +482,16 @@ prompt_and_wait()
                     } else if (!ui_text_visible()) {
                         return;  // reboot if logs aren't visible
                     } else {
+#ifndef BOARD_HAS_NO_MISC_PARTITION
                         if (firmware_update_pending()) {
                             ui_print("\nReboot via menu to complete\n"
                                      "installation.\n");
                         } else {
                             ui_print("\nInstall from sdcard complete.\n");
                         }
+#else
+                        ui_print("\nInstall from sdcard complete.\n");
+#endif
                     }
                 }
                 break;
@@ -524,8 +538,8 @@ main(int argc, char **argv)
             return nandroid_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
-    create_fstab();
     __system("/sbin/postrecoveryboot.sh");
+    create_fstab();
     
     int is_user_initiated_recovery = 0;
     time_t start = time(NULL);
@@ -614,8 +628,10 @@ main(int argc, char **argv)
     if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) ui_set_background(BACKGROUND_ICON_ERROR);
     if (status != INSTALL_SUCCESS || ui_text_visible()) prompt_and_wait();
 
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     // If there is a radio image pending, reboot now to install it.
     maybe_install_firmware_update(send_intent);
+#endif
 
     // Otherwise, get ready to boot the main system...
     finish_recovery(send_intent);

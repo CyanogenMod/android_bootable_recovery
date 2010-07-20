@@ -60,6 +60,14 @@
 #define CACHE_FILESYSTEM "yaffs2"
 #endif
 
+#ifndef SYSTEM_DEVICE
+#define SYSTEM_DEVICE g_mtd_device
+#endif
+
+#ifndef SYSTEM_FILESYSTEM
+#define SYSTEM_FILESYSTEM "yaffs2"
+#endif
+
 /* Any of the "root_path" arguments can be paths with relative
  * components, like "SYSTEM:a/b/c".
  */

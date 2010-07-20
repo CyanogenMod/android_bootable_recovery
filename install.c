@@ -90,11 +90,13 @@ handle_firmware_update(char* type, char* filename, ZipArchive* zip) {
         fclose(f);
     }
 
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     if (remember_firmware_update(type, data, data_size)) {
         LOGE("Can't store %s image\n", type);
         free(data);
         return INSTALL_ERROR;
     }
+#endif
     free(filename);
 
     return INSTALL_SUCCESS;

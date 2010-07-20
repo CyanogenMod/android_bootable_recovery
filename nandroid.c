@@ -133,6 +133,7 @@ int nandroid_backup(const char* backup_path)
     sprintf(tmp, "mkdir -p %s", backup_path);
     __system(tmp);
 
+#ifndef BOARD_RECOVERY_IGNORE_BOOTABLES
     ui_print("Backing up boot...\n");
     sprintf(tmp, "%s/%s", backup_path, "boot.img");
     ret = dump_image("boot", tmp, NULL);
@@ -143,7 +144,8 @@ int nandroid_backup(const char* backup_path)
     sprintf(tmp, "%s/%s", backup_path, "recovery.img");
     ret = dump_image("recovery", tmp, NULL);
     if (0 != ret)
-        return print_and_error("Error while dumping boot image!\n");
+        return print_and_error("Error while dumping recovery image!\n");
+#endif
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "SYSTEM:")))
         return ret;
@@ -198,13 +200,28 @@ int nandroid_backup(const char* backup_path)
 
 typedef int (*format_function)(char* root);
 
+static void ensure_directory(const char* dir) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "mkdir -p %s", dir);
+    __system(tmp);
+}
+
 int nandroid_restore_partition_extended(const char* backup_path, const char* root, int umount_when_finished) {
     int ret = 0;
     char mount_point[PATH_MAX];
     translate_root_path(root, mount_point, PATH_MAX);
     char* name = basename(mount_point);
     
+    char tmp[PATH_MAX];
+    sprintf(tmp, "%s/%s.img", backup_path, name);
     struct stat file_info;
+    if (0 != (ret = statfs(tmp, &file_info))) {
+        ui_print("%s.img not found. Skipping restore of /sd-ext.", name);
+        return 0;
+    }
+
+    ensure_directory(mount_point);
+
     unyaffs_callback callback = NULL;
     if (0 != stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info)) {
         callback = yaffs_callback;
@@ -225,8 +242,6 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* roo
         return ret;
     }
     
-    char tmp[PATH_MAX];
-    sprintf(tmp, "%s/%s.img", backup_path, name);
     if (0 != (ret = unyaffs(tmp, mount_point, callback))) {
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
@@ -260,6 +275,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         return print_and_error("MD5 mismatch!\n");
     
     int ret;
+#ifndef BOARD_RECOVERY_IGNORE_BOOTABLES
     if (restore_boot)
     {
         ui_print("Erasing boot before restore...\n");
@@ -272,6 +288,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
             return ret;
         }
     }
+#endif
     
     if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "SYSTEM:")))
         return ret;
@@ -284,34 +301,14 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         return ret;
 #endif
 
-    if (restore_data)
-    {
-        struct statfs s;
-        sprintf(tmp, "%s/.android_secure.img", backup_path);
-        if (0 != (ret = statfs(tmp, &s)))
-        {
-            ui_print(".android_secure.img not found. Skipping restore of applications on external storage.");
-        }
-        else
-        {
-            __system("mkdir -p /sdcard/.android_secure");
-            if (0 != (ret = nandroid_restore_partition_extended(backup_path, "SDCARD:/.android_secure", 0)))
-                return ret;
-        }
-    }
+    if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "SDCARD:/.android_secure", 0)))
+        return ret;
 
     if (restore_cache && 0 != (ret = nandroid_restore_partition_extended(backup_path, "CACHE:", 0)))
         return ret;
 
-    if (restore_sdext)
-    {
-        struct statfs s;
-        sprintf(tmp, "%s/sd-ext.img", backup_path);
-        if (0 != (ret = statfs(tmp, &s)))
-            ui_print("sd-ext.img not found. Skipping restore of /sd-ext.");
-        else if (0 != (ret = nandroid_restore_partition(backup_path, "SDEXT:")))
-            return ret;
-    }
+    if (restore_sdext && 0 != (ret = nandroid_restore_partition(backup_path, "SDEXT:")))
+        return ret;
 
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);

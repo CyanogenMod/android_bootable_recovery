@@ -13,12 +13,26 @@ LOCAL_SRC_FILES := \
 	legacy.c \
 	commands.c \
 	recovery.c \
-	bootloader.c \
-	firmware.c \
 	install.c \
 	roots.c \
 	ui.c \
 	verifier.c
+
+ifndef BOARD_HAS_NO_MISC_PARTITION
+    LOCAL_SRC_FILES += \
+        firmware.c \
+        bootloader.c
+else
+    LOCAL_CFLAGS += -DBOARD_HAS_NO_MISC_PARTITION
+endif
+
+ifdef BOARD_USES_FFORMAT
+    LOCAL_CFLAGS += -DBOARD_USES_FFORMAT
+endif
+
+ifdef BOARD_RECOVERY_IGNORE_BOOTABLES
+    LOCAL_CLFAGS += -DBOARD_RECOVERY_IGNORE_BOOTABLES
+endif
 
 LOCAL_SRC_FILES += test_roots.c
 
@@ -27,7 +41,7 @@ LOCAL_MODULE := recovery
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
 RECOVERY_VERSION := ClockworkMod Recovery v2.5.0.1
-LOCAL_CFLAGS := -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
+LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
 
@@ -59,12 +73,28 @@ ifdef BOARD_DATA_FILESYSTEM
   LOCAL_CFLAGS += -DDATA_FILESYSTEM=\"$(BOARD_DATA_FILESYSTEM)\"
 endif
 
+ifdef BOARD_DATADATA_DEVICE
+  LOCAL_CFLAGS += -DDATADATA_DEVICE=\"$(BOARD_DATADATA_DEVICE)\"
+endif
+
+ifdef BOARD_DATADATA_FILESYSTEM
+  LOCAL_CFLAGS += -DDATADATA_FILESYSTEM=\"$(BOARD_DATADATA_FILESYSTEM)\"
+endif
+
 ifdef BOARD_CACHE_DEVICE
   LOCAL_CFLAGS += -DCACHE_DEVICE=\"$(BOARD_CACHE_DEVICE)\"
 endif
 
 ifdef BOARD_CACHE_FILESYSTEM
   LOCAL_CFLAGS += -DCACHE_FILESYSTEM=\"$(BOARD_CACHE_FILESYSTEM)\"
+endif
+
+ifdef BOARD_SYSTEM_DEVICE
+  LOCAL_CFLAGS += -DSYSTEM_DEVICE=\"$(BOARD_SYSTEM_DEVICE)\"
+endif
+
+ifdef BOARD_SYSTEM_FILESYSTEM
+  LOCAL_CFLAGS += -DSYSTEM_FILESYSTEM=\"$(BOARD_SYSTEM_FILESYSTEM)\"
 endif
 
 ifdef BOARD_HAS_DATADATA
@@ -93,6 +123,7 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 include $(BUILD_EXECUTABLE)
 
 RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid
+
 # nc is provided by external/netcat
 SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
 $(SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)
@@ -131,6 +162,16 @@ LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 LOCAL_SRC_FILES := killrecovery.sh
 include $(BUILD_PREBUILT)
+
+ifdef BOARD_USES_FFORMAT
+include $(CLEAR_VARS)
+LOCAL_MODULE := fformat
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_SRC_FILES := prebuilt/fformat
+include $(BUILD_PREBUILT)
+endif
 
 include $(commands_recovery_local_path)/amend/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk

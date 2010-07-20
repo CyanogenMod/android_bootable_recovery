@@ -61,7 +61,9 @@ void toggle_script_asserts()
 int install_zip(const char* packagefilepath)
 {
     ui_print("\n-- Installing: %s\n", packagefilepath);
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     set_sdcard_update_bootloader_message();
+#endif
     int status = install_package(packagefilepath);
     ui_reset_progress();
     if (status != INSTALL_SUCCESS) {
@@ -69,9 +71,11 @@ int install_zip(const char* packagefilepath)
         ui_print("Installation aborted.\n");
         return 1;
     } 
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     if (firmware_update_pending()) {
         ui_print("\nReboot via menu to complete\ninstallation.\n");
     }
+#endif
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_print("\nInstall from sdcard complete.\n");
     return 0;
