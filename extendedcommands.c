@@ -870,7 +870,7 @@ void write_fstab_root(char *root_path, FILE *file)
     }
     
     fprintf(file, "%s ", info->mount_point);
-    fprintf(file, "%s rw\n", info->filesystem); 
+    fprintf(file, "%s %s\n", info->filesystem, info->filesystem_options == NULL ? "rw" : info->filesystem_options); 
 }
 
 void create_fstab()

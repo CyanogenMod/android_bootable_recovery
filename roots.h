@@ -68,6 +68,23 @@
 #define SYSTEM_FILESYSTEM "yaffs2"
 #endif
 
+#ifndef DATA_FILESYSTEM_OPTIONS
+#define DATA_FILESYSTEM_OPTIONS NULL
+#endif
+
+#ifndef CACHE_FILESYSTEM_OPTIONS
+#define CACHE_FILESYSTEM_OPTIONS NULL
+#endif
+
+#ifndef DATADATA_FILESYSTEM_OPTIONS
+#define DATADATA_FILESYSTEM_OPTIONS NULL
+#endif
+
+#ifndef SYSTEM_FILESYSTEM_OPTIONS
+#define SYSTEM_FILESYSTEM_OPTIONS NULL
+#endif
+
+
 /* Any of the "root_path" arguments can be paths with relative
  * components, like "SYSTEM:a/b/c".
  */
@@ -115,6 +132,7 @@ typedef struct {
     const char *partition_name;
     const char *mount_point;
     const char *filesystem;
+    const char *filesystem_options;
 } RootInfo;
 
 #endif  // RECOVERY_ROOTS_H_
