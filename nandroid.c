@@ -228,10 +228,12 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* roo
     }
 
     ui_print("Restoring %s...\n", name);
+    /*
     if (0 != (ret = ensure_root_path_unmounted(root))) {
         ui_print("Can't unmount %s!\n", mount_point);
         return ret;
     }
+    */
     if (0 != (ret = format_root_device(root))) {
         ui_print("Error while formatting %s!\n", root);
         return ret;

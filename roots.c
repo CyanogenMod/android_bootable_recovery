@@ -345,7 +345,7 @@ format_root_device(const char *root)
         LOGW("format_root_device: can't resolve \"%s\"\n", root);
         return -1;
     }
-    if (info->mount_point != NULL) {
+    if (info->mount_point != NULL && info->device == g_mtd_device) {
         /* Don't try to format a mounted device.
          */
         int ret = ensure_root_path_unmounted(root);

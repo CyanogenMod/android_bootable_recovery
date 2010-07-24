@@ -18,6 +18,10 @@ LOCAL_SRC_FILES := \
 	ui.c \
 	verifier.c
 
+LOCAL_SRC_FILES += \
+    reboot.c \
+    setprop.c
+
 ifndef BOARD_HAS_NO_MISC_PARTITION
     LOCAL_SRC_FILES += \
         firmware.c \
@@ -36,7 +40,7 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v2.5.0.1
+RECOVERY_VERSION := ClockworkMod Recovery v2.5.0.4
 LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
@@ -138,7 +142,7 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 include $(BUILD_EXECUTABLE)
 
-RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid
+RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot
 
 # nc is provided by external/netcat
 SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
