@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -573,6 +574,7 @@ main(int argc, char **argv) {
 
     ui_init();
     ui_print(EXPAND(RECOVERY_VERSION)"\n");
+    set_root_table();
     get_args(&argc, &argv);
 
     int previous_runs = 0;

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +26,7 @@
 
 #include "mtdutils/mtdutils.h"
 #include "mtdutils/mounts.h"
+#include "mmcutils/mmcutils.h"
 #include "minzip/Zip.h"
 #include "roots.h"
 #include "common.h"
@@ -35,6 +37,7 @@
 xxx may just want to use enums
  */
 static const char g_mtd_device[] = "@\0g_mtd_device";
+static const char g_mmc_device[] = "@\0g_mmc_device";
 static const char g_raw[] = "@\0g_raw";
 static const char g_package_file[] = "@\0g_package_file";
 
@@ -383,6 +386,22 @@ format_root_device(const char *root)
             }
         }
     }
-    
+
+    //Handle MMC device types
+    if(info->device == g_mmc_device) {
+        mmc_scan_partitions();
+        const MmcPartition *partition;
+        partition = mmc_find_partition_by_name(info->partition_name);
+        if (partition == NULL) {
+            LOGE("format_root_device: can't find mmc partition \"%s\"\n",
+                    info->partition_name);
+            return -1;
+        }
+        if (!strcmp(info->filesystem, "ext3")) {
+            if(mmc_format_ext3(partition))
+                LOGE("\n\"%s\" wipe failed!\n", info->partition_name);
+        }
+    }
+
     return format_non_mtd_device(root);
 }
