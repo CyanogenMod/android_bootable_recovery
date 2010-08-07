@@ -813,9 +813,15 @@ void show_advanced_menu()
             {
                 if (0 != ensure_root_path_mounted("DATA:"))
                     break;
-                if (confirm_selection( "Confirm wipe?", "Yes - Wipe Dalvik Cache"))
+                ensure_root_path_mounted("SDEXT:");
+                ensure_root_path_mounted("CACHE:");
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe Dalvik Cache")) {
                     __system("rm -r /data/dalvik-cache");
+                    __system("rm -r /cache/dalvik-cache");
+                    __system("rm -r /sd-ext/dalvik-cache");
+                }
                 ensure_root_path_unmounted("DATA:");
+                ui_print("Dalvik Cache wiped.\n");
                 break;
             }
             case 2:

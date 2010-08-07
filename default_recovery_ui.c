@@ -27,8 +27,8 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "wipe data/factory reset",
                        "wipe cache partition",
                        "install zip from sdcard",
-                       "nandroid",
-                       "partitions menu",
+                       "backup and restore",
+                       "mounts and storage",
                        "advanced",
                        NULL };
 
