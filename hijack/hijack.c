@@ -19,33 +19,33 @@
 
 #include <signal.h>
 #include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include <limits.h>
 
-#define RECOVERY_MODE_FILE "/cache/.recovery_mode"
+#include <cutils/properties.h>
+
+#define RECOVERY_MODE_FILE "/data/.recovery_mode"
 #define UPDATE_BINARY BOARD_HIJACK_RECOVERY_PATH"/update-binary"
 #define UPDATE_PACKAGE BOARD_HIJACK_RECOVERY_PATH"/recovery.zip"
-#define BUSYBOX BOARD_HIJACK_RECOVERY_PATH"/busybox"
-#define PREPARE_SCRIPT BOARD_HIJACK_RECOVERY_PATH"/prepare.sh"
+#define PRERECOVERY_BOOT BOARD_HIJACK_RECOVERY_PATH"/prerecoveryboot.sh"
 
-// This was pulled from bionic: The default system command always looks
-// for shell in /system/bin/sh. This is bad.
-#define _PATH_BSHELL BOARD_HIJACK_RECOVERY_PATH"/sh"
-
-extern char **environ;
 int
-__system(const char *command)
+exec_and_wait(char** argp)
 {
   pid_t pid;
     sig_t intsave, quitsave;
     sigset_t mask, omask;
     int pstat;
-    char *argp[] = {"sh", "-c", NULL, NULL};
-
-    if (!command)        /* just checking... */
-        return(1);
-
-    argp[2] = (char *)command;
-
+    
     sigemptyset(&mask);
     sigaddset(&mask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &mask, &omask);
@@ -55,7 +55,7 @@ __system(const char *command)
         return(-1);
     case 0:                /* child */
         sigprocmask(SIG_SETMASK, &omask, NULL);
-        execve(_PATH_BSHELL, argp, environ);
+        execve(argp[0], argp, environ);
     _exit(127);
   }
 
@@ -68,12 +68,27 @@ __system(const char *command)
     return (pid == -1 ? -1 : pstat);
 }
 
+typedef char* string;
+
 int main(int argc, char** argv) {
     char* hijacked_executable = argv[0];
     struct stat info;
     
     if (NULL != strstr(hijacked_executable, "hijack")) {
         // no op
+        if (argc >= 2) {
+            if (strcmp("sh", argv[1]) == 0) {
+                return ash_main(argc - 1, argv + 1);
+            }
+            if (strcmp("mount", argv[1]) == 0) {
+                printf("mount!\n");
+                return mount_main(argc - 1, argv + 1);
+            }
+            if (strcmp("umount", argv[1]) == 0) {
+                printf("umount!\n");
+                return umount_main(argc - 1, argv + 1);
+            }
+        }
         printf("Hijack!\n");
         return 0;
     }
@@ -81,19 +96,46 @@ int main(int argc, char** argv) {
     char cmd[PATH_MAX];
     if (0 == stat(RECOVERY_MODE_FILE, &info)) {
         remove(RECOVERY_MODE_FILE);
-        kill(getppid(), SIGKILL);
         sprintf(cmd, "%s 2 0 %s", UPDATE_BINARY, UPDATE_PACKAGE);
-        return __system(cmd);
+        
+        char* remount_root_args[] = { "/system/bin/hijack", "mount", "-orw,remount", "/", NULL };
+        //mount_main(3, remount_root_args);
+        //__system("/system/bin/hijack mount -orw,remount /");
+        exec_and_wait(remount_root_args);
+
+        mkdir("/preinstall", S_IRWXU);
+        mkdir("/tmp", S_IRWXU);
+        mkdir("/res", S_IRWXU);
+        mkdir("/res/images", S_IRWXU);
+        remove("/etc");
+        mkdir("/etc", S_IRWXU);
+        rename("/sbin/adbd", "/sbin/adbd.old");
+        property_set("ctl.stop", "runtime");
+        property_set("ctl.stop", "zygote");
+        property_set("persist.service.adb.enable", "1");
+
+        char* mount_preinstall_args[] = { "/system/bin/hijack", "mount", "/dev/block/preinstall", "/preinstall", NULL };
+        //mount_main(3, mount_preinstall_args);
+        //__system("/system/bin/hijack mount /dev/block/preinstall /preinstall");
+        exec_and_wait(mount_preinstall_args);
+
+        char* umount_args[] = { "/system/bin/hijack", "umount", "-l", "/system", NULL };
+        exec_and_wait(umount_args);
+
+        char* updater_args[] = { UPDATE_BINARY, "2", "0", UPDATE_PACKAGE, NULL };
+        return exec_and_wait(updater_args);
     }
     
-    sprintf(cmd, "%s.bin", hijacked_executable);
+    char real_executable[PATH_MAX];
+    sprintf(real_executable, "%s.bin", hijacked_executable);
+    string* argp = (string*)malloc(sizeof(string) * (argc + 1));
     int i;
-    for (i = 1; i < argc; i++) {
-        strcat(cmd, " '");
-        strcat(cmd, argv[i]);
-        strcat(cmd, "'");
+    for (i = 0; i < argc; i++) {
+        argp[i]=argv[i];
     }
+    argp[argc] = NULL;
     
-    __system(PREPARE_SCRIPT);
-    return __system(cmd);
+    argp[0] = real_executable;
+    
+    return exec_and_wait(argp);
 }

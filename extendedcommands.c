@@ -796,6 +796,7 @@ void show_advanced_menu()
                             "Wipe Battery Stats",
                             "Report Error",
                             "Key Test",
+                            "Restart adbd",
                             NULL
     };
 
@@ -846,6 +847,11 @@ void show_advanced_menu()
                     ui_print("Key: %d\n", key);
                 }
                 while (action != GO_BACK);
+            }
+            case 5:
+            {
+                __system("kill $(ps | grep adbd)");
+                __system("/sbin/adbd &");
             }
         }
     }
