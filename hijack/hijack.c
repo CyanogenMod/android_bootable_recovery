@@ -36,7 +36,6 @@
 #define RECOVERY_MODE_FILE "/data/.recovery_mode"
 #define UPDATE_BINARY BOARD_HIJACK_RECOVERY_PATH"/update-binary"
 #define UPDATE_PACKAGE BOARD_HIJACK_RECOVERY_PATH"/recovery.zip"
-#define PRERECOVERY_BOOT BOARD_HIJACK_RECOVERY_PATH"/prerecoveryboot.sh"
 
 int
 exec_and_wait(char** argp)

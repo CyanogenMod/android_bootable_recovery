@@ -797,6 +797,7 @@ void show_advanced_menu()
                             "Report Error",
                             "Key Test",
                             "Restart adbd",
+                            "Process dump",
                             NULL
     };
 
@@ -852,6 +853,10 @@ void show_advanced_menu()
             {
                 __system("kill $(ps | grep adbd)");
                 __system("/sbin/adbd &");
+            }
+            case 6:
+            {
+                __system("ps");
             }
         }
     }
@@ -912,5 +917,5 @@ void handle_failure(int ret)
         return;
     mkdir("/sdcard/clockworkmod", S_IRWXU);
     __system("cp /tmp/recovery.log /sdcard/clockworkmod/recovery.log");
-    ui_print("/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.");
+    ui_print("/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.\n");
 }
