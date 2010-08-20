@@ -188,7 +188,6 @@ LOCAL_SRC_FILES := killrecovery.sh
 include $(BUILD_PREBUILT)
 
 include $(commands_recovery_local_path)/amend/Android.mk
-include $(commands_recovery_local_path)/hijack/Android.mk
 include $(commands_recovery_local_path)/minui/Android.mk
 include $(commands_recovery_local_path)/minzip/Android.mk
 include $(commands_recovery_local_path)/mtdutils/Android.mk
