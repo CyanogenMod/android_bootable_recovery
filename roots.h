@@ -21,11 +21,11 @@
 #include "mtdutils/mtdutils.h"
 
 #ifndef SDCARD_DEVICE_PRIMARY
-#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0"
+#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0p1"
 #endif
 
 #ifndef SDCARD_DEVICE_SECONDARY
-#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0p1"
+#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0"
 #endif
 
 #ifndef SDEXT_DEVICE

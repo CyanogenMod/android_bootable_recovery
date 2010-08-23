@@ -418,6 +418,10 @@ void show_mount_usb_storage_menu()
 
 int confirm_selection(const char* title, const char* confirm)
 {
+    struct stat info;
+    if (0 == stat("/sdcard/clockworkmod/.no_confirm", &info))
+        return 1;
+
     char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
     char* items[] = { "No",
                       "No",
@@ -474,7 +478,7 @@ int format_non_mtd_device(const char* root)
 
 void show_partition_menu()
 {
-    static char* headers[] = {  "Mount and unmount partitions",
+    static char* headers[] = {  "Mounts and Storage Menu",
                                 "",
                                 NULL 
     };
@@ -796,8 +800,8 @@ void show_advanced_menu()
                             "Wipe Battery Stats",
                             "Report Error",
                             "Key Test",
-                            "Restart adbd",
-                            "Process dump",
+                            "Partition SD Card",
+                            "Fix Permissions",
                             NULL
     };
 
@@ -851,12 +855,51 @@ void show_advanced_menu()
             }
             case 5:
             {
-                __system("kill $(ps | grep adbd)");
-                __system("/sbin/adbd &");
+                static char* ext_sizes[] = { "128M",
+                                             "256M",
+                                             "512M",
+                                             "1024M",
+                                             NULL };
+
+                static char* swap_sizes[] = { "0M",
+                                              "32M",
+                                              "64M",
+                                              "128M",
+                                              "256M",
+                                              NULL };
+
+                static char* ext_headers[] = { "Ext Size", "", NULL };
+                static char* swap_headers[] = { "Swap Size", "", NULL };
+
+                int ext_size = get_menu_selection(ext_headers, ext_sizes, 0);
+                if (ext_size == GO_BACK)
+                    continue;
+                 
+                int swap_size = get_menu_selection(swap_headers, swap_sizes, 0);
+                if (swap_size == GO_BACK)
+                    continue;
+
+                char sddevice[256];
+                const RootInfo *ri = get_root_info_for_path("SDCARD:");
+                strcpy(sddevice, ri->device);
+                // we only want the mmcblk, not the partition
+                sddevice[strlen("/dev/block/mmcblkX")] = NULL;
+                char cmd[PATH_MAX];
+                setenv("SDPATH", sddevice, 1);
+                sprintf(cmd, "sdparted -es %s -ss %s -efs ext3 -s", ext_sizes[ext_size], swap_sizes[swap_size]);
+                ui_print("Partitioning SD Card... please wait...\n");
+                if (0 == __system(cmd))
+                    ui_print("Done!\n");
+                else
+                    ui_print("An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n");
             }
             case 6:
             {
-                __system("ps");
+                ensure_root_path_mounted("SYSTEM:");
+                ensure_root_path_mounted("DATA:");
+                ui_print("Fixing permissions...\n");
+                __system("fix_permissions");
+                ui_print("Done!\n");
             }
         }
     }
