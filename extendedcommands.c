@@ -852,6 +852,7 @@ void show_advanced_menu()
                     ui_print("Key: %d\n", key);
                 }
                 while (action != GO_BACK);
+                break;
             }
             case 5:
             {
@@ -892,6 +893,7 @@ void show_advanced_menu()
                     ui_print("Done!\n");
                 else
                     ui_print("An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n");
+                break;
             }
             case 6:
             {
@@ -900,6 +902,7 @@ void show_advanced_menu()
                 ui_print("Fixing permissions...\n");
                 __system("fix_permissions");
                 ui_print("Done!\n");
+                break;
             }
         }
     }
