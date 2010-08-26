@@ -39,20 +39,20 @@ static const char g_raw[] = "@\0g_raw";
 static const char g_package_file[] = "@\0g_package_file";
 
 static RootInfo g_roots[] = {
-    { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
-    { "CACHE:", CACHE_DEVICE, NULL, "cache", "/cache", CACHE_FILESYSTEM },
-    { "DATA:", DATA_DEVICE, NULL, "userdata", "/data", DATA_FILESYSTEM },
+    { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw, NULL },
+    { "CACHE:", CACHE_DEVICE, NULL, "cache", "/cache", CACHE_FILESYSTEM, CACHE_FILESYSTEM_OPTIONS },
+    { "DATA:", DATA_DEVICE, NULL, "userdata", "/data", DATA_FILESYSTEM, DATA_FILESYSTEM_OPTIONS },
 #ifdef HAS_DATADATA
-    { "DATADATA:", DATADATA_DEVICE, NULL, "datadata", "/datadata", DATADATA_FILESYSTEM },
+    { "DATADATA:", DATADATA_DEVICE, NULL, "datadata", "/datadata", DATADATA_FILESYSTEM, DATADATA_FILESYSTEM_OPTIONS },
 #endif
-    { "MISC:", g_mtd_device, NULL, "misc", NULL, g_raw },
-    { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file },
-    { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },
-    { "SDCARD:", SDCARD_DEVICE_PRIMARY, SDCARD_DEVICE_SECONDARY, NULL, "/sdcard", "vfat" },
-    { "SDEXT:", SDEXT_DEVICE, NULL, NULL, "/sd-ext", SDEXT_FILESYSTEM },
-    { "SYSTEM:", g_mtd_device, NULL, "system", "/system", "yaffs2" },
-    { "MBM:", g_mtd_device, NULL, "mbm", NULL, g_raw },
-    { "TMP:", NULL, NULL, NULL, "/tmp", NULL },
+    { "MISC:", g_mtd_device, NULL, "misc", NULL, g_raw, NULL },
+    { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file, NULL },
+    { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw, NULL },
+    { "SDCARD:", SDCARD_DEVICE_PRIMARY, SDCARD_DEVICE_SECONDARY, NULL, "/sdcard", "vfat", NULL },
+    { "SDEXT:", SDEXT_DEVICE, NULL, NULL, "/sd-ext", SDEXT_FILESYSTEM, NULL },
+    { "SYSTEM:", SYSTEM_DEVICE, NULL, "system", "/system", SYSTEM_FILESYSTEM, SYSTEM_FILESYSTEM_OPTIONS },
+    { "MBM:", g_mtd_device, NULL, "mbm", NULL, g_raw, NULL },
+    { "TMP:", NULL, NULL, NULL, "/tmp", NULL, NULL },
 };
 #define NUM_ROOTS (sizeof(g_roots) / sizeof(g_roots[0]))
 
@@ -207,14 +207,15 @@ is_root_path_mounted(const char *root_path)
     return internal_root_mounted(info) >= 0;
 }
 
-static int mount_internal(const char* device, const char* mount_point, const char* filesystem)
+static int mount_internal(const char* device, const char* mount_point, const char* filesystem, const char* filesystem_options)
 {
-    if (strcmp(filesystem, "auto") != 0) {
+    if (strcmp(filesystem, "auto") != 0 && filesystem_options == NULL) {
         return mount(device, mount_point, filesystem, MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
     }
     else {
         char mount_cmd[PATH_MAX];
-        sprintf(mount_cmd, "mount -onoatime,nodiratime,nodev %s %s", device, mount_point);
+        const char* options = filesystem_options == NULL ? "noatime,nodiratime,nodev" : filesystem_options;
+        sprintf(mount_cmd, "mount -t %s -o%s %s %s", filesystem, options, device, mount_point);
         return __system(mount_cmd);
     }
 }
@@ -259,7 +260,7 @@ ensure_root_path_mounted(const char *root_path)
     }
 
     mkdir(info->mount_point, 0755);  // in case it doesn't already exist
-    if (mount_internal(info->device, info->mount_point, info->filesystem)) {
+    if (mount_internal(info->device, info->mount_point, info->filesystem, info->filesystem_options)) {
         if (info->device2 == NULL) {
             LOGE("Can't mount %s\n(%s)\n", info->device, strerror(errno));
             return -1;
@@ -311,7 +312,12 @@ get_root_mtd_partition(const char *root_path)
     if (info == NULL || info->device != g_mtd_device ||
             info->partition_name == NULL)
     {
+#ifdef BOARD_HAS_MTD_CACHE
+        if (strcmp(root_path, "CACHE:") != 0)
+            return NULL;
+#else
         return NULL;
+#endif
     }
     mtd_scan_partitions();
     return mtd_find_partition_by_name(info->partition_name);
@@ -339,7 +345,7 @@ format_root_device(const char *root)
         LOGW("format_root_device: can't resolve \"%s\"\n", root);
         return -1;
     }
-    if (info->mount_point != NULL) {
+    if (info->mount_point != NULL && info->device == g_mtd_device) {
         /* Don't try to format a mounted device.
          */
         int ret = ensure_root_path_unmounted(root);
@@ -377,6 +383,6 @@ format_root_device(const char *root)
             }
         }
     }
-
+    
     return format_non_mtd_device(root);
 }

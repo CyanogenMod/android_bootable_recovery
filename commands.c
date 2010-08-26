@@ -626,11 +626,13 @@ cmd_write_firmware_image(const char *name, void *cookie,
         return 1;
     }
 
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     if (remember_firmware_update(type, context.data, context.total_bytes)) {
         LOGE("Can't store %s image\n", type);
         free(context.data);
         return 1;
     }
+#endif
 
     return 0;
 }

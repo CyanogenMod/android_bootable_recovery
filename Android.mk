@@ -8,17 +8,35 @@ commands_recovery_local_path := $(LOCAL_PATH)
 # LOCAL_CPP_EXTENSION := .c
 
 LOCAL_SRC_FILES := \
-    extendedcommands.c \
-    nandroid.c \
-    legacy.c \
-    commands.c \
-    recovery.c \
-    bootloader.c \
-    firmware.c \
-    install.c \
-    roots.c \
-    ui.c \
-    verifier.c
+	extendedcommands.c \
+	nandroid.c \
+	legacy.c \
+	commands.c \
+	recovery.c \
+	install.c \
+	roots.c \
+	ui.c \
+	verifier.c
+
+LOCAL_SRC_FILES += \
+    reboot.c \
+    setprop.c
+
+ifndef BOARD_HAS_NO_MISC_PARTITION
+    LOCAL_SRC_FILES += \
+        firmware.c \
+        bootloader.c
+else
+    LOCAL_CFLAGS += -DBOARD_HAS_NO_MISC_PARTITION
+endif
+
+ifdef BOARD_RECOVERY_IGNORE_BOOTABLES
+    LOCAL_CFLAGS += -DBOARD_RECOVERY_IGNORE_BOOTABLES
+endif
+
+ifdef BOARD_HIJACK_RECOVERY_PATH
+    LOCAL_CFLAGS += -DBOARD_HIJACK_RECOVERY_PATH=\"$(BOARD_HIJACK_RECOVERY_PATH)\"
+endif
 
 LOCAL_SRC_FILES += test_roots.c
 
@@ -26,8 +44,8 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v2.5.0.1
-LOCAL_CFLAGS := -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
+RECOVERY_VERSION := ClockworkMod Recovery v2.5.0.8
+LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 3
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
 
@@ -59,6 +77,14 @@ ifdef BOARD_DATA_FILESYSTEM
   LOCAL_CFLAGS += -DDATA_FILESYSTEM=\"$(BOARD_DATA_FILESYSTEM)\"
 endif
 
+ifdef BOARD_DATADATA_DEVICE
+  LOCAL_CFLAGS += -DDATADATA_DEVICE=\"$(BOARD_DATADATA_DEVICE)\"
+endif
+
+ifdef BOARD_DATADATA_FILESYSTEM
+  LOCAL_CFLAGS += -DDATADATA_FILESYSTEM=\"$(BOARD_DATADATA_FILESYSTEM)\"
+endif
+
 ifdef BOARD_CACHE_DEVICE
   LOCAL_CFLAGS += -DCACHE_DEVICE=\"$(BOARD_CACHE_DEVICE)\"
 endif
@@ -67,8 +93,36 @@ ifdef BOARD_CACHE_FILESYSTEM
   LOCAL_CFLAGS += -DCACHE_FILESYSTEM=\"$(BOARD_CACHE_FILESYSTEM)\"
 endif
 
+ifdef BOARD_SYSTEM_DEVICE
+  LOCAL_CFLAGS += -DSYSTEM_DEVICE=\"$(BOARD_SYSTEM_DEVICE)\"
+endif
+
+ifdef BOARD_SYSTEM_FILESYSTEM
+  LOCAL_CFLAGS += -DSYSTEM_FILESYSTEM=\"$(BOARD_SYSTEM_FILESYSTEM)\"
+endif
+
 ifdef BOARD_HAS_DATADATA
   LOCAL_CFLAGS += -DHAS_DATADATA
+endif
+
+ifdef BOARD_DATA_FILESYSTEM_OPTIONS
+  LOCAL_CFLAGS += -DDATA_FILESYSTEM_OPTIONS=\"$(BOARD_DATA_FILESYSTEM_OPTIONS)\"
+endif
+
+ifdef BOARD_DATADATA_FILESYSTEM_OPTIONS
+  LOCAL_CFLAGS += -DDATADATA_FILESYSTEM_OPTIONS=\"$(BOARD_DATADATA_FILESYSTEM_OPTIONS)\"
+endif
+
+ifdef BOARD_CACHE_FILESYSTEM_OPTIONS
+  LOCAL_CFLAGS += -DCACHE_FILESYSTEM_OPTIONS=\"$(BOARD_CACHE_FILESYSTEM_OPTIONS)\"
+endif
+
+ifdef BOARD_SYSTEM_FILESYSTEM_OPTIONS
+  LOCAL_CFLAGS += -DSYSTEM_FILESYSTEM_OPTIONS=\"$(BOARD_SYSTEM_FILESYSTEM_OPTIONS)\"
+endif
+
+ifdef BOARD_HAS_MTD_CACHE
+  LOCAL_CFLAGS += -DBOARD_HAS_MTD_CACHE
 endif
 
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
@@ -93,7 +147,8 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 include $(BUILD_EXECUTABLE)
 
-RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid
+RECOVERY_LINKS := amend busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot
+
 # nc is provided by external/netcat
 SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
 $(SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)
@@ -156,6 +211,7 @@ include $(commands_recovery_local_path)/tools/Android.mk
 include $(commands_recovery_local_path)/edify/Android.mk
 include $(commands_recovery_local_path)/updater/Android.mk
 include $(commands_recovery_local_path)/applypatch/Android.mk
+include $(commands_recovery_local_path)/utilities/Android.mk
 commands_recovery_local_path :=
 
 endif   # TARGET_ARCH == arm

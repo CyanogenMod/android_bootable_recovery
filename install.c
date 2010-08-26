@@ -42,6 +42,68 @@
 #define ASSUMED_UPDATE_BINARY_NAME  "META-INF/com/google/android/update-binary"
 #define PUBLIC_KEYS_FILE "/res/keys"
 
+// The update binary ask us to install a firmware file on reboot.  Set
+// that up.  Takes ownership of type and filename.
+static int
+handle_firmware_update(char* type, char* filename, ZipArchive* zip) {
+    unsigned int data_size;
+    const ZipEntry* entry = NULL;
+
+    if (strncmp(filename, "PACKAGE:", 8) == 0) {
+        entry = mzFindZipEntry(zip, filename+8);
+        if (entry == NULL) {
+            LOGE("Failed to find \"%s\" in package", filename+8);
+            return INSTALL_ERROR;
+        }
+        data_size = entry->uncompLen;
+    } else {
+        struct stat st_data;
+        if (stat(filename, &st_data) < 0) {
+            LOGE("Error stat'ing %s: %s\n", filename, strerror(errno));
+            return INSTALL_ERROR;
+        }
+        data_size = st_data.st_size;
+    }
+
+    LOGI("type is %s; size is %d; file is %s\n",
+         type, data_size, filename);
+
+    char* data = malloc(data_size);
+    if (data == NULL) {
+        LOGI("Can't allocate %d bytes for firmware data\n", data_size);
+        return INSTALL_ERROR;
+    }
+
+    if (entry) {
+        if (mzReadZipEntry(zip, entry, data, data_size) == false) {
+            LOGE("Failed to read \"%s\" from package", filename+8);
+            return INSTALL_ERROR;
+        }
+    } else {
+        FILE* f = fopen(filename, "rb");
+        if (f == NULL) {
+            LOGE("Failed to open %s: %s\n", filename, strerror(errno));
+            return INSTALL_ERROR;
+        }
+        if (fread(data, 1, data_size, f) != data_size) {
+            LOGE("Failed to read firmware data: %s\n", strerror(errno));
+            return INSTALL_ERROR;
+        }
+        fclose(f);
+    }
+
+#ifndef BOARD_HAS_NO_MISC_PARTITION
+    if (remember_firmware_update(type, data, data_size)) {
+        LOGE("Can't store %s image\n", type);
+        free(data);
+        return INSTALL_ERROR;
+    }
+#endif
+    free(filename);
+
+    return INSTALL_SUCCESS;
+}
+
 // If the package contains an update binary, extract it and run it.
 static int
 try_update_binary(const char *path, ZipArchive *zip) {
