@@ -25,8 +25,8 @@
 # v2.02 - ignore com.htc.resources.apk if it exists and minor code cleanups,
 #         fix help text, implement simulated run (-s) [farmatito]
 # v2.03 - fixed chown group ownership output [Kastro]
-
-VERSION="2.03"
+# v2.04 - replaced /system/sd with $SD_EXT_DIRECTORY [Firerat]
+VERSION="2.04"
 
 # Defaults
 DEBUG=0 # Debug off by default
@@ -74,7 +74,15 @@ DATAMOUNT=0
 SYSSDMOUNT=0
 FP_STARTTIME=$( $DATE +"%m-%d-%Y %H:%M:%S" )
 FP_STARTEPOCH=$( $DATE +%s )
-
+if $TEST "$SD_EXT_DIRECTORY" = ""; then
+    #check for mount point, /system/sd included in tests for backward compatibility
+    for MP in /sd-ext /system/sd;do
+        if $TEST -d $MP; then
+            SD_EXT_DIRECTORY=$MP
+            break
+        fi
+    done
+fi
 fp_usage()
 {
    $ECHO "Usage $0 [OPTIONS] [APK_PATH]"
@@ -186,8 +194,8 @@ fp_start()
          DATAMOUNT=1
       fi
       
-      if $TEST -e /dev/block/mmcblk0p2 && $TEST $( $GREP -c " /system/sd " "/proc/mounts" ) -eq 0; then
-         $MOUNT /system/sd > /dev/null 2>&1
+      if $TEST -e /dev/block/mmcblk0p2 && $TEST $( $GREP -c " $SD_EXT_DIRECTORY " "/proc/mounts" ) -eq 0; then
+         $MOUNT $SD_EXT_DIRECTORY > /dev/null 2>&1
          SYSSDMOUNT=1
       fi
    fi
@@ -445,7 +453,7 @@ fp_end()
    fi
    
    if $TEST $SYSSDMOUNT -eq 1; then
-      $UMOUNT /system/sd > /dev/null 2>&1
+      $UMOUNT $SD_EXT_DIRECTORY > /dev/null 2>&1
    fi
    
    if $TEST $SYSMOUNT -eq 1; then
