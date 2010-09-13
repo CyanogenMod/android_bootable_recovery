@@ -125,6 +125,11 @@ ifdef BOARD_HAS_MTD_CACHE
   LOCAL_CFLAGS += -DBOARD_HAS_MTD_CACHE
 endif
 
+ifdef BOARD_USES_BMLUTILS
+  LOCAL_CFLAGS += -DBOARD_USES_BMLUTILS
+  LOCAL_STATIC_LIBRARIES += libbmlutils
+endif
+
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
 # It gets copied there in config/Makefile.  LOCAL_MODULE_TAGS suppresses
 # a (redundant) copy of the binary in /system/bin for user builds.
@@ -132,12 +137,6 @@ endif
 
 LOCAL_MODULE_TAGS := eng
 
-LOCAL_STATIC_LIBRARIES :=
-#ifeq ($(TARGET_RECOVERY_UI_LIB),)
-#  LOCAL_SRC_FILES += default_recovery_ui.c
-#else
-#  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
-#endif
 LOCAL_SRC_FILES += default_recovery_ui.c
 LOCAL_STATIC_LIBRARIES += libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image libmtdutils
 LOCAL_STATIC_LIBRARIES += libamend

@@ -42,6 +42,14 @@
 #include "extendedcommands.h"
 #include "nandroid.h"
 
+#ifndef BOARD_USES_BMLUTILS
+int write_raw_image(const char* partition, const char* filename) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "flash_image boot %s", filename);
+    return __system(tmp);
+}
+#endif
+
 int print_and_error(char* message) {
     ui_print(message);
     return 1;
@@ -283,9 +291,9 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         ui_print("Erasing boot before restore...\n");
         if (0 != (ret = format_root_device("BOOT:")))
             return print_and_error("Error while formatting BOOT:!\n");
-        sprintf(tmp, "flash_image boot %s/boot.img", backup_path);
+        sprintf(tmp, "%s/boot.img", backup_path);
         ui_print("Restoring boot image...\n");
-        if (0 != (ret = __system(tmp))) {
+        if (0 != (ret = write_raw_image("boot", tmp))) {
             ui_print("Error while flashing boot image!");
             return ret;
         }
