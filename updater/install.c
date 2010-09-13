@@ -628,6 +628,8 @@ static bool write_raw_image_cb(const unsigned char* data,
     return false;
 }
 
+int write_raw_image(const char* partition, const char* filename);
+
 // write_raw_image(file, partition)
 Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
     char* result = NULL;
@@ -647,6 +649,12 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
         goto done;
     }
 
+#ifdef BOARD_HAS_CUSTOM_WRITE_RAW_IMAGE
+    if (0 == write_raw_image(name, filename)) {
+        result = partition;
+    }
+    result = strdup("Failure");
+#else
     mtd_scan_partitions();
     const MtdPartition* mtd = mtd_find_partition_by_name(partition);
     if (mtd == NULL) {
@@ -698,6 +706,7 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
            success ? "wrote" : "failed to write", partition, filename);
 
     result = success ? partition : strdup("");
+#endif
 
 done:
     if (result != partition) free(partition);
