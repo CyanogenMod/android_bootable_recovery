@@ -31,3 +31,9 @@ int write_raw_image(const char* partition, const char* filename) {
     sprintf(tmp, "/sbin/redbend_ua restore %s %s", filename, BOARD_BOOT_DEVICE);
     return __system(tmp);
 }
+
+int read_raw_image(const char* partition, const char* filename) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "dd if=/dev/block/bml7 of=%s", filename);
+    return __system(tmp);
+}

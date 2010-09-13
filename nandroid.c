@@ -48,6 +48,10 @@ int write_raw_image(const char* partition, const char* filename) {
     sprintf(tmp, "flash_image boot %s", filename);
     return __system(tmp);
 }
+
+int read_raw_image(const char* partition, const char* filename) {
+    return dump_image(partition, filename, NULL);
+}
 #endif
 
 int print_and_error(char* message) {
@@ -144,13 +148,13 @@ int nandroid_backup(const char* backup_path)
 #ifndef BOARD_RECOVERY_IGNORE_BOOTABLES
     ui_print("Backing up boot...\n");
     sprintf(tmp, "%s/%s", backup_path, "boot.img");
-    ret = dump_image("boot", tmp, NULL);
+    ret = read_raw_image("boot", tmp);
     if (0 != ret)
         return print_and_error("Error while dumping boot image!\n");
 
     ui_print("Backing up recovery...\n");
     sprintf(tmp, "%s/%s", backup_path, "recovery.img");
-    ret = dump_image("recovery", tmp, NULL);
+    ret = read_raw_image("recovery", tmp);
     if (0 != ret)
         return print_and_error("Error while dumping recovery image!\n");
 #endif
