@@ -137,10 +137,10 @@ endif
 LOCAL_MODULE_TAGS := eng
 
 LOCAL_STATIC_LIBRARIES :=
-ifeq ($(TARGET_RECOVERY_UI_LIB),)
+ifeq ($(BOARD_CUSTOM_RECOVERY_KEYMAPPING),)
   LOCAL_SRC_FILES += default_recovery_ui.c
 else
-  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_KEYMAPPING)
 endif
 LOCAL_STATIC_LIBRARIES += libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image libmtdutils
 LOCAL_STATIC_LIBRARIES += libamend
