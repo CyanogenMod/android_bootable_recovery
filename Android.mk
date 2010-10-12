@@ -44,7 +44,7 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v2.5.0.9
+RECOVERY_VERSION := ClockworkMod Recovery v2.5.1.0
 LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
@@ -141,7 +141,12 @@ endif
 
 LOCAL_MODULE_TAGS := eng
 
-LOCAL_SRC_FILES += default_recovery_ui.c
+LOCAL_STATIC_LIBRARIES :=
+ifeq ($(BOARD_CUSTOM_RECOVERY_KEYMAPPING),)
+  LOCAL_SRC_FILES += default_recovery_ui.c
+else
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_KEYMAPPING)
+endif
 LOCAL_STATIC_LIBRARIES += libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image libmtdutils
 LOCAL_STATIC_LIBRARIES += libamend
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmtdutils libmincrypt
