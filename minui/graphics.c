@@ -29,7 +29,12 @@
 
 #include <pixelflinger/pixelflinger.h>
 
-#include "font_10x18.h"
+#ifndef BOARD_RECOVERY_FONT_INCLUDE_HEADER
+	#include "font_10x18.h"
+#else
+	#include BOARD_RECOVERY_FONT_INCLUDE_HEADER
+#endif
+
 #include "minui.h"
 
 typedef struct {

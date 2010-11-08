@@ -41,8 +41,10 @@ static int gShowBackButton = 0;
 #define MENU_MAX_COLS 64
 #define MENU_MAX_ROWS 250
 
-#define CHAR_WIDTH 10
-#define CHAR_HEIGHT 18
+#if (!defined(CHAR_WIDTH) || !defined(CHAR_HEIGHT))
+  #define CHAR_WIDTH 10
+  #define CHAR_HEIGHT 18
+#endif
 
 #define PROGRESSBAR_INDETERMINATE_STATES 6
 #define PROGRESSBAR_INDETERMINATE_FPS 15
