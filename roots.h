@@ -21,6 +21,12 @@
 #include "minzip/Zip.h"
 #include "mtdutils/mtdutils.h"
 
+#ifndef BOARD_USES_BMLUTILS
+#define DEFAULT_DEVICE g_mtd_device
+#else
+#define DEFAULT_DEVICE g_mmc_device
+#endif
+
 #ifndef SDCARD_DEVICE_PRIMARY
 #define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0p1"
 #endif
@@ -38,7 +44,7 @@
 #endif
 
 #ifndef DATA_DEVICE
-#define DATA_DEVICE g_mtd_device
+#define DATA_DEVICE DEFAULT_DEVICE
 #endif
 
 #ifndef DATA_FILESYSTEM
@@ -46,7 +52,7 @@
 #endif
 
 #ifndef DATADATA_DEVICE
-#define DATADATA_DEVICE g_mtd_device
+#define DATADATA_DEVICE DEFAULT_DEVICE
 #endif
 
 #ifndef DATADATA_FILESYSTEM
@@ -54,7 +60,7 @@
 #endif
 
 #ifndef CACHE_DEVICE
-#define CACHE_DEVICE g_mtd_device
+#define CACHE_DEVICE DEFAULT_DEVICE
 #endif
 
 #ifndef CACHE_FILESYSTEM
@@ -62,7 +68,7 @@
 #endif
 
 #ifndef SYSTEM_DEVICE
-#define SYSTEM_DEVICE g_mtd_device
+#define SYSTEM_DEVICE DEFAULT_DEVICE
 #endif
 
 #ifndef SYSTEM_FILESYSTEM
