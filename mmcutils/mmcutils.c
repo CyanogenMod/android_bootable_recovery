@@ -47,16 +47,6 @@ char *ext3_partitions[] = {"system", "userdata", "cache", "NONE"};
 unsigned vfat_count = 0;
 char *vfat_partitions[] = {"modem", "NONE"};
 
-struct MmcPartition {
-    char *device_index;
-    char *filesystem;
-    char *name;
-    unsigned dstatus;
-    unsigned dtype ;
-    unsigned dfirstsec;
-    unsigned dsize;
-};
-
 typedef struct {
     MmcPartition *partitions;
     int partitions_allocd;
@@ -78,6 +68,10 @@ mmc_partition_name (MmcPartition *mbr, unsigned int type) {
         char name[64];
         case MMC_BOOT_TYPE:
             sprintf(name,"boot");
+            mbr->name = strdup(name);
+            break;
+        case MMC_RECOVERY_TYPE:
+            sprintf(name,"recovery");
             mbr->name = strdup(name);
             break;
         case MMC_EXT3_TYPE:
@@ -291,9 +285,9 @@ mmc_find_partition_by_name(const char *name)
     return NULL;
 }
 
-#define MKE2FS_BIN      "/sbin/mke2fs_static"
-#define TUNE2FS_BIN     "/sbin/tune2fs_static"
-#define E2FSCK_BIN      "/sbin/e2fsck_static"
+#define MKE2FS_BIN      "/sbin/mke2fs"
+#define TUNE2FS_BIN     "/sbin/tune2fs"
+#define E2FSCK_BIN      "/sbin/e2fsck"
 
 static int
 run_exec_process ( char **argv) {
@@ -323,7 +317,7 @@ mmc_format_ext3 (MmcPartition *partition) {
         return -1;
 
     // Run tune2fs
-    char *const tune2fs[] = {TUNE2FS_BIN, "-C", "1", device, NULL};
+    char *const tune2fs[] = {TUNE2FS_BIN, "-j", "-C", "1", device, NULL};
     if(run_exec_process(tune2fs))
         return -1;
 
@@ -373,6 +367,58 @@ mmc_raw_copy (const MmcPartition *partition, char *in_file) {
     unsigned i;
     int ret = -1;
     char *out_file = partition->device_index;
+
+    in  = fopen ( in_file,  "r" );
+    if (in == NULL)
+        goto ERROR3;
+
+    out = fopen ( out_file,  "w" );
+    if (out == NULL)
+        goto ERROR2;
+
+    fseek(in, 0L, SEEK_END);
+    sz = ftell(in);
+    fseek(in, 0L, SEEK_SET);
+
+    if (sz % 512)
+    {
+        while ( ( ch = fgetc ( in ) ) != EOF )
+            fputc ( ch, out );
+    }
+    else
+    {
+        for (i=0; i< (sz/512); i++)
+        {
+            if ((fread(buf, 512, 1, in)) != 1)
+                goto ERROR1;
+            if ((fwrite(buf, 512, 1, out)) != 1)
+                goto ERROR1;
+        }
+    }
+
+    fsync(out);
+    ret = 0;
+ERROR1:
+    fclose ( out );
+ERROR2:
+    fclose ( in );
+ERROR3:
+    return ret;
+
+}
+
+
+int
+mmc_raw_dump (const MmcPartition *partition, char *out_file) {
+    int ch;
+    FILE *in;
+    FILE *out;
+    int val = 0;
+    char buf[512];
+    unsigned sz = 0;
+    unsigned i;
+    int ret = -1;
+    char *in_file = partition->device_index;
 
     in  = fopen ( in_file,  "r" );
     if (in == NULL)

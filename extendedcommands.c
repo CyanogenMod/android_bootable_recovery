@@ -34,6 +34,7 @@
 #include "amend/amend.h"
 
 #include "mtdutils/mtdutils.h"
+#include "mmcutils/mmcutils.h"
 #include "mtdutils/dump_image.h"
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
 #include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
@@ -924,7 +925,15 @@ void write_fstab_root(char *root_path, FILE *file)
     }
     else
     {
-        fprintf(file, "%s ", info->device);
+        MmcPartition *mmc = get_root_mmc_partition(root_path);
+        if (mmc != NULL)
+        {
+            fprintf(file, "%s ", mmc->device_index);
+        }
+        else
+        {
+            fprintf(file, "%s ", info->device);
+        }
     }
     
     fprintf(file, "%s ", info->mount_point);

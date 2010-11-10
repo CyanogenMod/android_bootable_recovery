@@ -20,11 +20,14 @@
 
 #include "minzip/Zip.h"
 #include "mtdutils/mtdutils.h"
+#include "mmcutils/mmcutils.h"
 
-#ifndef BOARD_USES_BMLUTILS
+#ifndef BOARD_USES_MMCUTILS
 #define DEFAULT_DEVICE g_mtd_device
+#define DEFAULT_FILESYSTEM "yaffs2"
 #else
 #define DEFAULT_DEVICE g_mmc_device
+#define DEFAULT_FILESYSTEM "ext3"
 #endif
 
 #ifndef SDCARD_DEVICE_PRIMARY
@@ -48,7 +51,7 @@
 #endif
 
 #ifndef DATA_FILESYSTEM
-#define DATA_FILESYSTEM "yaffs2"
+#define DATA_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
 #ifndef DATADATA_DEVICE
@@ -56,7 +59,7 @@
 #endif
 
 #ifndef DATADATA_FILESYSTEM
-#define DATADATA_FILESYSTEM "yaffs2"
+#define DATADATA_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
 #ifndef CACHE_DEVICE
@@ -64,7 +67,7 @@
 #endif
 
 #ifndef CACHE_FILESYSTEM
-#define CACHE_FILESYSTEM "yaffs2"
+#define CACHE_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
 #ifndef SYSTEM_DEVICE
@@ -72,7 +75,7 @@
 #endif
 
 #ifndef SYSTEM_FILESYSTEM
-#define SYSTEM_FILESYSTEM "yaffs2"
+#define SYSTEM_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
 #ifndef DATA_FILESYSTEM_OPTIONS
@@ -126,6 +129,7 @@ int ensure_root_path_mounted(const char *root_path);
 int ensure_root_path_unmounted(const char *root_path);
 
 const MtdPartition *get_root_mtd_partition(const char *root_path);
+const MmcPartition *get_root_mmc_partition(const char *root_path);
 
 /* "root" must be the exact name of the root; no relative path is permitted.
  * If the named root is mounted, this will attempt to unmount it first.

@@ -50,6 +50,7 @@
 #define MMC_BOOT_TYPE 0x48
 #define MMC_SYSTEM_TYPE 0x82
 #define MMC_USERDATA_TYPE 0x83
+#define MMC_RECOVERY_TYPE 0x71
 
 #define MMC_RCA 2
 
@@ -70,7 +71,15 @@
 #define MMC_BOOT_TYPE 0x48
 #define MMC_EXT3_TYPE 0x83
 #define MMC_VFAT_TYPE 0xC
-typedef struct MmcPartition MmcPartition;
+typedef struct MmcPartition {
+    char *device_index;
+    char *filesystem;
+    char *name;
+    unsigned dstatus;
+    unsigned dtype ;
+    unsigned dfirstsec;
+    unsigned dsize;
+} MmcPartition;
 
 /* Functions */
 int mmc_scan_partitions();
@@ -79,6 +88,7 @@ int mmc_format_ext3 (MmcPartition *partition);
 int mmc_mount_partition(const MmcPartition *partition, const char *mount_point, \
                         int read_only);
 int mmc_raw_copy (const MmcPartition *partition, char *in_file);
+int mmc_raw_dump (const MmcPartition *partition, char *out_file);
 
 #endif  // MMCUTILS_H_
 

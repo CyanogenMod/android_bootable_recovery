@@ -42,19 +42,19 @@ static const char g_raw[] = "@\0g_raw";
 static const char g_package_file[] = "@\0g_package_file";
 
 static RootInfo g_roots[] = {
-    { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw, NULL },
+    { "BOOT:", DEFAULT_DEVICE, NULL, "boot", NULL, g_raw, NULL },
     { "CACHE:", CACHE_DEVICE, NULL, "cache", "/cache", CACHE_FILESYSTEM, CACHE_FILESYSTEM_OPTIONS },
     { "DATA:", DATA_DEVICE, NULL, "userdata", "/data", DATA_FILESYSTEM, DATA_FILESYSTEM_OPTIONS },
 #ifdef HAS_DATADATA
     { "DATADATA:", DATADATA_DEVICE, NULL, "datadata", "/datadata", DATADATA_FILESYSTEM, DATADATA_FILESYSTEM_OPTIONS },
 #endif
-    { "MISC:", g_mtd_device, NULL, "misc", NULL, g_raw, NULL },
+    { "MISC:", DEFAULT_DEVICE, NULL, "misc", NULL, g_raw, NULL },
     { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file, NULL },
-    { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw, NULL },
+    { "RECOVERY:", DEFAULT_DEVICE, NULL, "recovery", "/", g_raw, NULL },
     { "SDCARD:", SDCARD_DEVICE_PRIMARY, SDCARD_DEVICE_SECONDARY, NULL, "/sdcard", "vfat", NULL },
     { "SDEXT:", SDEXT_DEVICE, NULL, NULL, "/sd-ext", SDEXT_FILESYSTEM, NULL },
     { "SYSTEM:", SYSTEM_DEVICE, NULL, "system", "/system", SYSTEM_FILESYSTEM, SYSTEM_FILESYSTEM_OPTIONS },
-    { "MBM:", g_mtd_device, NULL, "mbm", NULL, g_raw, NULL },
+    { "MBM:", DEFAULT_DEVICE, NULL, "mbm", NULL, g_raw, NULL },
     { "TMP:", NULL, NULL, NULL, "/tmp", NULL, NULL },
 };
 #define NUM_ROOTS (sizeof(g_roots) / sizeof(g_roots[0]))
@@ -255,6 +255,20 @@ ensure_root_path_mounted(const char *root_path)
                 info->filesystem, 0);
     }
 
+    if (info->device == g_mmc_device) {
+        if (info->partition_name == NULL) {
+            return -1;
+        }
+//TODO: make the mtd stuff scan once when it needs to
+        mmc_scan_partitions();
+        const MmcPartition *partition;
+        partition = mmc_find_partition_by_name(info->partition_name);
+        if (partition == NULL) {
+            return -1;
+        }
+        return mmc_mount_partition(partition, info->mount_point, 0);
+    }
+
     if (info->device == NULL || info->mount_point == NULL ||
         info->filesystem == NULL ||
         info->filesystem == g_raw ||
@@ -326,6 +340,19 @@ get_root_mtd_partition(const char *root_path)
     return mtd_find_partition_by_name(info->partition_name);
 }
 
+const MmcPartition *
+get_root_mmc_partition(const char *root_path)
+{
+    const RootInfo *info = get_root_info_for_path(root_path);
+    if (info == NULL || info->device != g_mmc_device ||
+            info->partition_name == NULL)
+    {
+        return NULL;
+    }
+    mmc_scan_partitions();
+    return mmc_find_partition_by_name(info->partition_name);
+}
+
 int
 format_root_device(const char *root)
 {
@@ -348,7 +375,7 @@ format_root_device(const char *root)
         LOGW("format_root_device: can't resolve \"%s\"\n", root);
         return -1;
     }
-    if (info->mount_point != NULL && info->device == g_mtd_device) {
+    if (info->mount_point != NULL && (info->device == g_mtd_device || info->device == g_mmc_device)) {
         /* Don't try to format a mounted device.
          */
         int ret = ensure_root_path_unmounted(root);
@@ -398,9 +425,13 @@ format_root_device(const char *root)
             return -1;
         }
         if (!strcmp(info->filesystem, "ext3")) {
-            if(mmc_format_ext3(partition))
-                LOGE("\n\"%s\" wipe failed!\n", info->partition_name);
+            if(0 == mmc_format_ext3(partition))
+                return 0;
+            LOGE("\n\"%s\" wipe failed!\n", info->partition_name);
+            return -1;
         }
+        LOGW("\n\"%s\" wipe skipped!\n", info->partition_name);
+        return 0;
     }
 
     return format_non_mtd_device(root);

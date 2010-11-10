@@ -34,6 +34,7 @@
 #include "amend/amend.h"
 
 #include "mtdutils/dump_image.h"
+#include "mmcutils/mmcutils.h"
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
 #include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
 
@@ -42,7 +43,22 @@
 #include "extendedcommands.h"
 #include "nandroid.h"
 
-#ifndef BOARD_USES_BMLUTILS
+#ifdef BOARD_USES_BMLUTILS
+#elif BOARD_USES_MMCUTILS
+int write_raw_image(const char* partition, const char* filename) {
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    return mmc_raw_copy (p, filename);
+}
+
+int read_raw_image(const char* partition, const char* filename) {
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    return mmc_raw_dump (p, filename);
+}
+#else
 int write_raw_image(const char* partition, const char* filename) {
     char tmp[PATH_MAX];
     sprintf(tmp, "flash_image boot %s", filename);
