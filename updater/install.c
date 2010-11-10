@@ -660,8 +660,6 @@ static bool write_raw_image_cb(const unsigned char* data,
     return false;
 }
 
-int write_raw_image(const char* partition, const char* filename);
-
 // write_raw_image(file, partition)
 Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
     char* result = NULL;

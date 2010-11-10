@@ -33,9 +33,6 @@
 #include "commands.h"
 #include "amend/amend.h"
 
-#include "mtdutils/mtdutils.h"
-#include "mmcutils/mmcutils.h"
-#include "mtdutils/dump_image.h"
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
 #include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
 
@@ -395,7 +392,7 @@ void show_nandroid_restore_menu()
 void show_mount_usb_storage_menu()
 {
     char command[PATH_MAX];
-    sprintf(command, "echo %s > /sys/devices/platform/usb_mass_storage/lun0/file", SDCARD_DEVICE_PRIMARY);
+    sprintf(command, "echo %s > /sys/devices/platform/usb_mass_storage/lun0/file", BOARD_SDCARD_DEVICE_PRIMARY);
     __system(command);
     static char* headers[] = {  "USB Mass Storage device",
                                 "Leaving this menu unmount",
@@ -441,13 +438,13 @@ int confirm_selection(const char* title, const char* confirm)
     return chosen_item == 7;
 }
 
-int format_non_mtd_device(const char* root)
+int format_unknown_device(const char* root)
 {
     // if this is SDEXT:, don't worry about it.
     if (0 == strcmp(root, "SDEXT:"))
     {
         struct stat st;
-        if (0 != stat(SDEXT_DEVICE, &st))
+        if (0 != stat(BOARD_SDEXT_DEVICE, &st))
         {
             ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
             return 0;
@@ -569,7 +566,7 @@ void show_partition_menu()
             if (!confirm_selection(confirm_format, confirm))
                 continue;
             ui_print("Formatting %s...\n", mmcs[chosen_item][1]);
-            if (0 != format_non_mtd_device(mmcs[chosen_item][1]))
+            if (0 != format_unknown_device(mmcs[chosen_item][1]))
                 ui_print("Error formatting %s!\n", mmcs[chosen_item][1]);
             else
                 ui_print("Done.\n");
@@ -918,22 +915,15 @@ void write_fstab_root(char *root_path, FILE *file)
         LOGW("Unable to get root info for %s during fstab generation!", root_path);
         return;
     }
-    MtdPartition *mtd = get_root_mtd_partition(root_path);
-    if (mtd != NULL)
+    char device[PATH_MAX];
+    int ret = get_root_partition_device(root_path, device);
+    if (ret == 0)
     {
-        fprintf(file, "/dev/block/mtdblock%d ", mtd->device_index);
+        fprintf(file, "%s ", device);
     }
     else
     {
-        MmcPartition *mmc = get_root_mmc_partition(root_path);
-        if (mmc != NULL)
-        {
-            fprintf(file, "%s ", mmc->device_index);
-        }
-        else
-        {
-            fprintf(file, "%s ", info->device);
-        }
+        fprintf(file, "%s ", info->device);
     }
     
     fprintf(file, "%s ", info->mount_point);
@@ -950,7 +940,7 @@ void create_fstab()
     }
     write_fstab_root("CACHE:", file);
     write_fstab_root("DATA:", file);
-#ifdef HAS_DATADATA
+#ifdef BOARD_HAS_DATADATA
     write_fstab_root("DATADATA:", file);
 #endif
     write_fstab_root("SYSTEM:", file);

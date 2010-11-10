@@ -28,7 +28,7 @@
 #include "minui/minui.h"
 #include "minzip/SysUtil.h"
 #include "minzip/Zip.h"
-#include "mtdutils/mounts.h"
+#include "mounts.h"
 #include "mtdutils/mtdutils.h"
 #include "roots.h"
 #include "verifier.h"
@@ -182,6 +182,9 @@ try_update_binary(const char *path, ZipArchive *zip) {
     }
     close(pipefd[1]);
 
+    char* firmware_type = NULL;
+    char* firmware_filename = NULL;
+
     char buffer[1024];
     FILE* from_child = fdopen(pipefd[0], "r");
     while (fgets(buffer, sizeof(buffer), from_child) != NULL) {
@@ -201,6 +204,18 @@ try_update_binary(const char *path, ZipArchive *zip) {
             char* fraction_s = strtok(NULL, " \n");
             float fraction = strtof(fraction_s, NULL);
             ui_set_progress(fraction);
+        } else if (strcmp(command, "firmware") == 0) {
+            char* type = strtok(NULL, " \n");
+            char* filename = strtok(NULL, " \n");
+
+            if (type != NULL && filename != NULL) {
+                if (firmware_type != NULL) {
+                    LOGE("ignoring attempt to do multiple firmware updates");
+                } else {
+                    firmware_type = strdup(type);
+                    firmware_filename = strdup(filename);
+                }
+            }
         } else if (strcmp(command, "ui_print") == 0) {
             char* str = strtok(NULL, "\n");
             if (str) {
@@ -221,6 +236,11 @@ try_update_binary(const char *path, ZipArchive *zip) {
         return INSTALL_ERROR;
     }
 
+    if (firmware_type != NULL) {
+        return handle_firmware_update(firmware_type, firmware_filename, zip);
+    } else {
+        return INSTALL_SUCCESS;
+    }
     return INSTALL_SUCCESS;
 }
 

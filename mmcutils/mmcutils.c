@@ -47,6 +47,16 @@ char *ext3_partitions[] = {"system", "userdata", "cache", "NONE"};
 unsigned vfat_count = 0;
 char *vfat_partitions[] = {"modem", "NONE"};
 
+struct MmcPartition {
+    char *device_index;
+    char *filesystem;
+    char *name;
+    unsigned dstatus;
+    unsigned dtype ;
+    unsigned dfirstsec;
+    unsigned dsize;
+};
+
 typedef struct {
     MmcPartition *partitions;
     int partitions_allocd;
@@ -408,6 +418,7 @@ ERROR3:
 }
 
 
+// TODO: refactor this to not be a giant copy paste mess
 int
 mmc_raw_dump (const MmcPartition *partition, char *out_file) {
     int ch;
@@ -459,3 +470,121 @@ ERROR3:
 
 }
 
+
+int
+mmc_raw_read (const MmcPartition *partition, char *data, int data_size) {
+    int ch;
+    FILE *in;
+    int val = 0;
+    char buf[512];
+    unsigned sz = 0;
+    unsigned i;
+    int ret = -1;
+    char *in_file = partition->device_index;
+
+    in  = fopen ( in_file,  "r" );
+    if (in == NULL)
+        goto ERROR3;
+
+    fseek(in, 0L, SEEK_END);
+    sz = ftell(in);
+    fseek(in, 0L, SEEK_SET);
+
+    fread(data, data_size, 1, in);
+
+    ret = 0;
+ERROR1:
+ERROR2:
+    fclose ( in );
+ERROR3:
+    return ret;
+
+}
+
+int
+mmc_raw_write (const MmcPartition *partition, char *data, int data_size) {
+    int ch;
+    FILE *out;
+    int val = 0;
+    char buf[512];
+    unsigned sz = 0;
+    unsigned i;
+    int ret = -1;
+    char *out_file = partition->device_index;
+
+    out  = fopen ( out_file,  "w" );
+    if (out == NULL)
+        goto ERROR3;
+
+    fwrite(data, data_size, 1, out);
+
+    ret = 0;
+ERROR1:
+ERROR2:
+    fclose ( out );
+ERROR3:
+    return ret;
+
+}
+
+int restore_raw_partition(const char *partition, const char *filename)
+{
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    if (p == NULL)
+        return -1;
+    return mmc_raw_copy(p, filename);
+}
+
+int backup_raw_partition(const char *partition, const char *filename)
+{
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    if (p == NULL)
+        return -1;
+    return mmc_raw_dump(p, filename);
+}
+
+int erase_raw_partition(const char *partition)
+{
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    if (p == NULL)
+        return -1;
+        
+    // TODO: implement raw wipe
+    return 0;
+}
+
+int erase_partition(const char *partition, const char *filesystem)
+{
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    if (p == NULL)
+        return -1;
+    return mmc_format_ext3 (p);
+}
+
+int mount_partition(const char *partition, const char *mount_point, const char *filesystem, int read_only)
+{
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    if (p == NULL)
+        return -1;
+    return mmc_mount_partition(p, mount_point, read_only);
+}
+
+const char* get_partition_device(const char *partition)
+{
+    mmc_scan_partitions();
+    const MmcPartition *p;
+    p = mmc_find_partition_by_name(partition);
+    if (p == NULL)
+        return NULL;
+    return p->device_index;
+}

@@ -444,7 +444,7 @@ wipe_data(int confirm) {
     ui_print("\n-- Wiping data...\n");
     device_wipe_data();
     erase_root("DATA:");
-#ifdef HAS_DATADATA
+#ifdef BOARD_HAS_DATADATA
     erase_root("DATADATA:");
 #endif
     erase_root("CACHE:");

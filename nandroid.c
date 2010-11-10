@@ -33,8 +33,6 @@
 #include "commands.h"
 #include "amend/amend.h"
 
-#include "mtdutils/dump_image.h"
-#include "mmcutils/mmcutils.h"
 #include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
 #include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
 
@@ -42,33 +40,6 @@
 
 #include "extendedcommands.h"
 #include "nandroid.h"
-
-#ifdef BOARD_USES_BMLUTILS
-#elif BOARD_USES_MMCUTILS
-int write_raw_image(const char* partition, const char* filename) {
-    mmc_scan_partitions();
-    const MmcPartition *p;
-    p = mmc_find_partition_by_name(partition);
-    return mmc_raw_copy (p, filename);
-}
-
-int read_raw_image(const char* partition, const char* filename) {
-    mmc_scan_partitions();
-    const MmcPartition *p;
-    p = mmc_find_partition_by_name(partition);
-    return mmc_raw_dump (p, filename);
-}
-#else
-int write_raw_image(const char* partition, const char* filename) {
-    char tmp[PATH_MAX];
-    sprintf(tmp, "flash_image boot %s", filename);
-    return __system(tmp);
-}
-
-int read_raw_image(const char* partition, const char* filename) {
-    return dump_image(partition, filename, NULL);
-}
-#endif
 
 int print_and_error(char* message) {
     ui_print(message);
@@ -164,13 +135,13 @@ int nandroid_backup(const char* backup_path)
 #ifndef BOARD_RECOVERY_IGNORE_BOOTABLES
     ui_print("Backing up boot...\n");
     sprintf(tmp, "%s/%s", backup_path, "boot.img");
-    ret = read_raw_image("boot", tmp);
+    ret = backup_raw_partition("boot", tmp);
     if (0 != ret)
         return print_and_error("Error while dumping boot image!\n");
 
     ui_print("Backing up recovery...\n");
     sprintf(tmp, "%s/%s", backup_path, "recovery.img");
-    ret = read_raw_image("recovery", tmp);
+    ret = backup_raw_partition("recovery", tmp);
     if (0 != ret)
         return print_and_error("Error while dumping recovery image!\n");
 #endif
@@ -181,7 +152,7 @@ int nandroid_backup(const char* backup_path)
     if (0 != (ret = nandroid_backup_partition(backup_path, "DATA:")))
         return ret;
 
-#ifdef HAS_DATADATA
+#ifdef BOARD_HAS_DATADATA
     if (0 != (ret = nandroid_backup_partition(backup_path, "DATADATA:")))
         return ret;
 #endif
@@ -200,7 +171,7 @@ int nandroid_backup(const char* backup_path)
     if (0 != (ret = nandroid_backup_partition_extended(backup_path, "CACHE:", 0)))
         return ret;
 
-    if (0 != stat(SDEXT_DEVICE, &st))
+    if (0 != stat(BOARD_SDEXT_DEVICE, &st))
     {
         ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
     }
@@ -313,7 +284,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
             return print_and_error("Error while formatting BOOT:!\n");
         sprintf(tmp, "%s/boot.img", backup_path);
         ui_print("Restoring boot image...\n");
-        if (0 != (ret = write_raw_image("boot", tmp))) {
+        if (0 != (ret = restore_raw_partition("boot", tmp))) {
             ui_print("Error while flashing boot image!");
             return ret;
         }
@@ -326,7 +297,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "DATA:")))
         return ret;
         
-#ifdef HAS_DATADATA
+#ifdef BOARD_HAS_DATADATA
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "DATADATA:")))
         return ret;
 #endif

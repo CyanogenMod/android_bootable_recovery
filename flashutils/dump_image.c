@@ -23,12 +23,13 @@
 #include <sys/ioctl.h>
 
 #include "cutils/log.h"
-#include "mtdutils.h"
-#include "dump_image.h"
+#include "flashutils.h"
 
 #ifdef LOG_TAG
 #undef LOG_TAG
 #endif
+
+#if 0
 
 #define LOG_TAG "dump_image"
 
@@ -134,4 +135,16 @@ int main(int argc, char **argv)
     }
 
     return dump_image(argv[1], argv[2], NULL);
+}
+
+#endif
+
+int main(int argc, char **argv)
+{
+    if (argc != 3) {
+        fprintf(stderr, "usage: %s partition file.img\n", argv[0]);
+        return 2;
+    }
+
+    return backup_raw_partition(argv[1], argv[2]);
 }

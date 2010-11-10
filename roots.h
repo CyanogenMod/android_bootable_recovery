@@ -23,75 +23,73 @@
 #include "mmcutils/mmcutils.h"
 
 #ifndef BOARD_USES_MMCUTILS
-#define DEFAULT_DEVICE g_mtd_device
 #define DEFAULT_FILESYSTEM "yaffs2"
 #else
-#define DEFAULT_DEVICE g_mmc_device
 #define DEFAULT_FILESYSTEM "ext3"
 #endif
 
-#ifndef SDCARD_DEVICE_PRIMARY
-#define SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0p1"
+#ifndef BOARD_SDCARD_DEVICE_PRIMARY
+#define BOARD_SDCARD_DEVICE_PRIMARY "/dev/block/mmcblk0p1"
 #endif
 
-#ifndef SDCARD_DEVICE_SECONDARY
-#define SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0"
+#ifndef BOARD_SDCARD_DEVICE_SECONDARY
+#define BOARD_SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0"
 #endif
 
-#ifndef SDEXT_DEVICE
-#define SDEXT_DEVICE "/dev/block/mmcblk0p2"
+#ifndef BOARD_SDEXT_DEVICE
+#define BOARD_SDEXT_DEVICE "/dev/block/mmcblk0p2"
 #endif
 
-#ifndef SDEXT_FILESYSTEM
-#define SDEXT_FILESYSTEM "auto"
+#ifndef BOARD_SDEXT_FILESYSTEM
+#define BOARD_SDEXT_FILESYSTEM "auto"
 #endif
 
-#ifndef DATA_DEVICE
-#define DATA_DEVICE DEFAULT_DEVICE
+#ifndef BOARD_DATA_DEVICE
+#define BOARD_DATA_DEVICE g_default_device
 #endif
 
-#ifndef DATA_FILESYSTEM
-#define DATA_FILESYSTEM DEFAULT_FILESYSTEM
+#ifndef BOARD_DATA_FILESYSTEM
+#define BOARD_DATA_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
-#ifndef DATADATA_DEVICE
-#define DATADATA_DEVICE DEFAULT_DEVICE
+#ifndef BOARD_DATADATA_DEVICE
+#define BOARD_DATADATA_DEVICE g_default_device
 #endif
 
-#ifndef DATADATA_FILESYSTEM
-#define DATADATA_FILESYSTEM DEFAULT_FILESYSTEM
+#ifndef BOARD_DATADATA_FILESYSTEM
+#define BOARD_DATADATA_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
-#ifndef CACHE_DEVICE
-#define CACHE_DEVICE DEFAULT_DEVICE
+#ifndef BOARD_CACHE_DEVICE
+#define BOARD_CACHE_DEVICE g_default_device
 #endif
 
-#ifndef CACHE_FILESYSTEM
-#define CACHE_FILESYSTEM DEFAULT_FILESYSTEM
+#ifndef BOARD_CACHE_FILESYSTEM
+#define BOARD_CACHE_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
-#ifndef SYSTEM_DEVICE
-#define SYSTEM_DEVICE DEFAULT_DEVICE
+#ifndef BOARD_SYSTEM_DEVICE
+#define BOARD_SYSTEM_DEVICE g_default_device
 #endif
 
-#ifndef SYSTEM_FILESYSTEM
-#define SYSTEM_FILESYSTEM DEFAULT_FILESYSTEM
+#ifndef BOARD_SYSTEM_FILESYSTEM
+#define BOARD_SYSTEM_FILESYSTEM DEFAULT_FILESYSTEM
 #endif
 
-#ifndef DATA_FILESYSTEM_OPTIONS
-#define DATA_FILESYSTEM_OPTIONS NULL
+#ifndef BOARD_DATA_FILESYSTEM_OPTIONS
+#define BOARD_DATA_FILESYSTEM_OPTIONS NULL
 #endif
 
-#ifndef CACHE_FILESYSTEM_OPTIONS
-#define CACHE_FILESYSTEM_OPTIONS NULL
+#ifndef BOARD_CACHE_FILESYSTEM_OPTIONS
+#define BOARD_CACHE_FILESYSTEM_OPTIONS NULL
 #endif
 
-#ifndef DATADATA_FILESYSTEM_OPTIONS
-#define DATADATA_FILESYSTEM_OPTIONS NULL
+#ifndef BOARD_DATADATA_FILESYSTEM_OPTIONS
+#define BOARD_DATADATA_FILESYSTEM_OPTIONS NULL
 #endif
 
-#ifndef SYSTEM_FILESYSTEM_OPTIONS
-#define SYSTEM_FILESYSTEM_OPTIONS NULL
+#ifndef BOARD_SYSTEM_FILESYSTEM_OPTIONS
+#define BOARD_SYSTEM_FILESYSTEM_OPTIONS NULL
 #endif
 
 
@@ -129,7 +127,7 @@ int ensure_root_path_mounted(const char *root_path);
 int ensure_root_path_unmounted(const char *root_path);
 
 const MtdPartition *get_root_mtd_partition(const char *root_path);
-const MmcPartition *get_root_mmc_partition(const char *root_path);
+int get_root_partition_device(const char *root_path, char *device);
 
 /* "root" must be the exact name of the root; no relative path is permitted.
  * If the named root is mounted, this will attempt to unmount it first.
