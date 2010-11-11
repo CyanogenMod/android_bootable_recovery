@@ -579,12 +579,13 @@ int mount_partition(const char *partition, const char *mount_point, const char *
     return mmc_mount_partition(p, mount_point, read_only);
 }
 
-const char* get_partition_device(const char *partition)
+int get_partition_device(const char *partition, char *device)
 {
     mmc_scan_partitions();
     const MmcPartition *p;
     p = mmc_find_partition_by_name(partition);
     if (p == NULL)
-        return NULL;
-    return p->device_index;
+        return -1;
+    strcpy(device, p->device_index);
+    return 0;
 }
