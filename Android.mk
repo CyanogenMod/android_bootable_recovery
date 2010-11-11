@@ -78,6 +78,7 @@ ifdef BOARD_USES_BMLUTILS
 else ifdef BOARD_USES_MMCUTILS
 	BOARD_FLASH_LIBRARY := libmmcutils
 else
+    LOCAL_CFLAGS += -DBOARD_USES_MTDUTILS
 	BOARD_FLASH_LIBRARY := libmtdutils
 endif
 

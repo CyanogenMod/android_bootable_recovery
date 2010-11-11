@@ -114,6 +114,7 @@ void FreeFileContents(FileContents* file) {
 // hash of the data, and we'll do the load expecting to find one of
 // those hashes.
 int LoadMTDContents(const char* filename, FileContents* file) {
+#ifdef BOARD_USES_MTDUTILS
     char* copy = strdup(filename);
     const char* magic = strtok(copy, ":");
     if (strcmp(magic, "MTD") != 0) {
@@ -256,6 +257,10 @@ int LoadMTDContents(const char* filename, FileContents* file) {
     free(sha1sum);
 
     return 0;
+#else
+    printf("mtd utils not supported.\n");
+    return -1;
+#endif
 }
 
 
@@ -296,6 +301,7 @@ int SaveFileContents(const char* filename, FileContents file) {
 // "MTD:<partition>[:...]".  Return 0 on success.
 int WriteToMTDPartition(unsigned char* data, size_t len,
                         const char* target_mtd) {
+#ifdef BOARD_USES_MTDUTILS
     char* partition = strchr(target_mtd, ':');
     if (partition == NULL) {
         printf("bad MTD target name \"%s\"\n", target_mtd);
@@ -348,6 +354,11 @@ int WriteToMTDPartition(unsigned char* data, size_t len,
 
     free(partition);
     return 0;
+#else
+    printf("mtd utils not supported.\n");
+    return -1;
+#endif
+
 }
 
 
