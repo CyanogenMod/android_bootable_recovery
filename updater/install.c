@@ -32,11 +32,17 @@
 #include "edify/expr.h"
 #include "mincrypt/sha.h"
 #include "minzip/DirUtil.h"
-#include "mtdutils/mounts.h"
+#include "mounts.h"
 #include "mtdutils/mtdutils.h"
 #include "mmcutils/mmcutils.h"
 #include "updater.h"
 #include "applypatch/applypatch.h"
+
+#ifndef BOARD_USES_MMCUTILS
+#define DEFAULT_FILESYSTEM "yaffs2"
+#else
+#define DEFAULT_FILESYSTEM "ext3"
+#endif
 
 // mount(type, location, mount_point)
 //
@@ -69,40 +75,11 @@ Value* MountFn(const char* name, State* state, int argc, Expr* argv[]) {
 
     mkdir(mount_point, 0755);
 
-    if (strcmp(type, "MTD") == 0) {
-        mtd_scan_partitions();
-        const MtdPartition* mtd;
-        mtd = mtd_find_partition_by_name(location);
-        if (mtd == NULL) {
-            fprintf(stderr, "%s: no mtd partition named \"%s\"",
-                    name, location);
+    if (strcmp(type, "MTD") == 0 || strcmp(type, "MMC") == 0) {
+        if (0 == mount_partition(location, mount_point, DEFAULT_FILESYSTEM, 0))
+            result = mount_point;
+        else
             result = strdup("");
-            goto done;
-        }
-        if (mtd_mount_partition(mtd, mount_point, "yaffs2", 0 /* rw */) != 0) {
-            fprintf(stderr, "mtd mount of %s failed: %s\n",
-                    location, strerror(errno));
-            result = strdup("");
-            goto done;
-        }
-        result = mount_point;
-    } else if (strcmp(type, "MMC") == 0) {
-        mmc_scan_partitions();
-        const MmcPartition* mmc;
-        mmc = mmc_find_partition_by_name(location);
-        if (mmc == NULL) {
-            fprintf(stderr, "%s: no mmc partition named \"%s\"",
-                    name, location);
-            result = strdup("");
-            goto done;
-        }
-        if (mmc_mount_partition(mmc, mount_point, 0 /* rw */) != 0) {
-            fprintf(stderr, "mmc mount of %s failed: %s\n",
-                    location, strerror(errno));
-            result = strdup("");
-            goto done;
-        }
-        result = mount_point;
     } else {
         if (mount(location, mount_point, type,
                   MS_NOATIME | MS_NODEV | MS_NODIRATIME, "") < 0) {
@@ -204,43 +181,8 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         goto done;
     }
 
-    if (strcmp(type, "MTD") == 0) {
-        mtd_scan_partitions();
-        const MtdPartition* mtd = mtd_find_partition_by_name(location);
-        if (mtd == NULL) {
-            fprintf(stderr, "%s: no mtd partition named \"%s\"",
-                    name, location);
-            result = strdup("");
-            goto done;
-        }
-        MtdWriteContext* ctx = mtd_write_partition(mtd);
-        if (ctx == NULL) {
-            fprintf(stderr, "%s: can't write \"%s\"", name, location);
-            result = strdup("");
-            goto done;
-        }
-        if (mtd_erase_blocks(ctx, -1) == -1) {
-            mtd_write_close(ctx);
-            fprintf(stderr, "%s: failed to erase \"%s\"", name, location);
-            result = strdup("");
-            goto done;
-        }
-        if (mtd_write_close(ctx) != 0) {
-            fprintf(stderr, "%s: failed to close \"%s\"", name, location);
-            result = strdup("");
-            goto done;
-        }
-    } else if (strcmp(type, "MMC") == 0) {
-        mmc_scan_partitions();
-        const MmcPartition* mmc = mmc_find_partition_by_name(location);
-        if (mmc == NULL) {
-            fprintf(stderr, "%s: no mmc partition named \"%s\"",
-                    name, location);
-            result = strdup("");
-            goto done;
-        }
-        if (mmc_format_ext3(mmc))
-        {
+    if (strcmp(type, "MTD") == 0 || strcmp(type, "MMC") == 0) {
+        if (0 != erase_partition(location, NULL)) {
             result = strdup("");
             goto done;
         }
@@ -679,80 +621,10 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
         goto done;
     }
 
-#ifdef BOARD_USES_BMLUTILS
-    if (0 == write_raw_image(name, filename)) {
-        result = partition;
-    }
-    result = strdup("Failure");
-#else
-    mtd_scan_partitions();
-    const MtdPartition* mtd = mtd_find_partition_by_name(partition);
-    if (mtd == NULL) {
-        fprintf(stderr, "%s: no mtd partition named \"%s\"\n", name, partition);
+    if (0 == restore_raw_partition(partition, filename))
+        result = strdup(partition);
+    else
         result = strdup("");
-        goto MMC;
-    }
-
-    MtdWriteContext* ctx = mtd_write_partition(mtd);
-    if (ctx == NULL) {
-        fprintf(stderr, "%s: can't write mtd partition \"%s\"\n",
-                name, partition);
-        result = strdup("");
-        goto done;
-    }
-
-    bool success;
-
-    FILE* f = fopen(filename, "rb");
-    if (f == NULL) {
-        fprintf(stderr, "%s: can't open %s: %s\n",
-                name, filename, strerror(errno));
-        result = strdup("");
-        goto done;
-    }
-
-    success = true;
-    char* buffer = malloc(BUFSIZ);
-    int read;
-    while (success && (read = fread(buffer, 1, BUFSIZ, f)) > 0) {
-        int wrote = mtd_write_data(ctx, buffer, read);
-        success = success && (wrote == read);
-        if (!success) {
-            fprintf(stderr, "mtd_write_data to %s failed: %s\n",
-                    partition, strerror(errno));
-        }
-    }
-    free(buffer);
-    fclose(f);
-
-    if (mtd_erase_blocks(ctx, -1) == -1) {
-        fprintf(stderr, "%s: error erasing blocks of %s\n", name, partition);
-    }
-    if (mtd_write_close(ctx) != 0) {
-        fprintf(stderr, "%s: error closing write of %s\n", name, partition);
-    }
-
-    printf("%s %s partition from %s\n",
-           success ? "wrote" : "failed to write", partition, filename);
-
-    result = success ? partition : strdup("");
-    goto done;
-
-MMC:
-    mmc_scan_partitions();
-    const MmcPartition* mmc = mmc_find_partition_by_name(partition);
-    if (mmc == NULL) {
-        fprintf(stderr, "%s: no mmc partition named \"%s\"\n", name, partition);
-        result = strdup("");
-        goto done;
-    }
-    if (mmc_raw_copy(mmc, filename)) {
-        fprintf(stderr, "%s: error erasing mmc partition named \"%s\"\n", name, partition);
-        result = strdup("");
-        goto done;
-    }
-    result = partition;
-#endif
 
 done:
     if (result != partition) free(partition);

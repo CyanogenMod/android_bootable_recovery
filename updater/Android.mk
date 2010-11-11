@@ -4,6 +4,7 @@ LOCAL_PATH := $(call my-dir)
 
 updater_src_files := \
 	install.c \
+	../mounts.c \
 	updater.c
 
 #
@@ -18,13 +19,10 @@ LOCAL_MODULE_TAGS := eng
 
 LOCAL_SRC_FILES := $(updater_src_files)
 
-ifdef BOARD_USES_BMLUTILS
-  LOCAL_CFLAGS += -DBOARD_USES_BMLUTILS
-  LOCAL_STATIC_LIBRARIES += libbmlutils
-endif
+LOCAL_STATIC_LIBRARIES += $(BOARD_FLASH_LIBRARY)
 
 LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UPDATER_LIBS) $(TARGET_RECOVERY_UPDATER_EXTRA_LIBS)
-LOCAL_STATIC_LIBRARIES += libapplypatch libedify libmtdutils libmmcutils libminzip libz
+LOCAL_STATIC_LIBRARIES += libapplypatch libedify libminzip libz
 LOCAL_STATIC_LIBRARIES += libmincrypt libbz
 LOCAL_STATIC_LIBRARIES += libcutils libstdc++ libc
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/..
