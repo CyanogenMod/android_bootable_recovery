@@ -337,7 +337,7 @@ ssize_t mtd_read_data(MtdReadContext *ctx, char *data, size_t len)
             read += ctx->partition->erase_size;
         }
 
-        if (read >= len) {
+        if (read >= (int)len) {
             return read;
         }
 
