@@ -33,16 +33,11 @@
 #include "mincrypt/sha.h"
 #include "minzip/DirUtil.h"
 #include "mounts.h"
+#include "flashutils/flashutils.h"
 #include "mtdutils/mtdutils.h"
 #include "mmcutils/mmcutils.h"
 #include "updater.h"
 #include "applypatch/applypatch.h"
-
-#ifndef BOARD_USES_MMCUTILS
-#define DEFAULT_FILESYSTEM "yaffs2"
-#else
-#define DEFAULT_FILESYSTEM "ext3"
-#endif
 
 // mount(type, location, mount_point)
 //
@@ -76,7 +71,7 @@ Value* MountFn(const char* name, State* state, int argc, Expr* argv[]) {
     mkdir(mount_point, 0755);
 
     if (strcmp(type, "MTD") == 0 || strcmp(type, "MMC") == 0) {
-        if (0 == mount_partition(location, mount_point, DEFAULT_FILESYSTEM, 0))
+        if (0 == mount_partition(location, mount_point, get_default_filesystem(), 0))
             result = mount_point;
         else
             result = strdup("");

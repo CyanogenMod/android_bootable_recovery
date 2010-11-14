@@ -527,7 +527,7 @@ ERROR3:
 
 }
 
-int restore_raw_partition(const char *partition, const char *filename)
+int cmd_mmc_restore_raw_partition(const char *partition, const char *filename)
 {
     mmc_scan_partitions();
     const MmcPartition *p;
@@ -537,7 +537,7 @@ int restore_raw_partition(const char *partition, const char *filename)
     return mmc_raw_copy(p, filename);
 }
 
-int backup_raw_partition(const char *partition, const char *filename)
+int cmd_mmc_backup_raw_partition(const char *partition, const char *filename)
 {
     mmc_scan_partitions();
     const MmcPartition *p;
@@ -547,19 +547,19 @@ int backup_raw_partition(const char *partition, const char *filename)
     return mmc_raw_dump(p, filename);
 }
 
-int erase_raw_partition(const char *partition)
+int cmd_mmc_erase_raw_partition(const char *partition)
 {
     mmc_scan_partitions();
     const MmcPartition *p;
     p = mmc_find_partition_by_name(partition);
     if (p == NULL)
         return -1;
-        
+
     // TODO: implement raw wipe
     return 0;
 }
 
-int erase_partition(const char *partition, const char *filesystem)
+int cmd_mmc_erase_partition(const char *partition, const char *filesystem)
 {
     mmc_scan_partitions();
     const MmcPartition *p;
@@ -569,7 +569,7 @@ int erase_partition(const char *partition, const char *filesystem)
     return mmc_format_ext3 (p);
 }
 
-int mount_partition(const char *partition, const char *mount_point, const char *filesystem, int read_only)
+int cmd_mmc_mount_partition(const char *partition, const char *mount_point, const char *filesystem, int read_only)
 {
     mmc_scan_partitions();
     const MmcPartition *p;
@@ -579,7 +579,7 @@ int mount_partition(const char *partition, const char *mount_point, const char *
     return mmc_mount_partition(p, mount_point, read_only);
 }
 
-int get_partition_device(const char *partition, char *device)
+int cmd_mmc_get_partition_device(const char *partition, char *device)
 {
     mmc_scan_partitions();
     const MmcPartition *p;

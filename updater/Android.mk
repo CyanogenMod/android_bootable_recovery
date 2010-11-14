@@ -19,7 +19,7 @@ LOCAL_MODULE_TAGS := eng
 
 LOCAL_SRC_FILES := $(updater_src_files)
 
-LOCAL_STATIC_LIBRARIES += $(BOARD_FLASH_LIBRARY)
+LOCAL_STATIC_LIBRARIES += libflashutils libmtdutils libmmcutils libbmlutils
 
 LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UPDATER_LIBS) $(TARGET_RECOVERY_UPDATER_EXTRA_LIBS)
 LOCAL_STATIC_LIBRARIES += libapplypatch libedify libminzip libz
