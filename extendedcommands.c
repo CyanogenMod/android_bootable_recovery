@@ -68,7 +68,7 @@ int install_zip(const char* packagefilepath)
         ui_set_background(BACKGROUND_ICON_ERROR);
         ui_print("Installation aborted.\n");
         return 1;
-    } 
+    }
 #ifndef BOARD_HAS_NO_MISC_PARTITION
     if (firmware_update_pending()) {
         ui_print("\nReboot via menu to complete\ninstallation.\n");
@@ -93,7 +93,7 @@ void show_install_update_menu()
 {
     static char* headers[] = {  "Apply update from .zip file on SD card",
                                 "",
-                                NULL 
+                                NULL
     };
     for (;;)
     {
@@ -118,7 +118,7 @@ void show_install_update_menu()
             default:
                 return;
         }
-        
+
     }
 }
 
@@ -153,11 +153,11 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
         ui_print("Couldn't open directory.\n");
         return NULL;
     }
-  
+
     int extension_length = 0;
     if (fileExtensionOrDirectory != NULL)
         extension_length = strlen(fileExtensionOrDirectory);
-  
+
     int isCounting = 1;
     i = 0;
     for (pass = 0; pass < 2; pass++) {
@@ -165,7 +165,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
             // skip hidden files
             if (de->d_name[0] == '.')
                 continue;
-            
+
             // NULL means that we are gathering directories, so skip this
             if (fileExtensionOrDirectory != NULL)
             {
@@ -187,13 +187,13 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
                 if (!(S_ISDIR(info.st_mode)))
                     continue;
             }
-            
+
             if (pass == 0)
             {
                 total++;
                 continue;
             }
-            
+
             files[i] = (char*) malloc(dirLen + strlen(de->d_name) + 2);
             strcpy(files[i], directory);
             strcat(files[i], de->d_name);
@@ -290,7 +290,7 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
                     break;
                 }
                 continue;
-            } 
+            }
             strcpy(ret, files[chosen_item - numDirs]);
             return_value = ret;
             break;
@@ -312,9 +312,9 @@ void show_choose_zip_menu()
 
     static char* headers[] = {  "Choose a zip to apply",
                                 "",
-                                NULL 
+                                NULL
     };
-    
+
     char* file = choose_file_menu("/sdcard/", ".zip", headers);
     if (file == NULL)
         return;
@@ -328,57 +328,16 @@ void show_choose_zip_menu()
         install_zip(sdcard_package_file);
 }
 
-// This was pulled from bionic: The default system command always looks
-// for shell in /system/bin/sh. This is bad.
-#define _PATH_BSHELL "/sbin/sh"
-
-extern char **environ;
-int
-__system(const char *command)
-{
-  pid_t pid;
-    sig_t intsave, quitsave;
-    sigset_t mask, omask;
-    int pstat;
-    char *argp[] = {"sh", "-c", NULL, NULL};
-
-    if (!command)        /* just checking... */
-        return(1);
-
-    argp[2] = (char *)command;
-
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGCHLD);
-    sigprocmask(SIG_BLOCK, &mask, &omask);
-    switch (pid = vfork()) {
-    case -1:            /* error */
-        sigprocmask(SIG_SETMASK, &omask, NULL);
-        return(-1);
-    case 0:                /* child */
-        sigprocmask(SIG_SETMASK, &omask, NULL);
-        execve(_PATH_BSHELL, argp, environ);
-    _exit(127);
-  }
-
-    intsave = (sig_t)  bsd_signal(SIGINT, SIG_IGN);
-    quitsave = (sig_t) bsd_signal(SIGQUIT, SIG_IGN);
-    pid = waitpid(pid, (int *)&pstat, 0);
-    sigprocmask(SIG_SETMASK, &omask, NULL);
-    (void)bsd_signal(SIGINT, intsave);
-    (void)bsd_signal(SIGQUIT, quitsave);
-    return (pid == -1 ? -1 : pstat);
-}
-
 void show_nandroid_restore_menu()
 {
     if (ensure_root_path_mounted("SDCARD:") != 0) {
         LOGE ("Can't mount /sdcard\n");
         return;
     }
-    
+
     static char* headers[] = {  "Choose an image to restore",
                                 "",
-                                NULL 
+                                NULL
     };
 
     char* file = choose_file_menu("/sdcard/clockworkmod/backup/", NULL, headers);
@@ -398,18 +357,18 @@ void show_mount_usb_storage_menu()
                                 "Leaving this menu unmount",
                                 "your SD card from your PC.",
                                 "",
-                                NULL 
+                                NULL
     };
-    
+
     static char* list[] = { "Unmount", NULL };
-    
+
     for (;;)
     {
         int chosen_item = get_menu_selection(headers, list, 0);
         if (chosen_item == GO_BACK || chosen_item == 0)
             break;
     }
-    
+
     __system("echo '' > /sys/devices/platform/usb_mass_storage/lun0/file");
     __system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
 }
@@ -465,7 +424,7 @@ int format_unknown_device(const char* root)
     __system(tmp);
     sprintf(tmp, "rm -rf %s/.*", path);
     __system(tmp);
-    
+
     ensure_root_path_unmounted(root);
     return 0;
 }
@@ -478,33 +437,33 @@ void show_partition_menu()
 {
     static char* headers[] = {  "Mounts and Storage Menu",
                                 "",
-                                NULL 
+                                NULL
     };
 
     typedef char* string;
-    string mounts[MOUNTABLE_COUNT][3] = { 
+    string mounts[MOUNTABLE_COUNT][3] = {
         { "mount /system", "unmount /system", "SYSTEM:" },
         { "mount /data", "unmount /data", "DATA:" },
         { "mount /cache", "unmount /cache", "CACHE:" },
         { "mount /sdcard", "unmount /sdcard", "SDCARD:" },
         { "mount /sd-ext", "unmount /sd-ext", "SDEXT:" }
         };
-        
+
     string mtds[MTD_COUNT][2] = {
         { "format boot", "BOOT:" },
         { "format system", "SYSTEM:" },
         { "format data", "DATA:" },
         { "format cache", "CACHE:" },
     };
-    
+
     string mmcs[MMC_COUNT][3] = {
       { "format sdcard", "SDCARD:" },
-      { "format sd-ext", "SDEXT:" }  
+      { "format sd-ext", "SDEXT:" }
     };
-    
+
     static char* confirm_format  = "Confirm format?";
     static char* confirm = "Yes - Format";
-        
+
     for (;;)
     {
         int ismounted[MOUNTABLE_COUNT];
@@ -515,20 +474,20 @@ void show_partition_menu()
             ismounted[i] = is_root_path_mounted(mounts[i][2]);
             options[i] = ismounted[i] ? mounts[i][1] : mounts[i][0];
         }
-        
+
         for (i = 0; i < MTD_COUNT; i++)
         {
             options[MOUNTABLE_COUNT + i] = mtds[i][0];
         }
-            
+
         for (i = 0; i < MMC_COUNT; i++)
         {
             options[MOUNTABLE_COUNT + MTD_COUNT + i] = mmcs[i][0];
         }
-    
+
         options[MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT] = "mount USB storage";
         options[MOUNTABLE_COUNT + MTD_COUNT + MMC_COUNT + 1] = NULL;
-        
+
         int chosen_item = get_menu_selection(headers, options, 0);
         if (chosen_item == GO_BACK)
             break;
@@ -607,8 +566,8 @@ int run_script_from_buffer(char* script_data, int script_len, char* filename)
         }
         printf("Failure at line %d:\n%s\n", num, next ? line : "(not found)");
         return 1;
-    }    
-    
+    }
+
     return 0;
 }
 
@@ -619,7 +578,7 @@ int run_script(char* filename)
         printf("Error executing stat on file: %s\n", filename);
         return 1;
     }
-    
+
     int script_len = file_info.st_size;
     char* script_data = (char*)malloc(script_len + 1);
     FILE *file = fopen(filename, "rb");
@@ -654,14 +613,14 @@ int run_and_remove_extendedcommand()
     if (i == 0) {
         ui_print("Timed out waiting for SD card... continuing anyways.");
     }
-    
+
     sprintf(tmp, "/tmp/%s", basename(EXTENDEDCOMMAND_SCRIPT));
     return run_script(tmp);
 }
 
 int amend_main(int argc, char** argv)
 {
-    if (argc != 2) 
+    if (argc != 2)
     {
         printf("Usage: amend <script>\n");
         return 0;
@@ -740,10 +699,10 @@ void show_nandroid_menu()
 {
     static char* headers[] = {  "Nandroid",
                                 "",
-                                NULL 
+                                NULL
     };
 
-    static char* list[] = { "Backup", 
+    static char* list[] = { "Backup",
                             "Restore",
                             "Advanced Restore",
                             NULL
@@ -875,7 +834,7 @@ void show_advanced_menu()
                 int ext_size = get_menu_selection(ext_headers, ext_sizes, 0);
                 if (ext_size == GO_BACK)
                     continue;
-                 
+
                 int swap_size = get_menu_selection(swap_headers, swap_sizes, 0);
                 if (swap_size == GO_BACK)
                     continue;
@@ -925,9 +884,9 @@ void write_fstab_root(char *root_path, FILE *file)
     {
         fprintf(file, "%s ", info->device);
     }
-    
+
     fprintf(file, "%s ", info->mount_point);
-    fprintf(file, "%s %s\n", info->filesystem, info->filesystem_options == NULL ? "rw" : info->filesystem_options); 
+    fprintf(file, "%s %s\n", info->filesystem, info->filesystem_options == NULL ? "rw" : info->filesystem_options);
 }
 
 void create_fstab()

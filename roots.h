@@ -19,6 +19,7 @@
 #define RECOVERY_ROOTS_H_
 
 #include "minzip/Zip.h"
+#include "flashutils/flashutils.h"
 #include "mtdutils/mtdutils.h"
 #include "mmcutils/mmcutils.h"
 

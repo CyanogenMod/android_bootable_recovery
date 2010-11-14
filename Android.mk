@@ -73,16 +73,7 @@ else
 endif
 LOCAL_STATIC_LIBRARIES += libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image
 
-ifdef BOARD_USES_BMLUTILS
-	BOARD_FLASH_LIBRARY := libbmlutils
-else ifdef BOARD_USES_MMCUTILS
-	BOARD_FLASH_LIBRARY := libmmcutils
-else
-    LOCAL_CFLAGS += -DBOARD_USES_MTDUTILS
-	BOARD_FLASH_LIBRARY := libmtdutils
-endif
-
-LOCAL_STATIC_LIBRARIES += $(BOARD_FLASH_LIBRARY)
+LOCAL_STATIC_LIBRARIES += libflashutils libmtdutils libmmcutils libbmlutils
 
 LOCAL_STATIC_LIBRARIES += libamend
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmincrypt
