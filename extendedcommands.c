@@ -862,6 +862,8 @@ void show_advanced_menu()
                                              "256M",
                                              "512M",
                                              "1024M",
+                                             "2048M",
+                                             "4096M",
                                              NULL };
 
                 static char* swap_sizes[] = { "0M",
