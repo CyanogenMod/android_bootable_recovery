@@ -29,7 +29,7 @@
 #include "minui/minui.h"
 #include "recovery_ui.h"
 
-#ifdef KEY_POWER_IS_SELECT_ITEM
+#ifdef BOARD_HAS_NO_SELECT_BUTTON
 static int gShowBackButton = 1;
 #else
 static int gShowBackButton = 0;
