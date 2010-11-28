@@ -302,12 +302,13 @@ int
 get_root_partition_device(const char *root_path, char *device)
 {
     const RootInfo *info = get_root_info_for_path(root_path);
-    if (info == NULL || info->device != g_default_device ||
-            info->partition_name == NULL)
+    if (info == NULL)
     {
         return NULL;
     }
-    return get_partition_device(info->partition_name, device);
+    if (info->device == g_default_device)
+        return get_partition_device(info->partition_name, device);
+    return info->device;
 }
 
 #ifndef BOARD_HAS_NO_MISC_PARTITION
