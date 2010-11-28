@@ -34,12 +34,6 @@
 
 #define PRESS_THRESHHOLD    10
 
-enum {
-    DOWN_NOT,
-    DOWN_SENT,
-    DOWN_RELEASED,
-};
-
 struct virtualkey {
     int scancode;
     int centerx, centery;
