@@ -32,6 +32,8 @@
 #define VIBRATOR_TIMEOUT_FILE	"/sys/class/timed_output/vibrator/enable"
 #define VIBRATOR_TIME_MS	50
 
+#define PRESS_THRESHHOLD    10
+
 enum {
     DOWN_NOT,
     DOWN_SENT,
@@ -46,7 +48,7 @@ struct virtualkey {
 
 struct position {
     int x, y;
-    int synced;
+    int pressed;
     struct input_absinfo xi, yi;
 };
 
@@ -57,7 +59,7 @@ struct ev {
     int vk_count;
 
     struct position p, mt_p;
-    int down;
+    int sent, mt_idx;
 };
 
 static struct pollfd ev_fds[MAX_DEVICES];
@@ -141,15 +143,16 @@ static int vk_init(struct ev *e)
     if (e->vk_count <= 0)
         return -1;
 
-    e->down = DOWN_NOT;
+    e->sent = 0;
+    e->mt_idx = 0;
 
     ioctl(e->fd->fd, EVIOCGABS(ABS_X), &e->p.xi);
     ioctl(e->fd->fd, EVIOCGABS(ABS_Y), &e->p.yi);
-    e->p.synced = 0;
+    e->p.pressed = 0;
 
     ioctl(e->fd->fd, EVIOCGABS(ABS_MT_POSITION_X), &e->mt_p.xi);
     ioctl(e->fd->fd, EVIOCGABS(ABS_MT_POSITION_Y), &e->mt_p.yi);
-    e->mt_p.synced = 0;
+    e->mt_p.pressed = 0;
 
     e->vks = malloc(sizeof(*e->vks) * e->vk_count);
 
@@ -252,34 +255,33 @@ static int vk_modify(struct ev *e, struct input_event *ev)
     int x, y;
 
     if (ev->type == EV_KEY) {
-        if (ev->code == BTN_TOUCH && !ev->value)
-            e->down = DOWN_RELEASED;
+        if (ev->code == BTN_TOUCH)
+            e->p.pressed = ev->value;
         return 0;
     }
 
     if (ev->type == EV_ABS) {
         switch (ev->code) {
         case ABS_X:
-            e->p.synced = 1;
             e->p.x = ev->value;
             return !vk_inside_display(e->p.x, &e->p.xi, gr_fb_width());
         case ABS_Y:
-            e->p.synced = 1;
             e->p.y = ev->value;
             return !vk_inside_display(e->p.y, &e->p.yi, gr_fb_height());
         case ABS_MT_POSITION_X:
-            if (e->mt_p.synced & 2) return 1;
-            e->mt_p.synced = 1;
+            if (e->mt_idx) return 1;
             e->mt_p.x = ev->value;
             return !vk_inside_display(e->mt_p.x, &e->mt_p.xi, gr_fb_width());
         case ABS_MT_POSITION_Y:
-            if (e->mt_p.synced & 2) return 1;
-            e->mt_p.synced = 1;
+            if (e->mt_idx) return 1;
             e->mt_p.y = ev->value;
             return !vk_inside_display(e->mt_p.y, &e->mt_p.yi, gr_fb_height());
         case ABS_MT_TOUCH_MAJOR:
-            if (e->mt_p.synced & 2) return 1;
-            if (!ev->value) e->down = DOWN_RELEASED;
+            if (e->mt_idx) return 1;
+            if (e->sent)
+                e->mt_p.pressed = (ev->value > 0);
+            else
+                e->mt_p.pressed = (ev->value > PRESS_THRESHHOLD);
             return 0;
         }
 
@@ -291,35 +293,41 @@ static int vk_modify(struct ev *e, struct input_event *ev)
 
     if (ev->code == SYN_MT_REPORT) {
         /* Ignore the rest of the points */
-        e->mt_p.synced |= 2;
-        return 0;
+        ++e->mt_idx;
+        return 1;
     }
     if (ev->code != SYN_REPORT)
         return 0;
 
-    if (e->down == DOWN_RELEASED) {
-        e->down = DOWN_NOT;
-        /* TODO: Send emulated key release? */
-        return 1;
-    }
+    /* Report complete */
 
-    if (!(e->p.synced && vk_tp_to_screen(&e->p, &x, &y)) &&
-            !((e->mt_p.synced & 1) && vk_tp_to_screen(&e->mt_p, &x, &y))) {
+    e->mt_idx = 0;
+
+    if (!e->p.pressed && !e->mt_p.pressed) {
+        /* No touch */
+        e->sent = 0;
         return 0;
     }
 
-    e->p.synced = e->mt_p.synced = 0;
+    if (!(e->p.pressed && vk_tp_to_screen(&e->p, &x, &y)) &&
+            !(e->mt_p.pressed && vk_tp_to_screen(&e->mt_p, &x, &y))) {
+        /* No touch inside vk area */
+        return 0;
+    }
 
-    if (e->down)
+    if (e->sent) {
+        /* We've already sent a fake key for this touch */
         return 1;
+    }
+
+    /* The screen is being touched on the vk area */
+    e->sent = 1;
 
     for (i = 0; i < e->vk_count; ++i) {
         int xd = ABS(e->vks[i].centerx - x);
         int yd = ABS(e->vks[i].centery - y);
         if (xd < e->vks[i].width/2 && yd < e->vks[i].height/2) {
             /* Fake a key event */
-            e->down = DOWN_SENT;
-
             ev->type = EV_KEY;
             ev->code = e->vks[i].scancode;
             ev->value = 1;
