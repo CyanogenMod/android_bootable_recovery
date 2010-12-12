@@ -90,7 +90,7 @@ static int get_framebuffer(GGLSurface *fb)
     fb->version = sizeof(*fb);
     fb->width = vi.xres;
     fb->height = vi.yres;
-    fb->stride = vi.xres;
+    fb->stride = fi.line_length/2; /* stride is the number of pixels until the data of next row, >= xres */;
     fb->data = bits;
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
 
@@ -99,8 +99,8 @@ static int get_framebuffer(GGLSurface *fb)
     fb->version = sizeof(*fb);
     fb->width = vi.xres;
     fb->height = vi.yres;
-    fb->stride = vi.xres;
-    fb->data = (void*) (((unsigned) bits) + vi.yres * vi.xres * 2);
+    fb->stride = fi.line_length/2;
+    fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length);
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
 
     return fd;
