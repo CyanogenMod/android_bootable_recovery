@@ -27,7 +27,7 @@ int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
 {
     printf("bml restore\n");
     int fd = open("/dev/block/bml7", O_RDWR | O_LARGEFILE);
-    return ioctl(fd, BML_UNLOCK_ALL, 0);
+    ioctl(fd, BML_UNLOCK_ALL, 0);
     
     char tmp[PATH_MAX];
     sprintf("dd if=%s of=/dev/block/bml7 bs=4096", filename);
