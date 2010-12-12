@@ -37,6 +37,10 @@
 #define BOARD_SDCARD_DEVICE_SECONDARY "/dev/block/mmcblk0"
 #endif
 
+#ifndef BOARD_SDCARD_DEVICE_INTERNAL
+#define BOARD_SDCARD_DEVICE_INTERNAL g_default_device
+#endif
+
 #ifndef BOARD_SDEXT_DEVICE
 #define BOARD_SDEXT_DEVICE "/dev/block/mmcblk0p2"
 #endif

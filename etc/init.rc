@@ -8,6 +8,7 @@ on init
     symlink /system/etc /etc
 
     mkdir /sdcard
+    mkdir /emmc
     mkdir /system
     mkdir /data
     mkdir /cache
