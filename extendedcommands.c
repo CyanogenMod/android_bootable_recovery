@@ -446,6 +446,9 @@ void show_partition_menu()
         { "mount /data", "unmount /data", "DATA:" },
         { "mount /cache", "unmount /cache", "CACHE:" },
         { "mount /sdcard", "unmount /sdcard", "SDCARD:" },
+#ifdef BOARD_HAS_SDCARD_INTERNAL
+        { "mount /emmc", "unmount /emmc", "SDINTERNAL:" },
+#endif
         { "mount /sd-ext", "unmount /sd-ext", "SDEXT:" }
         };
 
@@ -458,6 +461,9 @@ void show_partition_menu()
 
     string mmcs[MMC_COUNT][3] = {
       { "format sdcard", "SDCARD:" },
+#ifdef BOARD_HAS_SDCARD_INTERNAL
+      { "format internal sdcard", "SDINTERNAL:" },
+#endif
       { "format sd-ext", "SDEXT:" }
     };
 
@@ -760,6 +766,9 @@ void show_advanced_menu()
 #ifndef BOARD_HAS_SMALL_RECOVERY
                             "Partition SD Card",
                             "Fix Permissions",
+#ifdef BOARD_HAS_SDCARD_INTERNAL
+                            "Partition Internal SD Card",
+#endif
 #endif
                             NULL
     };
@@ -863,6 +872,49 @@ void show_advanced_menu()
                 ui_print("Fixing permissions...\n");
                 __system("fix_permissions");
                 ui_print("Done!\n");
+                break;
+            }
+            case 7:
+            {
+                static char* ext_sizes[] = { "128M",
+                                             "256M",
+                                             "512M",
+                                             "1024M",
+                                             "2048M",
+                                             "4096M",
+                                             NULL };
+
+                static char* swap_sizes[] = { "0M",
+                                              "32M",
+                                              "64M",
+                                              "128M",
+                                              "256M",
+                                              NULL };
+
+                static char* ext_headers[] = { "Data Size", "", NULL };
+                static char* swap_headers[] = { "Swap Size", "", NULL };
+
+                int ext_size = get_menu_selection(ext_headers, ext_sizes, 0);
+                if (ext_size == GO_BACK)
+                    continue;
+
+                int swap_size = 0;
+                if (swap_size == GO_BACK)
+                    continue;
+
+                char sddevice[256];
+                const RootInfo *ri = get_root_info_for_path("SDINTERNAL:");
+                strcpy(sddevice, ri->device);
+                // we only want the mmcblk, not the partition
+                sddevice[strlen("/dev/block/mmcblkX")] = NULL;
+                char cmd[PATH_MAX];
+                setenv("SDPATH", sddevice, 1);
+                sprintf(cmd, "sdparted -es %s -ss %s -efs ext3 -s", ext_sizes[ext_size], swap_sizes[swap_size]);
+                ui_print("Partitioning Internal SD Card... please wait...\n");
+                if (0 == __system(cmd))
+                    ui_print("Done!\n");
+                else
+                    ui_print("An error occured while partitioning your Internal SD Card. Please see /tmp/recovery.log for more details.\n");
                 break;
             }
         }
