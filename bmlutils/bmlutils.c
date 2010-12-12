@@ -25,13 +25,37 @@ extern int __system(const char *command);
 
 int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
 {
-    printf("bml restore\n");
-    int fd = open("/dev/block/bml7", O_RDWR | O_LARGEFILE);
-    ioctl(fd, BML_UNLOCK_ALL, 0);
-    
-    char tmp[PATH_MAX];
-    sprintf("dd if=%s of=/dev/block/bml7 bs=4096", filename);
-    return __system(tmp);
+    char *bml;
+    if (strcmp(partition, "boot") == 0 || strcmp(partition, "recovery") == 0)
+        bml = "/dev/block/bml7";
+    else
+        return 6;
+
+    char buf[4096];
+    int dstfd, srcfd, bytes_read, bytes_written, total_read = 0;
+    if (filename == NULL)
+        srcfd = 0;
+    else {
+        srcfd = open(filename, O_RDONLY | O_LARGEFILE);
+        if (srcfd < 0)
+            return 2;
+    }
+    dstfd = open(bml, O_RDWR | O_LARGEFILE);
+    if (dstfd < 0)
+        return 3;
+    if (ioctl(dstfd, BML_UNLOCK_ALL, 0))
+        return 4;
+    do {
+        total_read += bytes_read = read(srcfd, buf, 4096);
+        if (!bytes_read)
+            break;
+        if (bytes_read < 4096)
+            memset(&buf[bytes_read], 0, 4096 - bytes_read);
+        if (write(dstfd, buf, 4096) < 4096)
+            return 5;
+    } while(bytes_read == 4096);
+
+    return 0;
 }
 
 int cmd_bml_backup_raw_partition(const char *partition, const char *filename)
