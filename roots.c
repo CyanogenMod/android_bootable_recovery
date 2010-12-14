@@ -314,7 +314,6 @@ get_root_partition_device(const char *root_path, char *device)
     return info->device;
 }
 
-#ifndef BOARD_HAS_NO_MISC_PARTITION
 const MtdPartition *
 get_root_mtd_partition(const char *root_path)
 {
@@ -332,7 +331,6 @@ get_root_mtd_partition(const char *root_path)
     mtd_scan_partitions();
     return mtd_find_partition_by_name(info->partition_name);
 }
-#endif
 
 int
 format_root_device(const char *root)
