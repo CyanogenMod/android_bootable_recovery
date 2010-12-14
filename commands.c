@@ -40,6 +40,7 @@
 #include "roots.h"
 
 #include "extendedcommands.h"
+#include "flashutils/flashutils.h"
 
 static int gDidShowProgress = 0;
 
@@ -653,7 +654,11 @@ static int
 cmd_write_raw_image(const char *name, void *cookie,
         int argc, const char *argv[], PermissionRequestList *permissions)
 {
-#ifdef BOARD_USES_MTDUTILS
+    if (device_flash_type() != MTD) {
+        LOGE("Board does not support mtd utils.");
+        return -1;
+    }
+    
     UNUSED(cookie);
     CHECK_WORDS();
 //xxx permissions
@@ -739,10 +744,6 @@ cmd_write_raw_image(const char *name, void *cookie,
         return -1;
     }
     return 0;
-#else
-    LOGE("Board does not support mtd utils.");
-    return -1;
-#endif
 }
 
 /* mark <resource> dirty|clean

@@ -5,14 +5,6 @@
 
 #include "flashutils/flashutils.h"
 
-enum flash_type {
-    UNSUPPORTED = -1,
-    UNKNOWN = 0,
-    MTD = 1,
-    MMC = 2,
-    BML = 3
-};
-
 int the_flash_type = UNKNOWN;
 
 int device_flash_type()
