@@ -101,7 +101,11 @@ static int get_framebuffer(GGLSurface *fb)
     fb->width = vi.xres;
     fb->height = vi.yres;
     fb->stride = fi.line_length/2;
+#ifdef BOARD_HAS_JANKY_BACKBUFFER
+    fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length);
+#else
     fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length / 2);
+#endif
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
     memset(fb->data, 0, vi.yres * vi.xres * 2);
 
