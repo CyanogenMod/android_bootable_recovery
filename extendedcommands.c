@@ -436,7 +436,7 @@ void show_partition_menu()
         { "mount /system", "unmount /system", "/system" },
         { "mount /data", "unmount /data", "/data" },
         { "mount /cache", "unmount /cache", "/cache" },
-        { "mount /sdcard", "unmount /sdcard", "/sdcard:" },
+        { "mount /sdcard", "unmount /sdcard", "/sdcard" },
 #ifdef BOARD_HAS_SDCARD_INTERNAL
         { "mount /emmc", "unmount /emmc", "/emmc" },
 #endif
