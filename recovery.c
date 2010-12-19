@@ -795,6 +795,7 @@ main(int argc, char **argv) {
     ui_init();
     ui_print(EXPAND(RECOVERY_VERSION)"\n");
     load_volume_table();
+    create_fstab();
     get_args(&argc, &argv);
 
     int previous_runs = 0;

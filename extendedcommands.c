@@ -879,48 +879,38 @@ void show_advanced_menu()
     }
 }
 
-/*
-void write_fstab_root(char *root_path, FILE *file)
+void write_fstab_root(char *path, FILE *file)
 {
-    RootInfo *info = get_root_info_for_path(root_path);
-    if (info == NULL) {
-        LOGW("Unable to get root info for %s during fstab generation!", root_path);
+    Volume *vol = volume_for_path(path);
+    if (vol == NULL) {
+        LOGW("Unable to get recovery.fstab info for %s during fstab generation!", path);
         return;
     }
-    char device[PATH_MAX];
-    int ret = get_root_partition_device(root_path, device);
-    if (ret == 0)
-    {
-        fprintf(file, "%s ", device);
-    }
-    else
-    {
-        fprintf(file, "%s ", info->device);
-    }
 
-    fprintf(file, "%s ", info->mount_point);
-    fprintf(file, "%s %s\n", info->filesystem, info->filesystem_options == NULL ? "rw" : info->filesystem_options);
+    fprintf(file, "%s ", vol->device);
+    fprintf(file, "%s ", path);
+    fprintf(file, "%s rw\n", vol->fs_type);
 }
 
 void create_fstab()
 {
+    struct stat info;
     __system("touch /etc/mtab");
     FILE *file = fopen("/etc/fstab", "w");
     if (file == NULL) {
-        LOGW("Unable to create /etc/fstab!");
+        LOGW("Unable to create /etc/fstab!\n");
         return;
     }
-    write_fstab_root("CACHE:", file);
-    write_fstab_root("DATA:", file);
+    write_fstab_root("/cache", file);
+    write_fstab_root("/data", file);
 #ifdef BOARD_HAS_DATADATA
-    write_fstab_root("DATADATA:", file);
+    write_fstab_root("/datadata", file);
 #endif
-    write_fstab_root("SYSTEM:", file);
-    write_fstab_root("SDCARD:", file);
-    write_fstab_root("SDEXT:", file);
+    write_fstab_root("/system", file);
+    write_fstab_root("/sdcard", file);
+    write_fstab_root("/sd-ext", file);
     fclose(file);
 }
-*/
 
 void handle_failure(int ret)
 {
