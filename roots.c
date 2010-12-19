@@ -269,6 +269,9 @@ int format_volume(const char* volume) {
         return 0;
     }
 
+#if 0
     LOGE("format_volume: fs_type \"%s\" unsupported\n", v->fs_type);
     return -1;
+#endif
+    return format_unknown_device(volume);
 }
