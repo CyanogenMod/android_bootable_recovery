@@ -34,10 +34,13 @@ void ui_clear_key_queue();
 // so keep the output short and not too cryptic.
 void ui_print(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
+void ui_reset_text_col();
+void ui_set_show_text(int value);
+
 // Display some header text followed by a menu of items, which appears
 // at the top of the screen (in place of any scrolling ui_print()
 // output, if necessary).
-void ui_start_menu(char** headers, char** items, int initial_selection);
+int ui_start_menu(char** headers, char** items, int initial_selection);
 // Set the menu highlight to the given index, and return it (capped to
 // the range [0..numitems).
 int ui_menu_select(int sel);
@@ -45,14 +48,24 @@ int ui_menu_select(int sel);
 // statements will be displayed.
 void ui_end_menu();
 
+int ui_get_showing_back_button();
+void ui_set_showing_back_button(int showBackButton);
+
 // Set the icon (normally the only thing visible besides the progress bar).
 enum {
   BACKGROUND_ICON_NONE,
   BACKGROUND_ICON_INSTALLING,
   BACKGROUND_ICON_ERROR,
+  BACKGROUND_ICON_FIRMWARE_INSTALLING,
+  BACKGROUND_ICON_FIRMWARE_ERROR,
   NUM_BACKGROUND_ICONS
 };
 void ui_set_background(int icon);
+
+// Get a malloc'd copy of the screen image showing (only) the specified icon.
+// Also returns the width, height, and bits per pixel of the returned image.
+// TODO: Use some sort of "struct Bitmap" here instead of all these variables?
+char *ui_copy_image(int icon, int *width, int *height, int *bpp);
 
 // Show a progress bar and define the scope of the next operation:
 //   portion - fraction of the progress bar the next operation will use

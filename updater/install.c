@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +32,10 @@
 #include "edify/expr.h"
 #include "mincrypt/sha.h"
 #include "minzip/DirUtil.h"
-#include "mtdutils/mounts.h"
+#include "mounts.h"
+#include "flashutils/flashutils.h"
 #include "mtdutils/mtdutils.h"
+#include "mmcutils/mmcutils.h"
 #include "updater.h"
 #include "applypatch/applypatch.h"
 
@@ -78,23 +81,11 @@ Value* MountFn(const char* name, State* state, int argc, Expr* argv[]) {
 
     mkdir(mount_point, 0755);
 
-    if (strcmp(partition_type, "MTD") == 0) {
-        mtd_scan_partitions();
-        const MtdPartition* mtd;
-        mtd = mtd_find_partition_by_name(location);
-        if (mtd == NULL) {
-            fprintf(stderr, "%s: no mtd partition named \"%s\"",
-                    name, location);
+    if (strcmp(partition_type, "MTD") == 0 || strcmp(partition_type, "MMC") == 0) {
+        if (0 == mount_partition(location, mount_point, get_default_filesystem(), 0))
+            result = mount_point;
+        else
             result = strdup("");
-            goto done;
-        }
-        if (mtd_mount_partition(mtd, mount_point, fs_type, 0 /* rw */) != 0) {
-            fprintf(stderr, "mtd mount of %s failed: %s\n",
-                    location, strerror(errno));
-            result = strdup("");
-            goto done;
-        }
-        result = mount_point;
     } else {
         if (mount(location, mount_point, fs_type,
                   MS_NOATIME | MS_NODEV | MS_NODIRATIME, "") < 0) {
@@ -204,33 +195,11 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         goto done;
     }
 
-    if (strcmp(partition_type, "MTD") == 0) {
-        mtd_scan_partitions();
-        const MtdPartition* mtd = mtd_find_partition_by_name(location);
-        if (mtd == NULL) {
-            fprintf(stderr, "%s: no mtd partition named \"%s\"",
-                    name, location);
+    if (strcmp(partition_type, "MTD") == 0 || strcmp(partition_type, "MMC") == 0) {
+        if (0 != erase_partition(location, NULL)) {
             result = strdup("");
             goto done;
         }
-        MtdWriteContext* ctx = mtd_write_partition(mtd);
-        if (ctx == NULL) {
-            fprintf(stderr, "%s: can't write \"%s\"", name, location);
-            result = strdup("");
-            goto done;
-        }
-        if (mtd_erase_blocks(ctx, -1) == -1) {
-            mtd_write_close(ctx);
-            fprintf(stderr, "%s: failed to erase \"%s\"", name, location);
-            result = strdup("");
-            goto done;
-        }
-        if (mtd_write_close(ctx) != 0) {
-            fprintf(stderr, "%s: failed to close \"%s\"", name, location);
-            result = strdup("");
-            goto done;
-        }
-        result = location;
 #ifdef USE_EXT4
     } else if (strcmp(fs_type, "ext4") == 0) {
         reset_ext4fs_info();
@@ -247,7 +216,7 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         fprintf(stderr, "%s: unsupported fs_type \"%s\" partition_type \"%s\"",
                 name, fs_type, partition_type);
     }
-
+    result = location;
 done:
     free(fs_type);
     free(partition_type);
@@ -680,57 +649,10 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
         goto done;
     }
 
-    mtd_scan_partitions();
-    const MtdPartition* mtd = mtd_find_partition_by_name(partition);
-    if (mtd == NULL) {
-        fprintf(stderr, "%s: no mtd partition named \"%s\"\n", name, partition);
+    if (0 == restore_raw_partition(partition, filename))
+        result = strdup(partition);
+    else
         result = strdup("");
-        goto done;
-    }
-
-    MtdWriteContext* ctx = mtd_write_partition(mtd);
-    if (ctx == NULL) {
-        fprintf(stderr, "%s: can't write mtd partition \"%s\"\n",
-                name, partition);
-        result = strdup("");
-        goto done;
-    }
-
-    bool success;
-
-    FILE* f = fopen(filename, "rb");
-    if (f == NULL) {
-        fprintf(stderr, "%s: can't open %s: %s\n",
-                name, filename, strerror(errno));
-        result = strdup("");
-        goto done;
-    }
-
-    success = true;
-    char* buffer = malloc(BUFSIZ);
-    int read;
-    while (success && (read = fread(buffer, 1, BUFSIZ, f)) > 0) {
-        int wrote = mtd_write_data(ctx, buffer, read);
-        success = success && (wrote == read);
-        if (!success) {
-            fprintf(stderr, "mtd_write_data to %s failed: %s\n",
-                    partition, strerror(errno));
-        }
-    }
-    free(buffer);
-    fclose(f);
-
-    if (mtd_erase_blocks(ctx, -1) == -1) {
-        fprintf(stderr, "%s: error erasing blocks of %s\n", name, partition);
-    }
-    if (mtd_write_close(ctx) != 0) {
-        fprintf(stderr, "%s: error closing write of %s\n", name, partition);
-    }
-
-    printf("%s %s partition from %s\n",
-           success ? "wrote" : "failed to write", partition, filename);
-
-    result = success ? partition : strdup("");
 
 done:
     if (result != partition) free(partition);

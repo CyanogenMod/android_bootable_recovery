@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +30,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #include "bootloader.h"
 #include "common.h"
@@ -39,6 +41,8 @@
 #include "roots.h"
 #include "recovery_ui.h"
 #include "encryptedfs_provisioning.h"
+
+#include "extendedcommands.h"
 
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 's' },
@@ -55,6 +59,8 @@ static const char *INTENT_FILE = "/cache/recovery/intent";
 static const char *LOG_FILE = "/cache/recovery/log";
 static const char *LAST_LOG_FILE = "/cache/recovery/last_log";
 static const char *SDCARD_ROOT = "/sdcard";
+static int allow_display_toggle = 1;
+static const char *SDCARD_PACKAGE_FILE = "/sdcard/update.zip";
 static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
 static const char *SIDELOAD_TEMP_DIR = "/tmp/sideload";
 
@@ -152,6 +158,7 @@ fopen_path(const char *path, const char *mode) {
     if (strchr("wa", mode[0])) dirCreateHierarchy(path, 0777, NULL, 1);
 
     FILE *fp = fopen(path, mode);
+    if (fp == NULL && path != COMMAND_FILE) LOGE("Can't open %s\n", path);
     return fp;
 }
 
@@ -171,7 +178,9 @@ static void
 get_args(int *argc, char ***argv) {
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     get_bootloader_message(&boot);  // this may fail, leaving a zeroed structure
+#endif
 
     if (boot.command[0] != 0 && boot.command[0] != 255) {
         LOGI("Boot command: %.*s\n", sizeof(boot.command), boot.command);
@@ -181,8 +190,10 @@ get_args(int *argc, char ***argv) {
         LOGI("Boot status: %.*s\n", sizeof(boot.status), boot.status);
     }
 
+    struct stat file_info;
+
     // --- if arguments weren't supplied, look in the bootloader control block
-    if (*argc <= 1) {
+    if (*argc <= 1 && 0 != stat("/tmp/.ignorebootmessage", &file_info)) {
         boot.recovery[sizeof(boot.recovery) - 1] = '\0';  // Ensure termination
         const char *arg = strtok(boot.recovery, "\n");
         if (arg != NULL && !strcmp(arg, "recovery")) {
@@ -226,10 +237,13 @@ get_args(int *argc, char ***argv) {
         strlcat(boot.recovery, (*argv)[i], sizeof(boot.recovery));
         strlcat(boot.recovery, "\n", sizeof(boot.recovery));
     }
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     set_bootloader_message(&boot);
+#endif
 }
 
-static void
+#ifndef BOARD_HAS_NO_MISC_PARTITION
+void
 set_sdcard_update_bootloader_message() {
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
@@ -237,6 +251,7 @@ set_sdcard_update_bootloader_message() {
     strlcpy(boot.recovery, "recovery\n", sizeof(boot.recovery));
     set_bootloader_message(&boot);
 }
+#endif
 
 // How much of the temp log we have copied to the copy in cache.
 static long tmplog_offset = 0;
@@ -288,10 +303,12 @@ finish_recovery(const char *send_intent) {
     copy_log_file(LAST_LOG_FILE, false);
     chmod(LAST_LOG_FILE, 0640);
 
+#ifndef BOARD_HAS_NO_MISC_PARTITION
     // Reset to mormal system boot so recovery won't cycle indefinitely.
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
     set_bootloader_message(&boot);
+#endif
 
     // Remove the command file, so recovery won't repeat indefinitely.
     if (ensure_path_mounted(COMMAND_FILE) != 0 ||
@@ -409,9 +426,8 @@ copy_sideloaded_package(const char* original_path) {
 }
 
 static char**
-prepend_title(const char** headers) {
-    char* title[] = { "Android system recovery <"
-                          EXPAND(RECOVERY_API_VERSION) "e>",
+prepend_title(char** headers) {
+    char* title[] = { EXPAND(RECOVERY_VERSION),
                       "",
                       NULL };
 
@@ -431,22 +447,29 @@ prepend_title(const char** headers) {
     return new_headers;
 }
 
-static int
+int
 get_menu_selection(char** headers, char** items, int menu_only,
                    int initial_selection) {
     // throw away keys pressed previously, so user doesn't
     // accidentally trigger menu items.
     ui_clear_key_queue();
 
-    ui_start_menu(headers, items, initial_selection);
+    int item_count = ui_start_menu(headers, items, initial_selection);
     int selected = initial_selection;
     int chosen_item = -1;
 
-    while (chosen_item < 0) {
+    // Some users with dead enter keys need a way to turn on power to select.
+    // Jiggering across the wrapping menu is one "secret" way to enable it.
+    // We can't rely on /cache or /sdcard since they may not be available.
+    int wrap_count = 0;
+
+    while (chosen_item < 0 && chosen_item != GO_BACK) {
         int key = ui_wait_key();
         int visible = ui_text_visible();
 
         int action = device_handle_key(key, visible);
+
+        int old_selected = selected;
 
         if (action < 0) {
             switch (action) {
@@ -460,16 +483,40 @@ get_menu_selection(char** headers, char** items, int menu_only,
                     break;
                 case SELECT_ITEM:
                     chosen_item = selected;
+                    if (ui_get_showing_back_button()) {
+                        if (chosen_item == item_count) {
+                            chosen_item = GO_BACK;
+                        }
+                    }
                     break;
                 case NO_ACTION:
+                    break;
+                case GO_BACK:
+                    chosen_item = GO_BACK;
                     break;
             }
         } else if (!menu_only) {
             chosen_item = action;
         }
+
+        if (abs(selected - old_selected) > 1) {
+            wrap_count++;
+            if (wrap_count == 3) {
+                wrap_count = 0;
+                if (ui_get_showing_back_button()) {
+                    ui_print("Back menu button disabled.\n");
+                    ui_set_showing_back_button(0);
+                }
+                else {
+                    ui_print("Back menu button enabled.\n");
+                    ui_set_showing_back_button(1);
+                }
+            }
+        }
     }
 
     ui_end_menu();
+    ui_clear_key_queue();
     return chosen_item;
 }
 
@@ -634,6 +681,10 @@ wipe_data(int confirm) {
     device_wipe_data();
     erase_volume("/data");
     erase_volume("/cache");
+    erase_volume("/datadata");
+    erase_volume("/datadata");
+    erase_volume("/sd-ext");
+    erase_volume("/sdcard/.android_secure");
     ui_print("Data wipe complete.\n");
 }
 
@@ -645,7 +696,9 @@ prompt_and_wait() {
         finish_recovery(NULL);
         ui_reset_progress();
 
+        allow_display_toggle = 1;
         int chosen_item = get_menu_selection(headers, MENU_ITEMS, 0, 0);
+        allow_display_toggle = 0;
 
         // device-specific code may take some action here.  It may
         // return one of the core actions handled in the switch
@@ -662,16 +715,20 @@ prompt_and_wait() {
                 break;
 
             case ITEM_WIPE_CACHE:
-                ui_print("\n-- Wiping cache...\n");
-                erase_volume("/cache");
-                ui_print("Cache wipe complete.\n");
-                if (!ui_text_visible()) return;
+                if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
+                {
+                    ui_print("\n-- Wiping cache...\n");
+                    erase_volume("/cache");
+                    ui_print("Cache wipe complete.\n");
+                    if (!ui_text_visible()) return;
+                }
                 break;
 
             case ITEM_APPLY_SDCARD:
-                ;
-                int status = sdcard_directory(SDCARD_ROOT);
-                if (status >= 0) {
+                if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
+                {
+                    ui_print("\n-- Install from sdcard...\n");
+                    int status = install_package(SDCARD_PACKAGE_FILE);
                     if (status != INSTALL_SUCCESS) {
                         ui_set_background(BACKGROUND_ICON_ERROR);
                         ui_print("Installation aborted.\n");
@@ -681,6 +738,18 @@ prompt_and_wait() {
                         ui_print("\nInstall from sdcard complete.\n");
                     }
                 }
+                break;
+            case ITEM_INSTALL_ZIP:
+                show_install_update_menu();
+                break;
+            case ITEM_NANDROID:
+                show_nandroid_menu();
+                break;
+            case ITEM_PARTITION:
+                show_partition_menu();
+                break;
+            case ITEM_ADVANCED:
+                show_advanced_menu();
                 break;
         }
     }
@@ -693,6 +762,29 @@ print_property(const char *key, const char *name, void *cookie) {
 
 int
 main(int argc, char **argv) {
+	if (strstr(argv[0], "recovery") == NULL)
+	{
+	    if (strstr(argv[0], "flash_image") != NULL)
+	        return flash_image_main(argc, argv);
+	    if (strstr(argv[0], "dump_image") != NULL)
+	        return dump_image_main(argc, argv);
+	    if (strstr(argv[0], "erase_image") != NULL)
+	        return erase_image_main(argc, argv);
+	    if (strstr(argv[0], "mkyaffs2image") != NULL)
+	        return mkyaffs2image_main(argc, argv);
+	    if (strstr(argv[0], "unyaffs") != NULL)
+	        return unyaffs_main(argc, argv);
+        if (strstr(argv[0], "nandroid"))
+            return nandroid_main(argc, argv);
+        if (strstr(argv[0], "reboot"))
+            return reboot_main(argc, argv);
+        if (strstr(argv[0], "setprop"))
+            return setprop_main(argc, argv);
+		return busybox_driver(argc, argv);
+	}
+    __system("/sbin/postrecoveryboot.sh");
+    
+    int is_user_initiated_recovery = 0;
     time_t start = time(NULL);
 
     // If these fail, there's not really anywhere to complain...
@@ -701,7 +793,7 @@ main(int argc, char **argv) {
     printf("Starting recovery on %s", ctime(&start));
 
     ui_init();
-    ui_set_background(BACKGROUND_ICON_INSTALLING);
+    ui_print(EXPAND(RECOVERY_VERSION)"\n");
     load_volume_table();
     get_args(&argc, &argv);
 
@@ -757,7 +849,7 @@ main(int argc, char **argv) {
     printf("\n");
 
     int status = INSTALL_SUCCESS;
-
+    
     if (toggle_secure_fs) {
         if (strcmp(encrypted_fs_mode,"on") == 0) {
             encrypted_fs_data.mode = MODE_ENCRYPTED_FS_ENABLED;
@@ -806,10 +898,31 @@ main(int argc, char **argv) {
         if (wipe_cache && erase_volume("/cache")) status = INSTALL_ERROR;
         if (status != INSTALL_SUCCESS) ui_print("Cache wipe failed.\n");
     } else {
+        LOGI("Checking for extendedcommand...\n");
         status = INSTALL_ERROR;  // No command specified
+        // we are starting up in user initiated recovery here
+        // let's set up some default options
+        signature_check_enabled = 0;
+        script_assert_enabled = 0;
+        is_user_initiated_recovery = 1;
+        ui_set_show_text(1);
+        
+        if (extendedcommand_file_exists()) {
+            LOGI("Running extendedcommand...\n");
+            int ret;
+            if (0 == (ret = run_and_remove_extendedcommand())) {
+                status = INSTALL_SUCCESS;
+                ui_set_show_text(0);
+            }
+            else {
+                handle_failure(ret);
+            }
+        } else {
+            LOGI("Skipping execution of extendedcommand, file not found...\n");
+        }
     }
 
-    if (status != INSTALL_SUCCESS) ui_set_background(BACKGROUND_ICON_ERROR);
+    if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) ui_set_background(BACKGROUND_ICON_ERROR);
     if (status != INSTALL_SUCCESS || ui_text_visible()) {
         prompt_and_wait();
     }
@@ -820,4 +933,8 @@ main(int argc, char **argv) {
     sync();
     reboot(RB_AUTOBOOT);
     return EXIT_SUCCESS;
+}
+
+int get_allow_toggle_display() {
+    return allow_display_toggle;
 }

@@ -27,7 +27,7 @@
 #include "cutils/properties.h"
 #include "common.h"
 #include "mtdutils/mtdutils.h"
-#include "mtdutils/mounts.h"
+#include "mounts.h"
 #include "roots.h"
 
 const char* encrypted_fs_enabled_property      = "persist.security.secfs.enabled";

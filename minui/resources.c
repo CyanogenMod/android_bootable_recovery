@@ -125,7 +125,7 @@ int res_create_surface(const char* name, gr_surface* pSurface) {
 
     int y;
     if (channels == 3) {
-        for (y = 0; y < height; ++y) {
+        for (y = 0; y < (int)height; ++y) {
             unsigned char* pRow = pData + y * stride;
             png_read_row(png_ptr, pRow, NULL);
 
@@ -144,7 +144,7 @@ int res_create_surface(const char* name, gr_surface* pSurface) {
             }
         }
     } else {
-        for (y = 0; y < height; ++y) {
+        for (y = 0; y < (int)height; ++y) {
             unsigned char* pRow = pData + y * stride;
             png_read_row(png_ptr, pRow, NULL);
         }

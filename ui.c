@@ -29,11 +29,25 @@
 #include "minui/minui.h"
 #include "recovery_ui.h"
 
+#ifdef BOARD_HAS_NO_SELECT_BUTTON
+static int gShowBackButton = 1;
+#else
+static int gShowBackButton = 0;
+#endif
+
 #define MAX_COLS 96
 #define MAX_ROWS 32
 
-#define CHAR_WIDTH 10
-#define CHAR_HEIGHT 18
+#define MENU_MAX_COLS 64
+#define MENU_MAX_ROWS 250
+
+#ifndef BOARD_LDPI_RECOVERY
+  #define CHAR_WIDTH 10
+  #define CHAR_HEIGHT 18
+#else
+  #define CHAR_WIDTH 7
+  #define CHAR_HEIGHT 16
+#endif
 
 #define PROGRESSBAR_INDETERMINATE_STATES 6
 #define PROGRESSBAR_INDETERMINATE_FPS 15
@@ -43,6 +57,7 @@ static gr_surface gBackgroundIcon[NUM_BACKGROUND_ICONS];
 static gr_surface gProgressBarIndeterminate[PROGRESSBAR_INDETERMINATE_STATES];
 static gr_surface gProgressBarEmpty;
 static gr_surface gProgressBarFill;
+static int ui_has_initialized = 0;
 
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING], "icon_installing" },
@@ -79,9 +94,10 @@ static int text_cols = 0, text_rows = 0;
 static int text_col = 0, text_row = 0, text_top = 0;
 static int show_text = 0;
 
-static char menu[MAX_ROWS][MAX_COLS];
+static char menu[MENU_MAX_ROWS][MENU_MAX_COLS];
 static int show_menu = 0;
 static int menu_top = 0, menu_items = 0, menu_sel = 0;
+static int menu_show_start = 0;             // this is line which menu display is starting at 
 
 // Key event input queue
 static pthread_mutex_t key_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -148,10 +164,15 @@ static void draw_text_line(int row, const char* t) {
   }
 }
 
+#define MENU_TEXT_COLOR 7, 133, 74, 255
+#define NORMAL_TEXT_COLOR 200, 200, 200, 255
+#define HEADER_TEXT_COLOR NORMAL_TEXT_COLOR
+
 // Redraw everything on the screen.  Does not flip pages.
 // Should only be called with gUpdateMutex locked.
 static void draw_screen_locked(void)
 {
+    if (!ui_has_initialized) return;
     draw_background_locked(gCurrentIcon);
     draw_progress_locked();
 
@@ -160,29 +181,43 @@ static void draw_screen_locked(void)
         gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
         int i = 0;
+        int j = 0;
+        int row = 0;            // current row that we are drawing on
         if (show_menu) {
-            gr_color(64, 96, 255, 255);
-            gr_fill(0, (menu_top+menu_sel) * CHAR_HEIGHT,
-                    gr_fb_width(), (menu_top+menu_sel+1)*CHAR_HEIGHT+1);
+            gr_color(MENU_TEXT_COLOR);
+            gr_fill(0, (menu_top + menu_sel - menu_show_start) * CHAR_HEIGHT,
+                    gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*CHAR_HEIGHT+1);
 
-            for (; i < menu_top + menu_items; ++i) {
+            gr_color(HEADER_TEXT_COLOR);
+            for (i = 0; i < menu_top; ++i) {
+                draw_text_line(i, menu[i]);
+                row++;
+            }
+
+            if (menu_items - menu_show_start + menu_top >= MAX_ROWS)
+                j = MAX_ROWS - menu_top;
+            else
+                j = menu_items - menu_show_start;
+
+            gr_color(MENU_TEXT_COLOR);
+            for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
                 if (i == menu_top + menu_sel) {
                     gr_color(255, 255, 255, 255);
-                    draw_text_line(i, menu[i]);
-                    gr_color(64, 96, 255, 255);
+                    draw_text_line(i - menu_show_start , menu[i]);
+                    gr_color(MENU_TEXT_COLOR);
                 } else {
-                    draw_text_line(i, menu[i]);
+                    gr_color(MENU_TEXT_COLOR);
+                    draw_text_line(i - menu_show_start, menu[i]);
                 }
+                row++;
             }
-            gr_fill(0, i*CHAR_HEIGHT+CHAR_HEIGHT/2-1,
-                    gr_fb_width(), i*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
-            ++i;
+            gr_fill(0, row*CHAR_HEIGHT+CHAR_HEIGHT/2-1,
+                    gr_fb_width(), row*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
         }
 
-        gr_color(255, 255, 0, 255);
-
-        for (; i < text_rows; ++i) {
-            draw_text_line(i, text[(i+text_top) % text_rows]);
+        gr_color(NORMAL_TEXT_COLOR);
+        for (; row < text_rows; ++row) {
+            draw_text_line(row, text[(row+text_top) % text_rows]);
         }
     }
 }
@@ -191,6 +226,7 @@ static void draw_screen_locked(void)
 // Should only be called with gUpdateMutex locked.
 static void update_screen_locked(void)
 {
+    if (!ui_has_initialized) return;
     draw_screen_locked();
     gr_flip();
 }
@@ -199,6 +235,7 @@ static void update_screen_locked(void)
 // Should only be called with gUpdateMutex locked.
 static void update_progress_locked(void)
 {
+    if (!ui_has_initialized) return;
     if (show_text || !gPagesIdentical) {
         draw_screen_locked();    // Must redraw the whole screen
         gPagesIdentical = 1;
@@ -308,6 +345,7 @@ static void *input_thread(void *cookie)
 
 void ui_init(void)
 {
+    ui_has_initialized = 1;
     gr_init();
     ev_init();
 
@@ -335,6 +373,23 @@ void ui_init(void)
     pthread_t t;
     pthread_create(&t, NULL, progress_thread, NULL);
     pthread_create(&t, NULL, input_thread, NULL);
+}
+
+char *ui_copy_image(int icon, int *width, int *height, int *bpp) {
+    pthread_mutex_lock(&gUpdateMutex);
+    draw_background_locked(gBackgroundIcon[icon]);
+    *width = gr_fb_width();
+    *height = gr_fb_height();
+    *bpp = sizeof(gr_pixel) * 8;
+    int size = *width * *height * sizeof(gr_pixel);
+    char *ret = malloc(size);
+    if (ret == NULL) {
+        LOGE("Can't allocate %d bytes for image\n", size);
+    } else {
+        memcpy(ret, gr_fb_data(), size);
+    }
+    pthread_mutex_unlock(&gUpdateMutex);
+    return ret;
 }
 
 void ui_set_background(int icon)
@@ -425,7 +480,17 @@ void ui_print(const char *fmt, ...)
     pthread_mutex_unlock(&gUpdateMutex);
 }
 
-void ui_start_menu(char** headers, char** items, int initial_selection) {
+void ui_reset_text_col()
+{
+    pthread_mutex_lock(&gUpdateMutex);
+    text_col = 0;
+    pthread_mutex_unlock(&gUpdateMutex);
+}
+
+#define MENU_ITEM_HEADER " - "
+#define MENU_ITEM_HEADER_LENGTH strlen(MENU_ITEM_HEADER)
+
+int ui_start_menu(char** headers, char** items, int initial_selection) {
     int i;
     pthread_mutex_lock(&gUpdateMutex);
     if (text_rows > 0 && text_cols > 0) {
@@ -435,17 +500,28 @@ void ui_start_menu(char** headers, char** items, int initial_selection) {
             menu[i][text_cols-1] = '\0';
         }
         menu_top = i;
-        for (; i < text_rows; ++i) {
+        for (; i < MENU_MAX_ROWS; ++i) {
             if (items[i-menu_top] == NULL) break;
-            strncpy(menu[i], items[i-menu_top], text_cols-1);
+            strcpy(menu[i], MENU_ITEM_HEADER);
+            strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, items[i-menu_top], text_cols-1 - MENU_ITEM_HEADER_LENGTH);
             menu[i][text_cols-1] = '\0';
         }
+
+        if (gShowBackButton) {
+            strcpy(menu[i], " - +++++Go Back+++++");
+            ++i;
+        }
+
         menu_items = i - menu_top;
         show_menu = 1;
-        menu_sel = initial_selection;
+        menu_sel = menu_show_start = initial_selection;
         update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
+    if (gShowBackButton) {
+        return menu_items - 1;
+    }
+    return menu_items;
 }
 
 int ui_menu_select(int sel) {
@@ -454,9 +530,21 @@ int ui_menu_select(int sel) {
     if (show_menu > 0) {
         old_sel = menu_sel;
         menu_sel = sel;
-        if (menu_sel < 0) menu_sel = 0;
-        if (menu_sel >= menu_items) menu_sel = menu_items-1;
+
+        if (menu_sel < 0) menu_sel = menu_items + menu_sel;
+        if (menu_sel >= menu_items) menu_sel = menu_sel - menu_items;
+
+
+        if (menu_sel < menu_show_start && menu_show_start > 0) {
+            menu_show_start = menu_sel;
+        }
+
+        if (menu_sel - menu_show_start + menu_top >= text_rows) {
+            menu_show_start = menu_sel + menu_top - text_rows + 1;
+        }
+
         sel = menu_sel;
+
         if (menu_sel != old_sel) update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
@@ -512,4 +600,16 @@ void ui_clear_key_queue() {
     pthread_mutex_lock(&key_queue_mutex);
     key_queue_len = 0;
     pthread_mutex_unlock(&key_queue_mutex);
+}
+
+void ui_set_show_text(int value) {
+    show_text = value;
+}
+
+void ui_set_showing_back_button(int showBackButton) {
+    gShowBackButton = showBackButton;
+}
+
+int ui_get_showing_back_button() {
+    return gShowBackButton;
 }
