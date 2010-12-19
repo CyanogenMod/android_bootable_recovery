@@ -196,6 +196,9 @@ int ensure_path_unmounted(const char* path) {
 int format_volume(const char* volume) {
     Volume* v = volume_for_path(volume);
     if (v == NULL) {
+        // silent failure for sd-ext
+        if (strcmp(volume, "/sd-ext") == 0)
+            return -1;
         LOGE("unknown volume \"%s\"\n", volume);
         return -1;
     }
@@ -205,8 +208,11 @@ int format_volume(const char* volume) {
         return -1;
     }
     if (strcmp(v->mount_point, volume) != 0) {
+#if 0
         LOGE("can't give path \"%s\" to format_volume\n", volume);
         return -1;
+#endif
+        return format_unknown_device(volume);
     }
 
     if (ensure_path_unmounted(volume) != 0) {
