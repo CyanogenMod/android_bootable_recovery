@@ -90,7 +90,11 @@ static int get_framebuffer(GGLSurface *fb)
     fb->version = sizeof(*fb);
     fb->width = vi.xres;
     fb->height = vi.yres;
-    fb->stride = fi.line_length/2; /* stride is the number of pixels until the data of next row, >= xres */;
+#ifdef BOARD_HAS_JANKY_BACKBUFFER
+    fb->stride = fi.line_length/2;
+#else
+    fb->stride = vi.xres;
+#endif
     fb->data = bits;
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
     memset(fb->data, 0, vi.yres * vi.xres * 2);
@@ -100,11 +104,12 @@ static int get_framebuffer(GGLSurface *fb)
     fb->version = sizeof(*fb);
     fb->width = vi.xres;
     fb->height = vi.yres;
-    fb->stride = fi.line_length/2;
 #ifdef BOARD_HAS_JANKY_BACKBUFFER
+    fb->stride = fi.line_length/2;
     fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length);
 #else
-    fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length / 2);
+    fb->stride = vi.xres;
+    fb->data = (void*) (((unsigned) bits) + vi.yres * vi.xres * 2);
 #endif
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
     memset(fb->data, 0, vi.yres * vi.xres * 2);
