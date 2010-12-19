@@ -914,6 +914,58 @@ void create_fstab()
     LOGI("Completed outputting fstab.\n");
 }
 
+int bml_check_volume(const char *path) {
+    ui_print("Checking %s...\n", path);
+    ensure_path_unmounted(path);
+    if (0 == ensure_path_mounted(path)) {
+        ensure_path_unmounted(path);
+        return 0;
+    }
+    
+    Volume *vol = volume_for_path(path);
+    if (vol == NULL) {
+        LOGE("Unable process volume! Skipping...\n");
+        return 0;
+    }
+    
+    ui_print("%s may be rfs. Checking...\n");
+    char tmp[PATH_MAX];
+    sprintf(tmp, "mount -t rfs %s %s", vol->device, path);
+    int ret = __system(tmp);
+    printf("%d\n", ret);
+    return ret == 0 ? 1 : 0;
+}
+
+void process_volumes() {
+    create_fstab();
+    
+    if (device_flash_type() != BML)
+        return;
+
+    ui_print("Checking for ext4 partitions...\n");
+    int ret = 0;
+    ret = bml_check_volume("/system");
+    ret |= bml_check_volume("/data");
+    if (has_datadata())
+        ret |= bml_check_volume("/datadata");
+    ret |= bml_check_volume("/cache");
+    
+    if (ret == 0) {
+        ui_print("Done!\n");
+        return;
+    }
+    
+    ui_set_show_text(1);
+    ui_print("Filesystems need to be converted to ext4.\n");
+    ui_print("A backup and restore will now take place.\n");
+    ui_print("If anything goes wrong, your back will be\n");
+    ui_print("named before-ext4-convert.\n");
+
+    nandroid_backup("/sdcard/clockworkmod/backup/before-ext4-convert");
+    nandroid_restore("/sdcard/clockworkmod/backup/before-ext4-convert", 1, 1, 1, 1, 1);
+    ui_set_show_text(0);
+}
+
 void handle_failure(int ret)
 {
     if (ret == 0)

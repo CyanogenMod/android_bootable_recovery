@@ -160,21 +160,10 @@ int ensure_path_mounted(const char* path) {
         LOGE("failed to mount %s (%s)\n", v->mount_point, strerror(errno));
         return -1;
     } else {
-        // let's just give it a shot and see what happens...
-        result = mount(v->device, v->mount_point, v->fs_type,
-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
-        if (result == 0) return 0;
-
-        if (v->device2) {
-            LOGW("failed to mount %s (%s); trying %s\n",
-                 v->device, strerror(errno), v->device2);
-            result = mount(v->device2, v->mount_point, v->fs_type,
-                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
-            if (result == 0) return 0;
-        }
-
-        LOGE("failed to mount %s (%s)\n", v->mount_point, strerror(errno));
-        return -1;
+        // let's try mounting with the mount binary and hope for the best.
+        char mount_cmd[PATH_MAX];
+        sprintf(mount_cmd, "mount %s", path);
+        return __system(mount_cmd);
     }
 
     LOGE("unknown fs_type \"%s\" for %s\n", v->fs_type, v->mount_point);
