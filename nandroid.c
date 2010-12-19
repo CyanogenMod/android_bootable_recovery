@@ -147,10 +147,10 @@ int nandroid_backup(const char* backup_path)
     if (0 != (ret = nandroid_backup_partition(backup_path, "/data")))
         return ret;
 
-#ifdef BOARD_HAS_DATADATA
-    if (0 != (ret = nandroid_backup_partition(backup_path, "/datadata")))
-        return ret;
-#endif
+    if (has_datadata()) {
+        if (0 != (ret = nandroid_backup_partition(backup_path, "/datadata")))
+            return ret;
+    }
 
     struct stat st;
     if (0 != stat("/sdcard/.android_secure", &st))
@@ -291,10 +291,10 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/data")))
         return ret;
         
-#ifdef BOARD_HAS_DATADATA
-    if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/datadata")))
-        return ret;
-#endif
+    if (has_datadata()) {
+        if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/datadata")))
+            return ret;
+    }
 
     if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
         return ret;

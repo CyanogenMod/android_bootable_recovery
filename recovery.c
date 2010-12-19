@@ -680,9 +680,9 @@ wipe_data(int confirm) {
     device_wipe_data();
     erase_volume("/data");
     erase_volume("/cache");
-#ifdef BOARD_HAS_DATADATA
-    erase_volume("/datadata");
-#endif
+    if (has_datadata()) {
+        erase_volume("/datadata");
+    }
     erase_volume("/sd-ext");
     erase_volume("/sdcard/.android_secure");
     ui_print("Data wipe complete.\n");

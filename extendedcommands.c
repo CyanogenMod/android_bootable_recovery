@@ -904,9 +904,9 @@ void create_fstab()
     }
     write_fstab_root("/cache", file);
     write_fstab_root("/data", file);
-#ifdef BOARD_HAS_DATADATA
-    write_fstab_root("/datadata", file);
-#endif
+    if (has_datadata()) {
+        write_fstab_root("/datadata", file);
+    }
     write_fstab_root("/system", file);
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
@@ -961,4 +961,9 @@ int is_path_mounted(const char* path) {
         return 1;
     }
     return 0;
+}
+
+int has_datadata() {
+    Volume *vol = volume_for_path("/datadata");
+    return vol != NULL;
 }

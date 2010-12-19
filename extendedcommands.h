@@ -44,3 +44,5 @@ void
 wipe_battery_stats();
 
 void create_fstab();
+
+int has_datadata();
