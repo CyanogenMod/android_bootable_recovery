@@ -36,6 +36,7 @@
 #include "extendedcommands.h"
 #include "nandroid.h"
 #include "mounts.h"
+#include "flashutils/flashutils.h"
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -57,9 +58,9 @@ void toggle_script_asserts()
 int install_zip(const char* packagefilepath)
 {
     ui_print("\n-- Installing: %s\n", packagefilepath);
-#ifndef BOARD_HAS_NO_MISC_PARTITION
-    set_sdcard_update_bootloader_message();
-#endif
+    if (device_flash_type() == MTD) {
+        set_sdcard_update_bootloader_message();
+    }
     int status = install_package(packagefilepath);
     ui_reset_progress();
     if (status != INSTALL_SUCCESS) {
@@ -883,7 +884,7 @@ void write_fstab_root(char *path, FILE *file)
 {
     Volume *vol = volume_for_path(path);
     if (vol == NULL) {
-        LOGW("Unable to get recovery.fstab info for %s during fstab generation!", path);
+        LOGW("Unable to get recovery.fstab info for %s during fstab generation!\n", path);
         return;
     }
 
@@ -910,6 +911,7 @@ void create_fstab()
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
     fclose(file);
+    LOGI("Completed outputting fstab.\n");
 }
 
 void handle_failure(int ret)

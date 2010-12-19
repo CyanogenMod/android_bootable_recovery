@@ -43,6 +43,7 @@
 #include "encryptedfs_provisioning.h"
 
 #include "extendedcommands.h"
+#include "flashutils/flashutils.h"
 
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 's' },
@@ -178,9 +179,9 @@ static void
 get_args(int *argc, char ***argv) {
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
-#ifndef BOARD_HAS_NO_MISC_PARTITION
-    get_bootloader_message(&boot);  // this may fail, leaving a zeroed structure
-#endif
+    if (device_flash_type() == MTD) {
+        get_bootloader_message(&boot);  // this may fail, leaving a zeroed structure
+    }
 
     if (boot.command[0] != 0 && boot.command[0] != 255) {
         LOGI("Boot command: %.*s\n", sizeof(boot.command), boot.command);
@@ -237,12 +238,11 @@ get_args(int *argc, char ***argv) {
         strlcat(boot.recovery, (*argv)[i], sizeof(boot.recovery));
         strlcat(boot.recovery, "\n", sizeof(boot.recovery));
     }
-#ifndef BOARD_HAS_NO_MISC_PARTITION
-    set_bootloader_message(&boot);
-#endif
+    if (device_flash_type() == MTD) {
+        set_bootloader_message(&boot);
+    }
 }
 
-#ifndef BOARD_HAS_NO_MISC_PARTITION
 void
 set_sdcard_update_bootloader_message() {
     struct bootloader_message boot;
@@ -251,7 +251,6 @@ set_sdcard_update_bootloader_message() {
     strlcpy(boot.recovery, "recovery\n", sizeof(boot.recovery));
     set_bootloader_message(&boot);
 }
-#endif
 
 // How much of the temp log we have copied to the copy in cache.
 static long tmplog_offset = 0;
@@ -303,12 +302,12 @@ finish_recovery(const char *send_intent) {
     copy_log_file(LAST_LOG_FILE, false);
     chmod(LAST_LOG_FILE, 0640);
 
-#ifndef BOARD_HAS_NO_MISC_PARTITION
-    // Reset to mormal system boot so recovery won't cycle indefinitely.
-    struct bootloader_message boot;
-    memset(&boot, 0, sizeof(boot));
-    set_bootloader_message(&boot);
-#endif
+    if (device_flash_type() == MTD) {
+        // Reset to mormal system boot so recovery won't cycle indefinitely.
+        struct bootloader_message boot;
+        memset(&boot, 0, sizeof(boot));
+        set_bootloader_message(&boot);
+    }
 
     // Remove the command file, so recovery won't repeat indefinitely.
     if (ensure_path_mounted(COMMAND_FILE) != 0 ||
@@ -797,6 +796,7 @@ main(int argc, char **argv) {
     ui_print(EXPAND(RECOVERY_VERSION)"\n");
     load_volume_table();
     create_fstab();
+    LOGI("Processing arguments.\n");
     get_args(&argc, &argv);
 
     int previous_runs = 0;
@@ -807,6 +807,7 @@ main(int argc, char **argv) {
     int toggle_secure_fs = 0;
     encrypted_fs_info encrypted_fs_data;
 
+    LOGI("Checking arguments.\n");
     int arg;
     while ((arg = getopt_long(argc, argv, "", OPTIONS, NULL)) != -1) {
         switch (arg) {
@@ -823,6 +824,7 @@ main(int argc, char **argv) {
         }
     }
 
+    LOGI("device_recovery_start()\n");
     device_recovery_start();
 
     printf("Command:");
