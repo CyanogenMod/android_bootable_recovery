@@ -31,7 +31,7 @@
 #include "edify/expr.h"
 #include "mincrypt/sha.h"
 #include "minzip/DirUtil.h"
-#include "mtdutils/mounts.h"
+#include "mounts.h"
 #include "mtdutils/mtdutils.h"
 #include "updater.h"
 #include "applypatch/applypatch.h"
@@ -683,7 +683,7 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
     if (0 == restore_raw_partition(partition, filename))
         result = strdup(partition);
     else
-        result = success ? partition : strdup("");
+        result = strdup("");
 
 done:
     if (result != partition) free(partition);
