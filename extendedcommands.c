@@ -908,7 +908,13 @@ void write_fstab_root(char *path, FILE *file)
         return;
     }
 
-    fprintf(file, "%s ", vol->device);
+    char device[200];
+    if (vol->device[0] != '/')
+        get_partition_device(vol->device, device);
+    else
+        strcpy(device, vol->device);
+
+    fprintf(file, "%s ", device);
     fprintf(file, "%s ", path);
     fprintf(file, "%s rw\n", vol->fs_type);
 }
