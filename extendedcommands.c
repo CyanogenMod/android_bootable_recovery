@@ -37,6 +37,7 @@
 #include "nandroid.h"
 #include "mounts.h"
 #include "flashutils/flashutils.h"
+#include "edify/expr.h"
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -474,7 +475,7 @@ void show_partition_menu()
 
         for (i = 0; i < DEVICE_COUNT; i++)
         {
-            options[DEVICE_COUNT + i] = devices[i][0];
+            options[MOUNTABLE_COUNT + i] = devices[i][0];
         }
 
         options[MOUNTABLE_COUNT + DEVICE_COUNT] = "mount USB storage";
@@ -522,33 +523,52 @@ int extendedcommand_file_exists()
     return 0 == stat(EXTENDEDCOMMAND_SCRIPT, &file_info);
 }
 
-int run_script_from_buffer(char* script_data, int script_len, char* filename)
-{
-    ui_print("not yet implemented.\n");
-    return -1;
+int edify_main(int argc, char** argv) {
+    load_volume_table();
+    process_volumes();
+    RegisterBuiltins();
+    RegisterRecoveryHooks();
+    FinishRegistration();
 
-    /*
-    const AmCommandList *commands = parseAmendScript(script_data, script_len);
-    if (commands == NULL) {
-        printf("Syntax error in update script\n");
+    if (argc != 2) {
+        printf("edify <filename>\n");
         return 1;
-    } else {
-        printf("Parsed %.*s\n", script_len, filename);
     }
 
-    int ret = execCommandList((ExecContext *)1, commands);
-    if (ret != 0) {
-        int num = ret;
-        char *line = NULL, *next = script_data;
-        while (next != NULL && ret-- > 0) {
-            line = next;
-            next = memchr(line, '\n', script_data + script_len - line);
-            if (next != NULL) *next++ = '\0';
+    FILE* f = fopen(argv[1], "r");
+    if (f == NULL) {
+        printf("%s: %s: No such file or directory\n", argv[0], argv[1]);
+        return 1;
+    }
+    char buffer[8192];
+    int size = fread(buffer, 1, 8191, f);
+    fclose(f);
+    buffer[size] = '\0';
+
+    Expr* root;
+    int error_count = 0;
+    yy_scan_bytes(buffer, size);
+    int error = yyparse(&root, &error_count);
+    printf("parse returned %d; %d errors encountered\n", error, error_count);
+    if (error == 0 || error_count > 0) {
+
+        //ExprDump(0, root, buffer);
+
+        State state;
+        state.cookie = NULL;
+        state.script = buffer;
+        state.errmsg = NULL;
+
+        char* result = Evaluate(&state, root);
+        if (result == NULL) {
+            printf("result was NULL, message is: %s\n",
+                   (state.errmsg == NULL ? "(NULL)" : state.errmsg));
+            free(state.errmsg);
+        } else {
+            printf("result is [%s]\n", result);
         }
-        printf("Failure at line %d:\n%s\n", num, next ? line : "(not found)");
-        return 1;
     }
-    */
+    return 0;
 }
 
 int run_script(char* filename)
@@ -928,7 +948,7 @@ int bml_check_volume(const char *path) {
         return 0;
     }
     
-    ui_print("%s may be rfs. Checking...\n");
+    ui_print("%s may be rfs. Checking...\n", path);
     char tmp[PATH_MAX];
     sprintf(tmp, "mount -t rfs %s %s", vol->device, path);
     int ret = __system(tmp);
@@ -958,8 +978,9 @@ void process_volumes() {
     ui_set_show_text(1);
     ui_print("Filesystems need to be converted to ext4.\n");
     ui_print("A backup and restore will now take place.\n");
-    ui_print("If anything goes wrong, your back will be\n");
-    ui_print("named before-ext4-convert.\n");
+    ui_print("If anything goes wrong, your backup will be\n");
+    ui_print("named before-ext4-convert. Try restoring it\n");
+    ui_print("in case of error.\n");
 
     nandroid_backup("/sdcard/clockworkmod/backup/before-ext4-convert");
     nandroid_restore("/sdcard/clockworkmod/backup/before-ext4-convert", 1, 1, 1, 1, 1);

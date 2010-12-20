@@ -766,6 +766,8 @@ main(int argc, char **argv) {
 	{
 	    if (strstr(argv[0], "flash_image") != NULL)
 	        return flash_image_main(argc, argv);
+	    if (strstr(argv[0], "edify") != NULL)
+	        return edify_main(argc, argv);
 	    if (strstr(argv[0], "dump_image") != NULL)
 	        return dump_image_main(argc, argv);
 	    if (strstr(argv[0], "erase_image") != NULL)

@@ -19,6 +19,7 @@ LOCAL_SRC_FILES := \
 	extendedcommands.c \
 	nandroid.c \
     reboot.c \
+    edifyscripting.c \
     setprop.c
 
 LOCAL_MODULE := recovery
@@ -55,7 +56,7 @@ endif
 LOCAL_STATIC_LIBRARIES += libext4_utils libz
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmincrypt
 
-LOCAL_STATIC_LIBRARIES += libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image
+LOCAL_STATIC_LIBRARIES += libedify libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image
 LOCAL_STATIC_LIBRARIES += libflashutils libmtdutils libmmcutils libbmlutils
 
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
