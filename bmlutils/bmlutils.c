@@ -23,6 +23,7 @@
 extern int __system(const char *command);
 #define BML_UNLOCK_ALL				0x8A29		///< unlock all partition RO -> RW
 
+
 static int restore_internal(const char* bml, const char* filename)
 {
     char buf[4096];
@@ -57,17 +58,17 @@ static int restore_internal(const char* bml, const char* filename)
 
 int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
 {
-    char *bml;
-    if (strcmp(partition, "boot") == 0 || strcmp(partition, "recovery") == 0)
-        bml = "/dev/block/bml7";
-    else
+    if (strcmp(partition, "boot") != 0 && strcmp(partition, "recovery") != 0)
         return 6;
 
+    // always restore boot, regardless of whether recovery or boot is flashed.
+    // this is because boot and recovery are the same on some samsung phones.
     int ret = restore_internal("/dev/block/bml7", filename);
     if (ret != 0)
         return ret;
 
-    ret = restore_internal("/dev/block/bml8", filename);
+    if (strcmp(partition, "recovery") == 0)
+        ret = restore_internal("/dev/block/bml8", filename);
     return ret;
 }
 
