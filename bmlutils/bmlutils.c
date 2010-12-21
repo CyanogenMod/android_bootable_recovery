@@ -72,7 +72,7 @@ int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
     return ret;
 }
 
-int cmd_bml_backup_raw_partition(const char *partition, const char *filename)
+int cmd_bml_backup_raw_partition(const char *partition, const char *out_file)
 {
     char* bml;
     if (strcmp("boot", partition) == 0)
