@@ -73,9 +73,62 @@ int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
 
 int cmd_bml_backup_raw_partition(const char *partition, const char *filename)
 {
-    char tmp[PATH_MAX];
-    sprintf(tmp, "dd of=%s if=/dev/block/bml7 bs=4096", filename);
-    return __system(tmp);
+    char* bml;
+    if (strcmp("boot", partition) == 0)
+        bml = "/dev/block/bml7";
+    else if (strcmp("recovery", partition) == 0)
+        bml = "/dev/block/bml8";
+    else {
+        printf("Invalid partition.\n");
+        return -1;
+    }
+
+    int ch;
+    FILE *in;
+    FILE *out;
+    int val = 0;
+    char buf[512];
+    unsigned sz = 0;
+    unsigned i;
+    int ret = -1;
+    char *in_file = bml;
+
+    in  = fopen ( in_file,  "r" );
+    if (in == NULL)
+        goto ERROR3;
+
+    out = fopen ( out_file,  "w" );
+    if (out == NULL)
+        goto ERROR2;
+
+    fseek(in, 0L, SEEK_END);
+    sz = ftell(in);
+    fseek(in, 0L, SEEK_SET);
+
+    if (sz % 512)
+    {
+        while ( ( ch = fgetc ( in ) ) != EOF )
+            fputc ( ch, out );
+    }
+    else
+    {
+        for (i=0; i< (sz/512); i++)
+        {
+            if ((fread(buf, 512, 1, in)) != 1)
+                goto ERROR1;
+            if ((fwrite(buf, 512, 1, out)) != 1)
+                goto ERROR1;
+        }
+    }
+
+    fsync(out);
+    ret = 0;
+ERROR1:
+    fclose ( out );
+ERROR2:
+    fclose ( in );
+ERROR3:
+    return ret;
 }
 
 int cmd_bml_erase_raw_partition(const char *partition)
