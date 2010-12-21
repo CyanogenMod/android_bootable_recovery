@@ -981,15 +981,23 @@ void process_volumes() {
         return;
     }
     
+    char backup_path[PATH_MAX];
+    time_t t = time(NULL);
+    char backup_name[PATH_MAX];
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    sprintf(backup_name, "before-ext4-convert-%d", tp.tv_sec);
+    sprintf(backup_path, "/sdcard/clockworkmod/backup/%s", backup_name);
+
     ui_set_show_text(1);
     ui_print("Filesystems need to be converted to ext4.\n");
     ui_print("A backup and restore will now take place.\n");
     ui_print("If anything goes wrong, your backup will be\n");
-    ui_print("named before-ext4-convert. Try restoring it\n");
+    ui_print("named %s. Try restoring it\n", backup_name);
     ui_print("in case of error.\n");
 
-    nandroid_backup("/sdcard/clockworkmod/backup/before-ext4-convert");
-    nandroid_restore("/sdcard/clockworkmod/backup/before-ext4-convert", 1, 1, 1, 1, 1);
+    nandroid_backup(backup_path);
+    nandroid_restore(backup_path, 1, 1, 1, 1, 1);
     ui_set_show_text(0);
 }
 
