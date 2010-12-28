@@ -105,6 +105,14 @@ Volume* volume_for_path(const char* path) {
     return NULL;
 }
 
+int try_mount(const char *device, const char *mount_point, const char *fs_type, int flags, const char *data) {
+    int result = mount(device, mount_point, fs_type, flags, data);
+    if(!result || strcmp(fs_type, "vfat"))
+        return result;
+    return mount(device, mount_point, "ext4", flags, data);
+}
+
+
 int ensure_path_mounted(const char* path) {
     Volume* v = volume_for_path(path);
     if (v == NULL) {
@@ -145,14 +153,14 @@ int ensure_path_mounted(const char* path) {
         return mtd_mount_partition(partition, v->mount_point, v->fs_type, 0);
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
-        result = mount(v->device, v->mount_point, v->fs_type,
+        result = try_mount(v->device, v->mount_point, v->fs_type,
                        MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
         if (result == 0) return 0;
 
         if (v->device2) {
             LOGW("failed to mount %s (%s); trying %s\n",
                  v->device, strerror(errno), v->device2);
-            result = mount(v->device2, v->mount_point, v->fs_type,
+            result = try_mount(v->device2, v->mount_point, v->fs_type,
                            MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
             if (result == 0) return 0;
         }
