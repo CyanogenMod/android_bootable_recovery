@@ -105,6 +105,21 @@ Volume* volume_for_path(const char* path) {
     return NULL;
 }
 
+static const char *known_fs_types[] = { "vfat", "ext4", "ext3", "ext2", "rfs", NULL };
+
+int try_mount(const char *device, const char *mount_point, const char *fs_type, int flags, const char *data) {
+    int i;
+    for(i = 0; known_fs_types[i]; i++) {
+        int result = mount(device, mount_point, known_fs_types[i], flags, data);
+        if(!result) {
+            LOGI("mounted %s on %s using fs_type %s\n", device, mount_point, known_fs_types[i]);
+            return result;
+        }
+    }
+    return -1;
+}
+
+
 int ensure_path_mounted(const char* path) {
     Volume* v = volume_for_path(path);
     if (v == NULL) {
@@ -143,29 +158,23 @@ int ensure_path_mounted(const char* path) {
             return -1;
         }
         return mtd_mount_partition(partition, v->mount_point, v->fs_type, 0);
-    } else if (strcmp(v->fs_type, "ext4") == 0 ||
-               strcmp(v->fs_type, "vfat") == 0) {
-        result = mount(v->device, v->mount_point, v->fs_type,
+    } else {
+        result = try_mount(v->device, v->mount_point, v->fs_type,
                        MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
         if (result == 0) return 0;
 
         if (v->device2) {
             LOGW("failed to mount %s (%s); trying %s\n",
                  v->device, strerror(errno), v->device2);
-            result = mount(v->device2, v->mount_point, v->fs_type,
+            result = try_mount(v->device2, v->mount_point, v->fs_type,
                            MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
             if (result == 0) return 0;
         }
-
-        LOGE("failed to mount %s (%s)\n", v->mount_point, strerror(errno));
-        return -1;
-    } else {
         // let's try mounting with the mount binary and hope for the best.
         char mount_cmd[PATH_MAX];
         sprintf(mount_cmd, "mount %s", path);
         return __system(mount_cmd);
     }
-
     LOGE("unknown fs_type \"%s\" for %s\n", v->fs_type, v->mount_point);
     return -1;
 }
