@@ -146,6 +146,15 @@ int nandroid_backup(const char* backup_path)
         return print_and_error("Error while dumping recovery image!\n");
 #endif
 
+    if (0 == (ret = get_partition_device("wimax", tmp)))
+    {
+        ui_print("Backing up wimax...\n");
+        sprintf(tmp, "%s/%s", backup_path, "wimax.img");
+        ret = backup_raw_partition("wimax", tmp);
+        if (0 != ret)
+            return print_and_error("Error while dumping wimax image!\n");
+    }
+
     if (0 != (ret = nandroid_backup_partition(backup_path, "SYSTEM:")))
         return ret;
 
@@ -259,7 +268,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
     return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext)
+int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
@@ -291,6 +300,26 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     }
 #endif
     
+    if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
+    {
+        sprintf(tmp, "%s/wimax.img", backup_path);
+
+        struct stat st;
+        if (0 != stat(tmp, &st))
+        {
+            ui_print("WARNING: Wimax partition exists, but nandroid\n");
+            ui_print("         backup does not contain wimax image.\n");
+            ui_print("         You should create a new backup to\n");
+            ui_print("         protect your wimax data.\n");
+        }
+        else
+        {
+            ui_print("Restoring wimax image...\n");
+            if (0 != (ret = restore_raw_partition("wimax", tmp)))
+                return ret;
+        }
+    }
+
     if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "SYSTEM:")))
         return ret;
 
@@ -360,7 +389,7 @@ int nandroid_main(int argc, char** argv)
     {
         if (argc != 3)
             return nandroid_usage();
-        return nandroid_restore(argv[2], 1, 1, 1, 1, 1);
+        return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 1);
     }
     
     return nandroid_usage();
