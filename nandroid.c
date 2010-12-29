@@ -141,16 +141,16 @@ int nandroid_backup(const char* backup_path)
         return print_and_error("Error while dumping recovery image!\n");
 #endif
 
-	if (0 == (ret = get_partition_device("wimax", tmp)))
-	{
-		ui_print("Backing up wimax...\n");
-		sprintf(tmp, "%s/%s", backup_path, "wimax.img");
-		ret = backup_raw_partition("wimax", tmp);
-		if (0 != ret)
-			return print_and_error("Error while dumping wimax image!\n");
-	}
+    if (0 == (ret = get_partition_device("wimax", tmp)))
+    {
+        ui_print("Backing up wimax...\n");
+        sprintf(tmp, "%s/%s", backup_path, "wimax.img");
+        ret = backup_raw_partition("wimax", tmp);
+        if (0 != ret)
+            return print_and_error("Error while dumping wimax image!\n");
+    }
 
-	if (0 != (ret = nandroid_backup_partition(backup_path, "/system")))
+    if (0 != (ret = nandroid_backup_partition(backup_path, "/system")))
         return ret;
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "/data")))
@@ -294,25 +294,25 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     }
 #endif
     
-	if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
-	{
-		sprintf(tmp, "%s/wimax.img", backup_path);
+    if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
+    {
+        sprintf(tmp, "%s/wimax.img", backup_path);
 
-		struct stat st;
-		if (0 != stat(tmp, &st))
-		{
-			ui_print("WARNING: Wimax partition exists, but nandroid\n");
-			ui_print("         backup does not contain wimax image.\n");
-			ui_print("         You should create a new backup to\n");
-			iu_print("         protect your wimax data.\n");
-		}
-		else
-		{
-			ui_print("Restoring wimax image...\n");
-			if (0 != (ret = restore_raw_partition("wimax", tmp)))
-				return ret;
-		}
-	}
+        struct stat st;
+        if (0 != stat(tmp, &st))
+        {
+            ui_print("WARNING: Wimax partition exists, but nandroid\n");
+            ui_print("         backup does not contain wimax image.\n");
+            ui_print("         You should create a new backup to\n");
+            iu_print("         protect your wimax data.\n");
+        }
+        else
+        {
+            ui_print("Restoring wimax image...\n");
+            if (0 != (ret = restore_raw_partition("wimax", tmp)))
+                return ret;
+        }
+    }
 
     if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "/system")))
         return ret;
