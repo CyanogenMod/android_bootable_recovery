@@ -817,7 +817,6 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
     int restoredata = 1;
     int restorecache = 1;
     int restoresdext = 1;
-    int restorewimax = 1;
     int i;
     for (i = 0; i < argc; i++)
     {
@@ -831,11 +830,9 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
             restorecache = 0;
         else if (strcmp(argv[i], "nosd-ext") == 0)
             restorecache = 0;
-        else if (strcmp(argv[i], "nowimax") == 0)
-            restorewimax = 0;
     }
 
-    return nandroid_restore(argv[0], restoreboot, restoresystem, restoredata, restorecache, restoresdext, restorewimax);
+    return nandroid_restore(argv[0], restoreboot, restoresystem, restoredata, restorecache, restoresdext, 0);
 }
 
 static int

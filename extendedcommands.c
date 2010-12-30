@@ -345,7 +345,7 @@ void show_nandroid_restore_menu()
         return;
 
     if (confirm_selection("Confirm restore?", "Yes - Restore"))
-        nandroid_restore(file, 1, 1, 1, 1, 1, 1);
+        nandroid_restore(file, 1, 1, 1, 1, 1, 0);
 }
 
 void show_mount_usb_storage_menu()
@@ -672,7 +672,12 @@ void show_nandroid_advanced_restore_menu()
                             "Restore wimax",
                             NULL
     };
-
+    
+    char tmp[PATH_MAX];
+    if (0 != get_partition_device("wimax", tmp)) {
+        // disable wimax restore option
+        list[5] = NULL;
+    }
 
     static char* confirm_restore  = "Confirm restore?";
 
