@@ -327,6 +327,7 @@ PartitionSdCard() {
 	if [ $EXTSIZE -gt 0 ] ; then
 		echo -n "creating ext2 partition..."
 		"$CMPARTED" -s "$SDPATH" mkpartfs primary ext2 "$FATSIZE"MB "$EXTEND"MB 2>&1 >>"$LOGFILE"
+		"$CMTUNE2FS" -L sd-ext "$EXTPATH" 2>&1 >>"$LOGFILE"
 		echo "done"
 	fi
 	
