@@ -389,7 +389,7 @@ int nandroid_main(int argc, char** argv)
     {
         if (argc != 3)
             return nandroid_usage();
-        return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 1);
+        return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
     }
     
     return nandroid_usage();
