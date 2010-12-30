@@ -148,11 +148,12 @@ int nandroid_backup(const char* backup_path)
 
     if (0 == (ret = get_partition_device("wimax", tmp)))
     {
-        ui_print("Backing up wimax...\n");
-        sprintf(tmp, "%s/%s", backup_path, "wimax.img");
+        char serialno[64];
+        ui_print("Backing up WiMAX...\n");
+        sprintf(tmp, "%s/wimax.%s.img", backup_path, property_get("ro.serialno", serialno, ""));
         ret = backup_raw_partition("wimax", tmp);
         if (0 != ret)
-            return print_and_error("Error while dumping wimax image!\n");
+            return print_and_error("Error while dumping WiMAX image!\n");
     }
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "SYSTEM:")))
@@ -302,15 +303,16 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     
     if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
     {
-        sprintf(tmp, "%s/wimax.img", backup_path);
+        char serialno[64];
+        sprintf(tmp, "%s/wimax.%s.img", backup_path, property_get("ro.serialno", serialno, ""));
 
         struct stat st;
         if (0 != stat(tmp, &st))
         {
-            ui_print("WARNING: Wimax partition exists, but nandroid\n");
-            ui_print("         backup does not contain wimax image.\n");
+            ui_print("WARNING: WiMAX partition exists, but nandroid\n");
+            ui_print("         backup does not contain WiMAX image.\n");
             ui_print("         You should create a new backup to\n");
-            ui_print("         protect your wimax data.\n");
+            ui_print("         protect your WiMAX keys.\n");
         }
         else
         {
