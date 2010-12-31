@@ -143,9 +143,11 @@ int nandroid_backup(const char* backup_path)
 
     if (0 == (ret = get_partition_device("wimax", tmp)))
     {
-        char serialno[64];
+        char serialno[PROPERTY_VALUE_MAX];
         ui_print("Backing up WiMAX...\n");
-        sprintf(tmp, "%s/wimax.%s.img", backup_path, property_get("ro.serialno", serialno, ""));
+        serialno[0] = 0;
+        property_get("ro.serialno", serialno, "");
+        sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
         ret = backup_raw_partition("wimax", tmp);
         if (0 != ret)
             return print_and_error("Error while dumping WiMAX image!\n");
@@ -297,8 +299,11 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     
     if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
     {
-        char serialno[64];
-        sprintf(tmp, "%s/wimax.%s.img", backup_path, property_get("ro.serialno", serialno, ""));
+        char serialno[PROPERTY_VALUE_MAX];
+        
+        serialno[0] = 0;
+        property_get("ro.serialno", serialno, "");
+        sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
 
         struct stat st;
         if (0 != stat(tmp, &st))
@@ -310,7 +315,10 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         }
         else
         {
-            ui_print("Restoring wimax image...\n");
+            ui_print("Erasing WiMAX before restore...\n");
+            if (0 != (ret = format_device("wimax")))
+                return print_and_error("Error while formatting wimax!\n");
+            ui_print("Restoring WiMAX image...\n");
             if (0 != (ret = restore_raw_partition("wimax", tmp)))
                 return ret;
         }
