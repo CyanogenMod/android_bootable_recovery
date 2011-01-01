@@ -285,14 +285,19 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 #ifndef BOARD_RECOVERY_IGNORE_BOOTABLES
     if (restore_boot)
     {
-        ui_print("Erasing boot before restore...\n");
-        if (0 != (ret = format_device("boot")))
-            return print_and_error("Error while formatting BOOT:!\n");
+        struct stat file_info;
         sprintf(tmp, "%s/boot.img", backup_path);
-        ui_print("Restoring boot image...\n");
-        if (0 != (ret = restore_raw_partition("boot", tmp))) {
-            ui_print("Error while flashing boot image!");
-            return ret;
+        if(statfs(tmp, &file_info) == 0)
+        {
+            ui_print("Erasing boot before restore...\n");
+            if (0 != (ret = format_device("boot")))
+                return print_and_error("Error while formatting BOOT:!\n");
+            ui_print("Restoring boot image...\n");
+            if (0 != (ret = restore_raw_partition("boot", tmp))) {
+                ui_print("Error while flashing boot image!");
+                return ret;
+        } else {
+            ui_print("No Bootimage found skipping.");
         }
     }
 #endif
