@@ -437,23 +437,27 @@ format_ext2_device (const char *device) {
 
 int format_unknown_device(const char *device, const char* path, const char *fs_type)
 {
-    printf("Formatting unknown device.\n");
+    LOGI("Formatting unknown device.\n");
 
     // device may simply be a name, like "system"
     if (device[0] != '/')
         return erase_partition(device, fs_type);
     
     if (strcmp("ext3", fs_type) == 0) {
-        printf("Formatting ext3 device.\n");
-        if (0 != ensure_path_unmounted(path))
-            return -11;
+        LOGI("Formatting ext3 device.\n");
+        if (0 != ensure_path_unmounted(path)) {
+            LOGE("Error while unmounting %s.\n", path);
+            return -12;
+        }
         return format_ext3_device(device);
     }
     
     if (strcmp("ext2", fs_type) == 0) {
-        printf("Formatting ext2 device.\n");
-        if (0 != ensure_path_unmounted(path))
+        LOGI("Formatting ext2 device.\n");
+        if (0 != ensure_path_unmounted(path)) {
+            LOGE("Error while unmounting %s.\n", path);
             return -12;
+        }
         return format_ext2_device(device);
     }
 
