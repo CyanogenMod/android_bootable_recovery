@@ -460,26 +460,8 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
     // device may simply be a name, like "system"
     if (device[0] != '/')
         return erase_partition(device, fs_type);
-    
-    if (strcmp("ext3", fs_type) == 0) {
-        LOGI("Formatting ext3 device.\n");
-        if (0 != ensure_path_unmounted(path)) {
-            LOGE("Error while unmounting %s.\n", path);
-            return -12;
-        }
-        return format_ext3_device(device);
-    }
-    
-    if (strcmp("ext2", fs_type) == 0) {
-        LOGI("Formatting ext2 device.\n");
-        if (0 != ensure_path_unmounted(path)) {
-            LOGE("Error while unmounting %s.\n", path);
-            return -12;
-        }
-        return format_ext2_device(device);
-    }
 
-    // if this is SDEXT:, don't worry about it.
+    // if this is SDEXT:, don't worry about it if it does not exist.
     if (0 == strcmp(path, "/sd-ext"))
     {
         struct stat st;
@@ -488,6 +470,26 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         {
             ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
             return 0;
+        }
+    }
+
+    if (NULL != fs_type) {
+        if (strcmp("ext3", fs_type) == 0) {
+            LOGI("Formatting ext3 device.\n");
+            if (0 != ensure_path_unmounted(path)) {
+                LOGE("Error while unmounting %s.\n", path);
+                return -12;
+            }
+            return format_ext3_device(device);
+        }
+
+        if (strcmp("ext2", fs_type) == 0) {
+            LOGI("Formatting ext2 device.\n");
+            if (0 != ensure_path_unmounted(path)) {
+                LOGE("Error while unmounting %s.\n", path);
+                return -12;
+            }
+            return format_ext2_device(device);
         }
     }
 
