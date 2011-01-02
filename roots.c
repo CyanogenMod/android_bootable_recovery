@@ -217,7 +217,8 @@ int format_volume(const char* volume) {
         LOGE("can't give path \"%s\" to format_volume\n", volume);
         return -1;
 #endif
-        return format_unknown_device(volume);
+        printf("Formatting volume %s of fs type %s\n", volume, v->fs_type);
+        return format_unknown_device(v->device, volume, v->fs_type);
     }
 
     if (ensure_path_unmounted(volume) != 0) {

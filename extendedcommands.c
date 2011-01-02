@@ -390,8 +390,69 @@ int confirm_selection(const char* title, const char* confirm)
     return chosen_item == 7;
 }
 
-int format_unknown_device(const char* path)
+#define MKE2FS_BIN      "/sbin/mke2fs"
+#define TUNE2FS_BIN     "/sbin/tune2fs"
+#define E2FSCK_BIN      "/sbin/e2fsck"
+
+static int
+format_ext3_device (const char *device) {
+    // Run mke2fs
+    char *const mke2fs[] = {MKE2FS_BIN, "-j", device, NULL};
+    if(run_exec_process(mke2fs))
+        return -1;
+
+    // Run tune2fs
+    char *const tune2fs[] = {TUNE2FS_BIN, "-j", "-C", "1", device, NULL};
+    if(run_exec_process(tune2fs))
+        return -1;
+
+    // Run e2fsck
+    char *const e2fsck[] = {E2FSCK_BIN, "-fy", device, NULL};
+    if(run_exec_process(e2fsck))
+        return -1;
+
+    return 0;
+}
+
+static int
+format_ext2_device (const char *device) {
+    // Run mke2fs
+    char *const mke2fs[] = {MKE2FS_BIN, device, NULL};
+    if(run_exec_process(mke2fs))
+        return -1;
+
+    // Run tune2fs
+    char *const tune2fs[] = {TUNE2FS_BIN, "-C", "1", device, NULL};
+    if(run_exec_process(tune2fs))
+        return -1;
+
+    // Run e2fsck
+    char *const e2fsck[] = {E2FSCK_BIN, "-fy", device, NULL};
+    if(run_exec_process(e2fsck))
+        return -1;
+
+    return 0;
+}
+
+
+int format_unknown_device(const char *device, const char* path, const char *fs_type)
 {
+    // device may simply be a name, like "system"
+    if (device[0] != '/')
+        return erase_partition(device, fs_type);
+    
+    if (strcmp("ext3", device) == 0) {
+        if (0 != ensure_path_unmounted(path))
+            return -11;
+        return format_ext3_device(device);
+    }
+    
+    if (strcmp("ext2", device) == 0) {
+        if (0 != ensure_path_unmounted(path))
+            return -12;
+        return format_ext2_device(device);
+    }
+
     // if this is SDEXT:, don't worry about it.
     if (0 == strcmp(path, "/sd-ext"))
     {

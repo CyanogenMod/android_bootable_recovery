@@ -299,7 +299,7 @@ mmc_find_partition_by_name(const char *name)
 #define TUNE2FS_BIN     "/sbin/tune2fs"
 #define E2FSCK_BIN      "/sbin/e2fsck"
 
-static int
+int
 run_exec_process ( char **argv) {
     pid_t pid;
     int status;
