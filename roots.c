@@ -263,5 +263,5 @@ int format_volume(const char* volume) {
     LOGE("format_volume: fs_type \"%s\" unsupported\n", v->fs_type);
     return -1;
 #endif
-    return format_unknown_device(volume);
+    return format_unknown_device(v->device, volume, v->fs_type);
 }
