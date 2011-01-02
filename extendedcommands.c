@@ -514,7 +514,7 @@ void show_partition_menu()
     };
 
     string devices[][2] = {
-        { "format boot", "boot:" },
+        { "format boot", "/boot" },
         { "format system", "/system" },
         { "format data", "/data" },
         { "format cache", "/cache" },
@@ -576,7 +576,7 @@ void show_partition_menu()
             if (!confirm_selection(confirm_format, confirm))
                 continue;
             ui_print("Formatting %s...\n", devices[chosen_item][1]);
-            if (0 != format_device(devices[chosen_item][1]))
+            if (0 != format_volume(devices[chosen_item][1]))
                 ui_print("Error formatting %s!\n", devices[chosen_item][1]);
             else
                 ui_print("Done.\n");
@@ -1089,18 +1089,6 @@ void handle_failure(int ret)
     mkdir("/sdcard/clockworkmod", S_IRWXU);
     __system("cp /tmp/recovery.log /sdcard/clockworkmod/recovery.log");
     ui_print("/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.\n");
-}
-
-int format_device(const char* device) {
-    if (device == NULL)
-        return -1;
-    if (device[0] == '/') {
-        Volume *vol = volume_for_path(device);
-        if (vol == NULL)
-            return -1;
-        return erase_partition(device, vol->fs_type);
-    }
-    return erase_raw_partition(device);
 }
 
 int is_path_mounted(const char* path) {
