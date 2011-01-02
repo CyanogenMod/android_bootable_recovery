@@ -39,6 +39,7 @@
 
 
 #define ASSUMED_UPDATE_BINARY_NAME  "META-INF/com/google/android/update-binary"
+#define ASSUMED_UPDATE_SCRIPT_NAME  "META-INF/com/google/android/update-script"
 #define PUBLIC_KEYS_FILE "/res/keys"
 
 // The update binary ask us to install a firmware file on reboot.  Set
@@ -102,6 +103,16 @@ try_update_binary(const char *path, ZipArchive *zip) {
     const ZipEntry* binary_entry =
             mzFindZipEntry(zip, ASSUMED_UPDATE_BINARY_NAME);
     if (binary_entry == NULL) {
+        const ZipEntry* update_script_entry =
+                mzFindZipEntry(zip, ASSUMED_UPDATE_SCRIPT_NAME);
+        if (update_script_entry != NULL) {
+            ui_print("Amend scripting (update-script) is no longer supported.\n");
+            ui_print("Amend scripting was deprecated by Google in Android 1.5.\n");
+            ui_print("It was necessary to remove it when upgrading to the ClockworkMod 3.0 Gingerbread based recovery.\n");
+            ui_print("Please switch to Edify scripting (updater-script and update-binary) to create working update zip packages.\n");
+            return INSTALL_UPDATE_BINARY_MISSING;
+        }
+
         mzCloseZipArchive(zip);
         return INSTALL_UPDATE_BINARY_MISSING;
     }
