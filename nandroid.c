@@ -316,7 +316,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         else
         {
             ui_print("Erasing WiMAX before restore...\n");
-            if (0 != (ret = format_device("wimax")))
+            if (0 != (ret = format_volume("/wimax")))
                 return print_and_error("Error while formatting wimax!\n");
             ui_print("Restoring WiMAX image...\n");
             if (0 != (ret = restore_raw_partition("wimax", tmp)))
