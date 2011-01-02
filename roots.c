@@ -213,12 +213,8 @@ int format_volume(const char* volume) {
         return -1;
     }
     if (strcmp(v->mount_point, volume) != 0) {
-#if 0
         LOGE("can't give path \"%s\" to format_volume\n", volume);
         return -1;
-#endif
-        printf("Formatting volume %s of fs type %s\n", volume, v->fs_type);
-        return format_unknown_device(v->device, volume, v->fs_type);
     }
 
     if (ensure_path_unmounted(volume) != 0) {
