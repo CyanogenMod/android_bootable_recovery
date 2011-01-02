@@ -342,10 +342,19 @@ void show_nandroid_restore_menu()
 
 void show_mount_usb_storage_menu()
 {
-    char command[PATH_MAX];
+    int fd;
     Volume *vol = volume_for_path("/sdcard");
-    sprintf(command, "echo %s > /sys/devices/platform/usb_mass_storage/lun0/file", vol->device);
-    __system(command);
+    if ((fd = open("/sys/devices/platform/usb_mass_storage/lun0/file",
+                   O_WRONLY)) < 0) {
+        LOGE("Unable to open ums lunfile (%s)", strerror(errno));
+        return -1;
+    }
+
+    if (write(fd, vol->device, strlen(vol->device)) < 0) {
+        LOGE("Unable to write to ums lunfile (%s)", strerror(errno));
+        close(fd);
+        return -1;
+    }
     static char* headers[] = {  "USB Mass Storage device",
                                 "Leaving this menu unmount",
                                 "your SD card from your PC.",
@@ -362,8 +371,17 @@ void show_mount_usb_storage_menu()
             break;
     }
 
-    __system("echo '' > /sys/devices/platform/usb_mass_storage/lun0/file");
-    __system("echo 0 > /sys/devices/platform/usb_mass_storage/lun0/enable");
+    if ((fd = open("/sys/devices/platform/usb_mass_storage/lun0/file", O_WRONLY)) < 0) {
+        LOGE("Unable to open ums lunfile (%s)", strerror(errno));
+        return -1;
+    }
+
+    char ch = 0;
+    if (write(fd, &ch, 1) < 0) {
+        LOGE("Unable to write to ums lunfile (%s)", strerror(errno));
+        close(fd);
+        return -1;
+    }
 }
 
 int confirm_selection(const char* title, const char* confirm)
