@@ -243,6 +243,24 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         }
         result = location;
 #endif
+    } else if (strcmp(fs_type, "ext2") == 0) {
+        int status = format_ext2_device(location);
+        if (status != 0) {
+            fprintf(stderr, "%s: format_ext2_device failed (%d) on %s",
+                    name, status, location);
+            result = strdup("");
+            goto done;
+        }
+        result = location;
+    } else if (strcmp(fs_type, "ext3") == 0) {
+        int status = format_ext3_device(location);
+        if (status != 0) {
+            fprintf(stderr, "%s: format_ext3_device failed (%d) on %s",
+                    name, status, location);
+            result = strdup("");
+            goto done;
+        }
+        result = location;
     } else {
         fprintf(stderr, "%s: unsupported fs_type \"%s\" partition_type \"%s\"",
                 name, fs_type, partition_type);
