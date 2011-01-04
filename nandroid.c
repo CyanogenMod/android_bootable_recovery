@@ -100,7 +100,26 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     return 0;
 }
 
-int nandroid_backup_partition(const char* backup_path, char* root) {
+int nandroid_backup_partition(const char* backup_path, const char* root) {
+    Volume *vol = volume_for_path(root);
+    // make sure the volume exists before attempting anything...
+    if (vol == NULL || vol->fs_type == NULL)
+        return NULL;
+
+    // see if we need a raw backup (mtd)
+    char tmp[PATH_MAX];
+    int ret;
+    if (strcmp(vol->fs_type, "mtd") == 0) {
+        const char* name = basename(root);
+        sprintf(tmp, "%s/%s.img", backup_path, name);
+        ui_print("Backing up %s image...\n", name);
+        if (0 != (ret = backup_raw_partition(vol->device, tmp))) {
+            ui_print("Error while backing up %s image!", name);
+            return ret;
+        }
+        return 0;
+    }
+
     return nandroid_backup_partition_extended(backup_path, root, 1);
 }
 
@@ -127,19 +146,11 @@ int nandroid_backup(const char* backup_path)
     sprintf(tmp, "mkdir -p %s", backup_path);
     __system(tmp);
 
-#ifndef BOARD_RECOVERY_IGNORE_BOOTABLES
-    ui_print("Backing up boot...\n");
-    sprintf(tmp, "%s/%s", backup_path, "boot.img");
-    ret = backup_raw_partition("boot", tmp);
-    if (0 != ret)
-        return print_and_error("Error while dumping boot image!\n");
+    if (0 != (ret = nandroid_backup_partition(backup_path, "/boot")))
+        return ret;
 
-    ui_print("Backing up recovery...\n");
-    sprintf(tmp, "%s/%s", backup_path, "recovery.img");
-    ret = backup_raw_partition("recovery", tmp);
-    if (0 != ret)
-        return print_and_error("Error while dumping recovery image!\n");
-#endif
+    if (0 != (ret = nandroid_backup_partition(backup_path, "/recovery")))
+        return ret;
 
     if (0 == (ret = get_partition_device("wimax", tmp)))
     {
@@ -262,6 +273,29 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
 }
 
 int nandroid_restore_partition(const char* backup_path, const char* root) {
+    Volume *vol = volume_for_path(root);
+    // make sure the volume exists...
+    if (vol == NULL || vol->fs_type == NULL)
+        return 0;
+
+    // see if we need a raw restore (mtd)
+    char tmp[PATH_MAX];
+    if (strcmp(vol->fs_type, "mtd") == 0) {
+        int ret;
+        const char* name = basename(root);
+        ui_print("Erasing %s before restore...\n", name);
+        if (0 != (ret = format_volume(root))) {
+            ui_print("Error while erasing %s image!", name);
+            return ret;
+        }
+        sprintf(tmp, "%s%s.img", backup_path, root);
+        ui_print("Restoring %s image...\n", name);
+        if (0 != (ret = restore_raw_partition(vol->device, tmp))) {
+            ui_print("Error while flashing %s image!", name);
+            return ret;
+        }
+        return 0;
+    }
     return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
@@ -282,20 +316,9 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         return print_and_error("MD5 mismatch!\n");
     
     int ret;
-#ifndef BOARD_RECOVERY_IGNORE_BOOTABLES
-    if (restore_boot)
-    {
-        ui_print("Erasing boot before restore...\n");
-        if (0 != (ret = format_volume("/boot")))
-            return print_and_error("Error while formatting BOOT:!\n");
-        sprintf(tmp, "%s/boot.img", backup_path);
-        ui_print("Restoring boot image...\n");
-        if (0 != (ret = restore_raw_partition("boot", tmp))) {
-            ui_print("Error while flashing boot image!");
-            return ret;
-        }
-    }
-#endif
+
+    if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
+        return ret;
     
     if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
     {
