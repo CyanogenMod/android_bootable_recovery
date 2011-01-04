@@ -1100,3 +1100,28 @@ int has_datadata() {
     Volume *vol = volume_for_path("/datadata");
     return vol != NULL;
 }
+
+int volume_main(int argc, char **argv) {
+    load_volume_table();
+    return 0;
+}
+
+void handle_chargemode() {
+    const char* filename = "/proc/cmdline";
+    struct stat file_info;
+    if (0 != stat(filename, &file_info))
+        return;
+
+    int file_len = file_info.st_size;
+    char* file_data = (char*)malloc(file_len + 1);
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL)
+        return;
+    fread(file_data, file_len, 1, file);
+    // supposedly not necessary, but let's be safe.
+    file_data[file_len] = '\0';
+    fclose(file);
+    
+    if (strstr(file_data, "androidboot.mode=offmode_charging") != NULL)
+        reboot(RB_POWER_OFF);
+ }

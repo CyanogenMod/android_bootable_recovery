@@ -766,6 +766,8 @@ main(int argc, char **argv) {
 	{
 	    if (strstr(argv[0], "flash_image") != NULL)
 	        return flash_image_main(argc, argv);
+	    if (strstr(argv[0], "volume") != NULL)
+	        return volume_main(argc, argv);
 	    if (strstr(argv[0], "edify") != NULL)
 	        return edify_main(argc, argv);
 	    if (strstr(argv[0], "dump_image") != NULL)
@@ -784,6 +786,7 @@ main(int argc, char **argv) {
             return setprop_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
+    handle_chargemode();
     __system("/sbin/postrecoveryboot.sh");
     
     int is_user_initiated_recovery = 0;
