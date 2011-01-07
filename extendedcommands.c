@@ -967,7 +967,7 @@ void write_fstab_root(char *path, FILE *file)
     }
 
     char device[200];
-    if (vol->device[0] != '/')
+    if (vol->device[0] != '/' && strncmp(vol->device, "LABEL=", 6) )
         get_partition_device(vol->device, device);
     else
         strcpy(device, vol->device);
@@ -1124,4 +1124,4 @@ void handle_chargemode() {
     
     if (strstr(file_data, "androidboot.mode=offmode_charging") != NULL)
         reboot(RB_POWER_OFF);
- }
+}
