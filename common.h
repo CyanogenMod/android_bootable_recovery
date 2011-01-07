@@ -101,6 +101,12 @@ void ui_reset_progress();
 #define STRINGIFY(x) #x
 #define EXPAND(x) STRINGIFY(x)
 
+// basic bitvector utils
+#define IS_SET(flag,bit)  ((flag) & (bit))
+#define SET_BIT(var,bit)  ((var) |= (bit))
+#define REMOVE_BIT(var,bit)  ((var) &= ~(bit))
+#define TOGGLE_BIT(var,bit) ((var) ^= (bit))
+
 typedef struct {
     const char* mount_point;  // eg. "/cache".  must live in the root directory.
 

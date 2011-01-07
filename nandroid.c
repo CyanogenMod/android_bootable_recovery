@@ -299,7 +299,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
     return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax)
+int nandroid_restore(const char* backup_path, char restore_flags)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
@@ -317,10 +317,10 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     
     int ret;
 
-    if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
+    if (IS_SET(restore_flags, RESTORE_BOOT) && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
         return ret;
     
-    if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
+    if (IS_SET(restore_flags, RESTORE_WIMAX) && 0 == (ret = get_partition_device("wimax", tmp)))
     {
         char serialno[PROPERTY_VALUE_MAX];
         
@@ -347,24 +347,24 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         }
     }
 
-    if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "/system")))
+    if (IS_SET(restore_flags, RESTORE_SYSTEM) && 0 != (ret = nandroid_restore_partition(backup_path, "/system")))
         return ret;
 
-    if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/data")))
+    if (IS_SET(restore_flags, RESTORE_DATA) && 0 != (ret = nandroid_restore_partition(backup_path, "/data")))
         return ret;
         
     if (has_datadata()) {
-        if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/datadata")))
+        if (IS_SET(restore_flags, RESTORE_DATA) && 0 != (ret = nandroid_restore_partition(backup_path, "/datadata")))
             return ret;
     }
 
-    if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
+    if (IS_SET(restore_flags, RESTORE_DATA) && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
         return ret;
 
-    if (restore_cache && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/cache", 0)))
+    if (IS_SET(restore_flags, RESTORE_CACHE) && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/cache", 0)))
         return ret;
 
-    if (restore_sdext && 0 != (ret = nandroid_restore_partition(backup_path, "/sd-ext")))
+    if (IS_SET(restore_flags, RESTORE_SDEXT) && 0 != (ret = nandroid_restore_partition(backup_path, "/sd-ext")))
         return ret;
 
     sync();
@@ -416,7 +416,7 @@ int nandroid_main(int argc, char** argv)
     {
         if (argc != 3)
             return nandroid_usage();
-        return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
+        return nandroid_restore(argv[2], RESTORE_BOOT | RESTORE_SYSTEM | RESTORE_DATA | RESTORE_CACHE | RESTORE_SDEXT);
     }
     
     return nandroid_usage();
