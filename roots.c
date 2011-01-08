@@ -143,7 +143,8 @@ int ensure_path_mounted(const char* path) {
             return -1;
         }
         return mtd_mount_partition(partition, v->mount_point, v->fs_type, 0);
-    } else if (strcmp(v->fs_type, "ext4") == 0 ||
+    } else if ((strcmp(v->fs_type, "ext4") == 0 && 
+                0 != strncmp(v->device, "LABEL=", 6)) ||
                strcmp(v->fs_type, "vfat") == 0) {
         result = mount(v->device, v->mount_point, v->fs_type,
                        MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");

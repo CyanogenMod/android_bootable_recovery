@@ -425,7 +425,7 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
     {
         struct stat st;
         Volume *vol = volume_for_path("/sd-ext");
-        if (vol == NULL || 0 != stat(vol->device, &st))
+        if (vol == NULL)
         {
             ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
             return 0;
@@ -967,7 +967,7 @@ void write_fstab_root(char *path, FILE *file)
     }
 
     char device[200];
-    if (vol->device[0] != '/')
+    if (vol->device[0] != '/' && strncmp(vol->device, "LABEL=", 6))
         get_partition_device(vol->device, device);
     else
         strcpy(device, vol->device);

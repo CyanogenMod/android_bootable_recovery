@@ -190,7 +190,7 @@ int nandroid_backup(const char* backup_path)
         return ret;
 
     Volume *vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->device, &st))
+    if (vol == NULL)
     {
         ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
     }
@@ -198,7 +198,7 @@ int nandroid_backup(const char* backup_path)
     {
         if (0 != ensure_path_mounted("/sd-ext"))
             ui_print("Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n");
-        else if (0 != (ret = nandroid_backup_partition(backup_path, "SDEXT:")))
+        else if (0 != (ret = nandroid_backup_partition(backup_path, "/sd-ext")))
             return ret;
     }
 
@@ -225,10 +225,12 @@ static void ensure_directory(const char* dir) {
 }
 
 int nandroid_restore_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
+    Volume* v = volume_for_path(mount_point);
     int ret = 0;
     char* name = basename(mount_point);
     
     char tmp[PATH_MAX];
+    char rmrf[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
     struct stat file_info;
     if (0 != (ret = statfs(tmp, &file_info))) {
@@ -250,7 +252,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         return ret;
     }
     */
-    if (0 != (ret = format_volume(mount_point))) {
+    if (0 != (ret = format_volume(mount_point)) && 0 != strncmp(v->device, "LABEL=", 6)) {
         ui_print("Error while formatting %s!\n", mount_point);
         return ret;
     }
@@ -258,6 +260,11 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     if (0 != (ret = ensure_path_mounted(mount_point))) {
         ui_print("Can't mount %s!\n", mount_point);
         return ret;
+    }
+
+    if (0 == strncmp(v->device, "LABEL=", 6)) {
+        sprintf(rmrf, "rm -rf %s/*", mount_point);
+        __system(rmrf);
     }
     
     if (0 != (ret = unyaffs(tmp, mount_point, callback))) {
