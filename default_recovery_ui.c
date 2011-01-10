@@ -31,7 +31,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "mounts and storage",
                        "advanced",
                        "power off",
-                       "Big Clean (ALL)",
+                       "( WIPE ALL )",
                        NULL };
 
 int device_recovery_start() {

@@ -754,7 +754,7 @@ prompt_and_wait() {
                 show_advanced_menu();
                 break;
             case ITEM_BIGCLEAN:
-                CleanAll();
+                SuperWipe();
                 break;
             case ITEM_POWEROFF:
                 poweroff=1;
@@ -763,8 +763,8 @@ prompt_and_wait() {
     }
 }
 
-static void CleanAll( )
-{
+void
+SuperWipe(void) {
 
     static char** title_headers = NULL;
 
