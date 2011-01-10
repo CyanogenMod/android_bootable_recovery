@@ -30,6 +30,8 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "backup and restore",
                        "mounts and storage",
                        "advanced",
+                       "power off",
+                       "Big Clean (ALL)",
                        NULL };
 
 int device_recovery_start() {
