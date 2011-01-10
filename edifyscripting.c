@@ -149,7 +149,7 @@ Value* BackupFn(const char* name, State* state, int argc, Expr* argv[]) {
         return NULL;
     }
     
-    if (0 != nandroid_backup(path))
+    if (0 != nandroid_backup(path, 1, 1, 1, 1, 1, 1, 1))
         return StringValue(strdup(""));
     
     return StringValue(strdup(path));

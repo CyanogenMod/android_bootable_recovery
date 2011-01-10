@@ -666,6 +666,80 @@ int run_and_remove_extendedcommand()
     return run_script(tmp);
 }
 
+void show_nandroid_advanced_backup_menu(const char* backup_path)
+{
+    if (ensure_path_mounted("/sdcard") != 0) {
+        LOGE ("Can't mount /sdcard\n");
+        return;
+    }
+
+    static char* headers[] = {  "Nandroid Advanced Backup",
+                                "",
+                                NULL
+    };
+
+    static char* list[] = { "Exit",
+                            "Backup recovery",
+                            "Backup boot",
+                            "Backup system",
+                            "Backup data",
+                            "Backup cache",
+                            "Backup sd-ext",
+                            "Backup wimax",
+                            NULL
+    };
+    
+    char tmp[PATH_MAX];
+    if (0 != get_partition_device("wimax", tmp)) {
+        // disable wimax backup option
+        list[6] = NULL;
+    }
+
+    static char* confirm_backup  = "Confirm backup?";
+
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    switch (chosen_item)
+    {
+        case 0:
+            break;
+        case 1:
+            if (confirm_selection(confirm_backup, "Yes - Backup recovery"))
+                nandroid_backup(backup_path, 1, 0, 0, 0, 0, 0, 0);
+            show_nandroid_advanced_backup_menu(backup_path);
+            break;
+        case 2:
+            if (confirm_selection(confirm_backup, "Yes - Backup boot"))
+                nandroid_backup(backup_path, 0, 1, 0, 0, 0, 0, 0);
+            show_nandroid_advanced_backup_menu(backup_path);
+            break;
+        case 3:
+            if (confirm_selection(confirm_backup, "Yes - Backup system"))
+                nandroid_backup(backup_path, 0, 0, 1, 0, 0, 0, 0);
+            show_nandroid_advanced_backup_menu(backup_path);
+            break;
+        case 4:
+            if (confirm_selection(confirm_backup, "Yes - Backup data"))
+                nandroid_backup(backup_path, 0, 0, 0, 1, 0, 0, 0);
+            show_nandroid_advanced_backup_menu(backup_path);
+            break;
+        case 5:
+            if (confirm_selection(confirm_backup, "Yes - Backup cache"))
+                nandroid_backup(backup_path, 0, 0, 0, 0, 1, 0, 0);
+            show_nandroid_advanced_backup_menu(backup_path);
+            break;
+        case 6:
+            if (confirm_selection(confirm_backup, "Yes - Backup sd-ext"))
+                nandroid_backup(backup_path, 0, 0, 0, 0, 0, 1, 0);
+            show_nandroid_advanced_backup_menu(backup_path);
+            break;
+        case 7:
+            if (confirm_selection(confirm_backup, "Yes - Backup wimax"))
+                nandroid_backup(backup_path, 0, 0, 0, 0, 0, 0, 1);
+            show_nandroid_advanced_backup_menu(backup_path);
+            break;
+    }
+}
+
 void show_nandroid_advanced_restore_menu()
 {
     if (ensure_path_mounted("/sdcard") != 0) {
@@ -746,6 +820,7 @@ void show_nandroid_menu()
     };
 
     static char* list[] = { "Backup",
+                            "Advanced Backup",
                             "Restore",
                             "Advanced Restore",
                             NULL
@@ -769,13 +844,31 @@ void show_nandroid_menu()
                 {
                     strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
                 }
-                nandroid_backup(backup_path);
+                nandroid_backup(backup_path, 1, 1, 1, 1, 1, 1, 1);
             }
             break;
         case 1:
+            {
+                char backup_path[PATH_MAX];
+                time_t t = time(NULL);
+                struct tm *tmp = localtime(&t);
+                if (tmp == NULL)
+                {
+                    struct timeval tp;
+                    gettimeofday(&tp, NULL);
+                    sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                }
+                else
+                {
+                    strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                }
+                show_nandroid_advanced_backup_menu(backup_path);
+                break;
+            }
+        case 2:
             show_nandroid_restore_menu();
             break;
-        case 2:
+        case 3:
             show_nandroid_advanced_restore_menu();
             break;
     }
@@ -1054,7 +1147,7 @@ void process_volumes() {
     ui_print("named %s. Try restoring it\n", backup_name);
     ui_print("in case of error.\n");
 
-    nandroid_backup(backup_path);
+    nandroid_backup(backup_path, 1, 1, 1, 1, 1, 1, 1);
     nandroid_restore(backup_path, 1, 1, 1, 1, 1, 0);
     ui_set_show_text(0);
 }
