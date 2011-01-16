@@ -248,6 +248,10 @@ int format_volume(const char* volume) {
         return 0;
     }
 
+    if (strcmp(v->fs_type, "emmc") == 0) {
+        return erase_raw_partition(v->device);
+    }
+
     if (strcmp(v->fs_type, "ext4") == 0) {
         reset_ext4fs_info();
         int result = make_ext4fs(v->device, NULL, NULL, 0, 0, 0);

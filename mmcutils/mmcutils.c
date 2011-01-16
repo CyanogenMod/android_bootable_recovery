@@ -278,9 +278,30 @@ mmc_scan_partitions() {
     return g_mmc_state.partition_count;
 }
 
+static const MmcPartition *
+mmc_find_partition_by_device_index(const char *device_index)
+{
+    if (g_mmc_state.partitions != NULL) {
+        int i;
+        for (i = 0; i < g_mmc_state.partitions_allocd; i++) {
+            MmcPartition *p = &g_mmc_state.partitions[i];
+            if (p->device_index !=NULL && p->name != NULL) {
+                if (strcmp(p->device_index, device_index) == 0) {
+                    return p;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
 const MmcPartition *
 mmc_find_partition_by_name(const char *name)
 {
+    if (name[0] == '/') {
+        return mmc_find_partition_by_device_index(name);
+    }
+
     if (g_mmc_state.partitions != NULL) {
         int i;
         for (i = 0; i < g_mmc_state.partitions_allocd; i++) {
