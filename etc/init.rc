@@ -10,6 +10,8 @@ on init
     symlink /system/etc /etc
 
     mkdir /sdcard
+    mkdir /sd-ext
+    mkdir /datadata
     mkdir /emmc
     mkdir /system
     mkdir /data
