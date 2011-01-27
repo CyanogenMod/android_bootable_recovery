@@ -482,6 +482,9 @@ void show_partition_menu()
 
     typedef char* string;
     string mounts[][3] = {
+#ifdef BOARD_HAS_MOUNTABLE_BOOT
+        { "mount /boot", "umount /boot", "/boot" },
+#endif
         { "mount /system", "unmount /system", "/system" },
         { "mount /data", "unmount /data", "/data" },
         { "mount /cache", "unmount /cache", "/cache" },
@@ -986,6 +989,9 @@ void create_fstab()
         LOGW("Unable to create /etc/fstab!\n");
         return;
     }
+#ifdef BOARD_HAS_MOUNTABLE_BOOT
+    write_fstab_root("/boot", file);
+#endif
     write_fstab_root("/cache", file);
     write_fstab_root("/data", file);
     if (has_datadata()) {
