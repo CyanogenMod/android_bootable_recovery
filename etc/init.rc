@@ -9,6 +9,7 @@ on init
 
     symlink /system/etc /etc
 
+    mkdir /boot
     mkdir /sdcard
     mkdir /sd-ext
     mkdir /datadata
