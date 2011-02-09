@@ -62,6 +62,7 @@ void load_volume_table() {
         // lines may optionally have a second device, to use if
         // mounting the first one fails.
         char* device2 = strtok(NULL, " \t\n");
+        char* fs_type2 = strtok(NULL, " \t\n");
 
         if (mount_point && fs_type && device) {
             while (num_volumes >= alloc) {
@@ -72,7 +73,8 @@ void load_volume_table() {
             device_volumes[num_volumes].fs_type = strdup(fs_type);
             device_volumes[num_volumes].device = strdup(device);
             device_volumes[num_volumes].device2 =
-                device2 ? strdup(device2) : NULL;
+                (device2 != NULL && strcmp(device2, "NULL") != 0) ? strdup(device2) : NULL;
+            device_volumes[num_volumes].fs_type2 = (fs_type2 != NULL && strcmp(fs_type2, "NULL") != 0) ? strdup(fs_type2) : NULL;
             ++num_volumes;
         } else {
             LOGE("skipping malformed recovery.fstab line: %s\n", original);
@@ -103,6 +105,17 @@ Volume* volume_for_path(const char* path) {
         }
     }
     return NULL;
+}
+
+int try_mount(const char* device, const char* mount_point, const char* fs_type) {
+    if (device == NULL || mount_point == NULL || fs_type == NULL)
+        return -1;
+    int ret = mount(device, mount_point, fs_type,
+                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
+    if (ret == 0)
+        return 0;
+    LOGW("failed to mount %s (%s)\n", device, strerror(errno));
+    return ret;
 }
 
 int ensure_path_mounted(const char* path) {
@@ -144,7 +157,18 @@ int ensure_path_mounted(const char* path) {
         }
         return mtd_mount_partition(partition, v->mount_point, v->fs_type, 0);
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
+               strcmp(v->fs_type, "ext3") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
+        if ((result = try_mount(v->device, v->mount_point, v->fs_type)) == 0)
+            return 0;
+        if ((result = try_mount(v->device2, v->mount_point, v->fs_type)) == 0)
+            return 0;
+        if ((result = try_mount(v->device, v->mount_point, v->fs_type2)) == 0)
+            return 0;
+        if ((result = try_mount(v->device2, v->mount_point, v->fs_type2)) == 0)
+            return 0;
+        return result;
+        /*
         result = mount(v->device, v->mount_point, v->fs_type,
                        MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
         if (result == 0) return 0;
@@ -159,6 +183,7 @@ int ensure_path_mounted(const char* path) {
 
         LOGE("failed to mount %s (%s)\n", v->mount_point, strerror(errno));
         return -1;
+        */
     } else {
         // let's try mounting with the mount binary and hope for the best.
         char mount_cmd[PATH_MAX];
