@@ -70,11 +70,11 @@ void load_volume_table() {
                 device_volumes = realloc(device_volumes, alloc*sizeof(Volume));
             }
             device_volumes[num_volumes].mount_point = strdup(mount_point);
-            device_volumes[num_volumes].fs_type = strdup(fs_type);
+            device_volumes[num_volumes].fs_type = fs_type2 != NULL ? strdup(fs_type2) : strdup(fs_type);
             device_volumes[num_volumes].device = strdup(device);
             device_volumes[num_volumes].device2 =
                 (device2 != NULL && strcmp(device2, "NULL") != 0) ? strdup(device2) : NULL;
-            device_volumes[num_volumes].fs_type2 = (fs_type2 != NULL && strcmp(fs_type2, "NULL") != 0) ? strdup(fs_type2) : NULL;
+            device_volumes[num_volumes].fs_type2 = fs_type2 != NULL ? strdup(fs_type) : NULL;
             ++num_volumes;
         } else {
             LOGE("skipping malformed recovery.fstab line: %s\n", original);
@@ -160,13 +160,13 @@ int ensure_path_mounted(const char* path) {
                strcmp(v->fs_type, "ext3") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
         // try fs type 2 first
-        if ((result = try_mount(v->device, v->mount_point, v->fs_type2)) == 0)
-            return 0;
-        if ((result = try_mount(v->device2, v->mount_point, v->fs_type2)) == 0)
-            return 0;
         if ((result = try_mount(v->device, v->mount_point, v->fs_type)) == 0)
             return 0;
         if ((result = try_mount(v->device2, v->mount_point, v->fs_type)) == 0)
+            return 0;
+        if ((result = try_mount(v->device, v->mount_point, v->fs_type2)) == 0)
+            return 0;
+        if ((result = try_mount(v->device2, v->mount_point, v->fs_type2)) == 0)
             return 0;
         return result;
     } else {
