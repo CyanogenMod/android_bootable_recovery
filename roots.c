@@ -159,31 +159,16 @@ int ensure_path_mounted(const char* path) {
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
                strcmp(v->fs_type, "ext3") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
-        if ((result = try_mount(v->device, v->mount_point, v->fs_type)) == 0)
-            return 0;
-        if ((result = try_mount(v->device2, v->mount_point, v->fs_type)) == 0)
-            return 0;
+        // try fs type 2 first
         if ((result = try_mount(v->device, v->mount_point, v->fs_type2)) == 0)
             return 0;
         if ((result = try_mount(v->device2, v->mount_point, v->fs_type2)) == 0)
             return 0;
+        if ((result = try_mount(v->device, v->mount_point, v->fs_type)) == 0)
+            return 0;
+        if ((result = try_mount(v->device2, v->mount_point, v->fs_type)) == 0)
+            return 0;
         return result;
-        /*
-        result = mount(v->device, v->mount_point, v->fs_type,
-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
-        if (result == 0) return 0;
-
-        if (v->device2) {
-            LOGW("failed to mount %s (%s); trying %s\n",
-                 v->device, strerror(errno), v->device2);
-            result = mount(v->device2, v->mount_point, v->fs_type,
-                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
-            if (result == 0) return 0;
-        }
-
-        LOGE("failed to mount %s (%s)\n", v->mount_point, strerror(errno));
-        return -1;
-        */
     } else {
         // let's try mounting with the mount binary and hope for the best.
         char mount_cmd[PATH_MAX];
