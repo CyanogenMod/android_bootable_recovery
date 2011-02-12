@@ -987,7 +987,7 @@ void create_fstab()
         return;
     }
     Volume *vol = volume_for_path("/boot");
-    if (NULL != vol && strcmp(vol->fs_type, "mtd") != 0)
+    if (NULL != vol && strcmp(vol->fs_type, "mtd") != 0 && strcmp(vol->fs_type, "emmc") != 0 && strcmp(vol->fs_type, "bml") != 0)
          write_fstab_root("/boot", file);
     write_fstab_root("/cache", file);
     write_fstab_root("/data", file);
