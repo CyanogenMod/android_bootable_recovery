@@ -38,4 +38,8 @@ int ensure_path_unmounted(const char* path);
 // it is mounted.
 int format_volume(const char* volume);
 
+int get_num_volumes();
+
+Volume* get_device_volumes();
+
 #endif  // RECOVERY_ROOTS_H_

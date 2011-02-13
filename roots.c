@@ -28,8 +28,16 @@
 #include "common.h"
 #include "make_ext4fs.h"
 
-static int num_volumes = 0;
-static Volume* device_volumes = NULL;
+int num_volumes;
+Volume* device_volumes;
+
+int get_num_volumes() {
+    return num_volumes;
+}
+
+Volume* get_device_volumes() {
+    return device_volumes;
+}
 
 static int is_null(const char* sz) {
     if (sz == NULL)
