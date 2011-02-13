@@ -473,6 +473,17 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
 //#define DEVICE_COUNT 4
 //#define MMC_COUNT 2
 
+typedef struct {
+    char mount[255];
+    char unmount[255];
+    Volume* v;
+} MountMenuEntry;
+
+typedef struct {
+    char txt[255];
+    Volume* v;
+} FormatMenuEntry;
+
 void show_partition_menu()
 {
     static char* headers[] = {  "Mounts and Storage Menu",
@@ -480,87 +491,118 @@ void show_partition_menu()
                                 NULL
     };
 
+    static MountMenuEntry* mount_menue = NULL;
+    static FormatMenuEntry* format_menue = NULL;
+
     typedef char* string;
-    string mounts[][3] = {
-        { "mount /system", "unmount /system", "/system" },
-        { "mount /data", "unmount /data", "/data" },
-        { "mount /cache", "unmount /cache", "/cache" },
-        { "mount /sdcard", "unmount /sdcard", "/sdcard" },
-#ifdef BOARD_HAS_SDCARD_INTERNAL
-        { "mount /emmc", "unmount /emmc", "/emmc" },
-#endif
-        { "mount /sd-ext", "unmount /sd-ext", "/sd-ext" }
-    };
 
-    string devices[][2] = {
-        { "format boot", "/boot" },
-        { "format system", "/system" },
-        { "format data", "/data" },
-        { "format cache", "/cache" },
-        { "format sdcard", "/sdcard" },
-        { "format sd-ext", "/sd-ext" },
-#ifdef BOARD_HAS_SDCARD_INTERNAL
-        { "format internal sdcard", "/emmc" }
-#endif
-    };
+    int i, mountable_volumes, formatable_volumes;
+    int num_volumes;
+    Volume* device_volumes;
 
-    const int MOUNTABLE_COUNT = sizeof(mounts) / sizeof(string) / 3;
-    const int DEVICE_COUNT = sizeof(devices) / sizeof(string) / 2;
+    num_volumes = get_num_volumes();
+    device_volumes = get_device_volumes();
+
+    string options[255];
+
+    if(!device_volumes)
+		return;
+
+		mountable_volumes = 0;
+		formatable_volumes = 0;
+
+		mount_menue = malloc(num_volumes * sizeof(MountMenuEntry));
+		format_menue = malloc(num_volumes * sizeof(FormatMenuEntry));
+
+		for (i = 0; i < num_volumes; ++i) {
+			Volume* v = &device_volumes[i];
+			if(strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0)
+			{
+				sprintf(&mount_menue[mountable_volumes].mount, "mount %s", v->mount_point);
+				sprintf(&mount_menue[mountable_volumes].unmount, "unmount %s", v->mount_point);
+				mount_menue[mountable_volumes].v = &device_volumes[i];
+				++mountable_volumes;
+				sprintf(&format_menue[formatable_volumes].txt, "format %s", v->mount_point);
+				format_menue[formatable_volumes].v = &device_volumes[i];
+				++formatable_volumes;
+		    }
+		    else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) == 0)
+		    {
+				sprintf(&format_menue[formatable_volumes].txt, "format %s", v->mount_point);
+				format_menue[formatable_volumes].v = &device_volumes[i];
+				++formatable_volumes;
+			}
+		}
+
 
     static char* confirm_format  = "Confirm format?";
     static char* confirm = "Yes - Format";
 
     for (;;)
     {
-        int ismounted[MOUNTABLE_COUNT];
-        int i;
-        static string options[MOUNTABLE_COUNT + DEVICE_COUNT + 1 + 1]; // mountables, format mtds, format mmcs, usb storage, null
-        for (i = 0; i < MOUNTABLE_COUNT; i++)
-        {
-            ismounted[i] = is_path_mounted(mounts[i][2]);
-            options[i] = ismounted[i] ? mounts[i][1] : mounts[i][0];
-        }
 
-        for (i = 0; i < DEVICE_COUNT; i++)
-        {
-            options[MOUNTABLE_COUNT + i] = devices[i][0];
-        }
+		for (i = 0; i < mountable_volumes; i++)
+		{
+			MountMenuEntry* e = &mount_menue[i];
+			Volume* v = e->v;
+			if(is_path_mounted(v->mount_point))
+				options[i] = e->unmount;
+			else
+				options[i] = e->mount;
+		}
 
-        options[MOUNTABLE_COUNT + DEVICE_COUNT] = "mount USB storage";
-        options[MOUNTABLE_COUNT + DEVICE_COUNT + 1] = NULL;
+		for (i = 0; i < formatable_volumes; i++)
+		{
+			FormatMenuEntry* e = &format_menue[i];
 
-        int chosen_item = get_menu_selection(headers, options, 0, 0);
+			options[mountable_volumes+i] = e->txt;
+		}
+
+        options[mountable_volumes+formatable_volumes] = "mount USB storage";
+        options[mountable_volumes+formatable_volumes + 1] = NULL;
+
+        int chosen_item = get_menu_selection(headers, &options, 0, 0);
         if (chosen_item == GO_BACK)
             break;
-        if (chosen_item == MOUNTABLE_COUNT + DEVICE_COUNT)
+        if (chosen_item == (mountable_volumes+formatable_volumes))
         {
             show_mount_usb_storage_menu();
         }
-        else if (chosen_item < MOUNTABLE_COUNT)
+        else if (chosen_item < mountable_volumes)
         {
-            if (ismounted[chosen_item])
+			MountMenuEntry* e = &mount_menue[chosen_item];
+            Volume* v = e->v;
+
+            if (is_path_mounted(v->mount_point))
             {
-                if (0 != ensure_path_unmounted(mounts[chosen_item][2]))
-                    ui_print("Error unmounting %s!\n", mounts[chosen_item][2]);
+                if (0 != ensure_path_unmounted(v->mount_point))
+                    ui_print("Error unmounting %s!\n", v->mount_point);
             }
             else
             {
-                if (0 != ensure_path_mounted(mounts[chosen_item][2]))
-                    ui_print("Error mounting %s!\n", mounts[chosen_item][2]);
+                if (0 != ensure_path_mounted(v->mount_point))
+                    ui_print("Error mounting %s!\n",  v->mount_point);
             }
         }
-        else if (chosen_item < MOUNTABLE_COUNT + DEVICE_COUNT)
+        else if (chosen_item < (mountable_volumes + formatable_volumes))
         {
-            chosen_item = chosen_item - MOUNTABLE_COUNT;
+            chosen_item = chosen_item - mountable_volumes;
+            FormatMenuEntry* e = &format_menue[chosen_item];
+            Volume* v = e->v;
+
             if (!confirm_selection(confirm_format, confirm))
                 continue;
-            ui_print("Formatting %s...\n", devices[chosen_item][1]);
-            if (0 != format_volume(devices[chosen_item][1]))
-                ui_print("Error formatting %s!\n", devices[chosen_item][1]);
+            ui_print("Formatting %s...\n", v->mount_point);
+            if (0 != format_volume(v->mount_point))
+                ui_print("Error formatting %s!\n", v->mount_point);
             else
                 ui_print("Done.\n");
         }
     }
+
+    free(mount_menue);
+    free(format_menue);
+
 }
 
 #define EXTENDEDCOMMAND_SCRIPT "/cache/recovery/extendedcommand"
