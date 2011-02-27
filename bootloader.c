@@ -40,7 +40,6 @@ int get_bootloader_message(struct bootloader_message *out) {
         LOGE("unknown misc partition fs_type \"%s\"\n", v->fs_type);
         return -1;
     }
-    LOGE("no misc partition\n");
     return -1;
 }
 
@@ -56,7 +55,6 @@ int set_bootloader_message(const struct bootloader_message *in) {
         LOGE("unknown misc partition fs_type \"%s\"\n", v->fs_type);
         return -1;
     }
-    LOGE("no misc partition\n");
     return -1;
 }
 
