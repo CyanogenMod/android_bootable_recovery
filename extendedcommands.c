@@ -1026,6 +1026,9 @@ int bml_check_volume(const char *path) {
 void process_volumes() {
     create_fstab();
     
+    return;
+
+    // dead code.
     if (device_flash_type() != BML)
         return;
 

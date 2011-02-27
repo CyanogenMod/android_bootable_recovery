@@ -63,6 +63,8 @@ void load_volume_table() {
         // mounting the first one fails.
         char* device2 = strtok(NULL, " \t\n");
         char* fs_type2 = strtok(NULL, " \t\n");
+        char* fs_options = strtok(NULL, " \t\n");
+        char* fs_options2 = strtok(NULL, " \t\n");
 
         if (mount_point && fs_type && device) {
             while (num_volumes >= alloc) {
@@ -75,6 +77,13 @@ void load_volume_table() {
             device_volumes[num_volumes].device2 =
                 (device2 != NULL && strcmp(device2, "NULL") != 0) ? strdup(device2) : NULL;
             device_volumes[num_volumes].fs_type2 = fs_type2 != NULL ? strdup(fs_type) : NULL;
+
+            if (fs_type2 != NULL) {
+                char *temp;
+                temp = fs_options2;
+                fs_options2 = fs_options;
+                fs_options = temp;
+            }
             ++num_volumes;
         } else {
             LOGE("skipping malformed recovery.fstab line: %s\n", original);
@@ -107,11 +116,19 @@ Volume* volume_for_path(const char* path) {
     return NULL;
 }
 
-int try_mount(const char* device, const char* mount_point, const char* fs_type) {
+int try_mount(const char* device, const char* mount_point, const char* fs_type, const char* fs_options) {
     if (device == NULL || mount_point == NULL || fs_type == NULL)
         return -1;
-    int ret = mount(device, mount_point, fs_type,
+    int ret = 0;
+    if (fs_options == NULL) {
+        ret = mount(device, mount_point, fs_type,
                        MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
+    }
+    else {
+        char mount_cmd[PATH_MAX];
+        sprintf(mount_cmd, "mount -o%s %s %s", fs_options, device, mount_point);
+        ret = __system(mount_cmd);
+    }
     if (ret == 0)
         return 0;
     LOGW("failed to mount %s (%s)\n", device, strerror(errno));
@@ -160,13 +177,13 @@ int ensure_path_mounted(const char* path) {
                strcmp(v->fs_type, "ext3") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
         // try fs type 2 first
-        if ((result = try_mount(v->device, v->mount_point, v->fs_type)) == 0)
+        if ((result = try_mount(v->device, v->mount_point, v->fs_type, v->fs_options)) == 0)
             return 0;
-        if ((result = try_mount(v->device2, v->mount_point, v->fs_type)) == 0)
+        if ((result = try_mount(v->device2, v->mount_point, v->fs_type, v->fs_options)) == 0)
             return 0;
-        if ((result = try_mount(v->device, v->mount_point, v->fs_type2)) == 0)
+        if ((result = try_mount(v->device, v->mount_point, v->fs_type2, v->fs_options2)) == 0)
             return 0;
-        if ((result = try_mount(v->device2, v->mount_point, v->fs_type2)) == 0)
+        if ((result = try_mount(v->device2, v->mount_point, v->fs_type2, v->fs_options2)) == 0)
             return 0;
         return result;
     } else {
