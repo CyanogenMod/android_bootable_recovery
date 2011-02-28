@@ -340,12 +340,15 @@ void show_nandroid_restore_menu()
         nandroid_restore(file, 1, 1, 1, 1, 1, 0);
 }
 
+#ifndef BOARD_UMS_LUNFILE
+#define BOARD_UMS_LUNFILE	"/sys/devices/platform/usb_mass_storage/lun0/file"
+#endif
+
 void show_mount_usb_storage_menu()
 {
     int fd;
     Volume *vol = volume_for_path("/sdcard");
-    if ((fd = open("/sys/devices/platform/usb_mass_storage/lun0/file",
-                   O_WRONLY)) < 0) {
+    if ((fd = open(BOARD_UMS_LUNFILE, O_WRONLY)) < 0) {
         LOGE("Unable to open ums lunfile (%s)", strerror(errno));
         return -1;
     }
@@ -371,7 +374,7 @@ void show_mount_usb_storage_menu()
             break;
     }
 
-    if ((fd = open("/sys/devices/platform/usb_mass_storage/lun0/file", O_WRONLY)) < 0) {
+    if ((fd = open(BOARD_UMS_LUNFILE, O_WRONLY)) < 0) {
         LOGE("Unable to open ums lunfile (%s)", strerror(errno));
         return -1;
     }
