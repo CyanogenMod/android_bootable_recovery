@@ -977,7 +977,8 @@ void write_fstab_root(char *path, FILE *file)
 
     fprintf(file, "%s ", device);
     fprintf(file, "%s ", path);
-    fprintf(file, "%s rw\n", vol->fs_type2 != NULL ? "auto" : vol->fs_type);
+    // special case rfs cause auto will mount it as vfat on samsung.
+    fprintf(file, "%s rw\n", vol->fs_type2 != NULL && strcmp(vol->fs_type, "rfs") != 0 ? "auto" : vol->fs_type);
 }
 
 void create_fstab()
