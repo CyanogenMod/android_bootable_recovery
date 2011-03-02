@@ -181,7 +181,6 @@ int ensure_path_mounted(const char* path) {
                strcmp(v->fs_type, "ext3") == 0 ||
                strcmp(v->fs_type, "rfs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
-                   LOGE("Tracepoint 1\n");
         if ((result = try_mount(v->device, v->mount_point, v->fs_type, v->fs_options)) == 0)
             return 0;
         if ((result = try_mount(v->device2, v->mount_point, v->fs_type, v->fs_options)) == 0)
