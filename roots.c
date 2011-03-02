@@ -40,7 +40,6 @@ void load_volume_table() {
     device_volumes[0].fs_type = "ramdisk";
     device_volumes[0].device = NULL;
     device_volumes[0].device2 = NULL;
-    device_volumes[0].device = NULL;
     device_volumes[0].fs_options = NULL;
     device_volumes[0].fs_options2 = NULL;
     num_volumes = 1;
