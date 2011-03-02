@@ -40,6 +40,9 @@ void load_volume_table() {
     device_volumes[0].fs_type = "ramdisk";
     device_volumes[0].device = NULL;
     device_volumes[0].device2 = NULL;
+    device_volumes[0].device = NULL;
+    device_volumes[0].fs_options = NULL;
+    device_volumes[0].fs_options2 = NULL;
     num_volumes = 1;
 
     FILE* fstab = fopen("/etc/recovery.fstab", "r");
@@ -178,7 +181,7 @@ int ensure_path_mounted(const char* path) {
                strcmp(v->fs_type, "ext3") == 0 ||
                strcmp(v->fs_type, "rfs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
-        // try fs type 2 first
+                   LOGE("Tracepoint 1\n");
         if ((result = try_mount(v->device, v->mount_point, v->fs_type, v->fs_options)) == 0)
             return 0;
         if ((result = try_mount(v->device2, v->mount_point, v->fs_type, v->fs_options)) == 0)
