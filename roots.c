@@ -31,6 +31,20 @@
 static int num_volumes = 0;
 static Volume* device_volumes = NULL;
 
+static int is_null(const char* sz) {
+    if (sz == NULL)
+        return 1;
+    if (strcmp("NULL", sz) == 0)
+        return 1;
+    return 0;
+}
+
+static char* dupe_string(const char* sz) {
+    if (is_null(sz))
+        return NULL;
+    return strdup(sz);
+}
+
 void load_volume_table() {
     int alloc = 2;
     device_volumes = malloc(alloc * sizeof(Volume));
@@ -74,17 +88,19 @@ void load_volume_table() {
                 device_volumes = realloc(device_volumes, alloc*sizeof(Volume));
             }
             device_volumes[num_volumes].mount_point = strdup(mount_point);
-            device_volumes[num_volumes].fs_type = fs_type2 != NULL ? strdup(fs_type2) : strdup(fs_type);
+            device_volumes[num_volumes].fs_type = !is_null(fs_type2) ? strdup(fs_type2) : strdup(fs_type);
             device_volumes[num_volumes].device = strdup(device);
             device_volumes[num_volumes].device2 =
-                (device2 != NULL && strcmp(device2, "NULL") != 0) ? strdup(device2) : NULL;
-            device_volumes[num_volumes].fs_type2 = fs_type2 != NULL ? strdup(fs_type) : NULL;
+                (!is_null(device2)) != 0) ? strdup(device2) : NULL;
+            device_volumes[num_volumes].fs_type2 = !is_null(fs_type2) ? strdup(fs_type) : NULL;
 
-            if (fs_type2 != NULL) {
-                char *temp;
-                temp = fs_options2;
-                fs_options2 = fs_options;
-                fs_options = temp;
+            if (!is_null(fs_type2)) {
+                device_volumes[num_volumes]fs_options2 = dupe_string(fs_options);
+                device_volumes[num_volumes]fs_options = dupe_string(fs_options2);
+            }
+            else {
+                device_volumes[num_volumes]fs_options2 = NULL;
+                device_volumes[num_volumes]fs_options = dupe_string(fs_options);
             }
             ++num_volumes;
         } else {
