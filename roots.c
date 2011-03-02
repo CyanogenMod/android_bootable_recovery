@@ -91,16 +91,16 @@ void load_volume_table() {
             device_volumes[num_volumes].fs_type = !is_null(fs_type2) ? strdup(fs_type2) : strdup(fs_type);
             device_volumes[num_volumes].device = strdup(device);
             device_volumes[num_volumes].device2 =
-                (!is_null(device2)) != 0) ? strdup(device2) : NULL;
+                !is_null(device2) ? strdup(device2) : NULL;
             device_volumes[num_volumes].fs_type2 = !is_null(fs_type2) ? strdup(fs_type) : NULL;
 
             if (!is_null(fs_type2)) {
-                device_volumes[num_volumes]fs_options2 = dupe_string(fs_options);
-                device_volumes[num_volumes]fs_options = dupe_string(fs_options2);
+                device_volumes[num_volumes].fs_options2 = dupe_string(fs_options);
+                device_volumes[num_volumes].fs_options = dupe_string(fs_options2);
             }
             else {
-                device_volumes[num_volumes]fs_options2 = NULL;
-                device_volumes[num_volumes]fs_options = dupe_string(fs_options);
+                device_volumes[num_volumes].fs_options2 = NULL;
+                device_volumes[num_volumes].fs_options = dupe_string(fs_options);
             }
             ++num_volumes;
         } else {
