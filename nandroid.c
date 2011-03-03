@@ -154,14 +154,15 @@ int nandroid_backup(const char* backup_path)
     if (0 != (ret = nandroid_backup_partition(backup_path, "/recovery")))
         return ret;
 
-    if (0 == (ret = get_partition_device("wimax", tmp)))
+    Volume *vol = volume_for_path("/wimax");
+    if (vol != NULL && 0 == stat(vol->device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
         ui_print("Backing up WiMAX...\n");
         serialno[0] = 0;
         property_get("ro.serialno", serialno, "");
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
-        ret = backup_raw_partition("wimax", tmp);
+        ret = backup_raw_partition(vol->device, tmp);
         if (0 != ret)
             return print_and_error("Error while dumping WiMAX image!\n");
     }
@@ -177,8 +178,7 @@ int nandroid_backup(const char* backup_path)
             return ret;
     }
 
-    struct stat st;
-    if (0 != stat("/sdcard/.android_secure", &st))
+    if (0 != stat("/sdcard/.android_secure", &s))
     {
         ui_print("No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n");
     }
@@ -191,8 +191,8 @@ int nandroid_backup(const char* backup_path)
     if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/cache", 0)))
         return ret;
 
-    Volume *vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->device, &st))
+    vol = volume_for_path("/sd-ext");
+    if (vol == NULL || 0 != stat(vol->device, &s))
     {
         ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
     }
@@ -324,7 +324,9 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
         return ret;
     
-    if (restore_wimax && 0 == (ret = get_partition_device("wimax", tmp)))
+    struct stat s;
+    Volume *vol = volume_for_path("/wimax");
+    if (restore_wimax && vol != NULL && 0 == stat(vol->device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
         
@@ -346,7 +348,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
             if (0 != (ret = format_volume("/wimax")))
                 return print_and_error("Error while formatting wimax!\n");
             ui_print("Restoring WiMAX image...\n");
-            if (0 != (ret = restore_raw_partition("wimax", tmp)))
+            if (0 != (ret = restore_raw_partition(vol->device, tmp)))
                 return ret;
         }
     }
