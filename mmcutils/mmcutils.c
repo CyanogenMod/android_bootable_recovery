@@ -464,9 +464,8 @@ ERROR3:
 }
 
 
-// TODO: refactor this to not be a giant copy paste mess
 int
-mmc_raw_dump (const MmcPartition *partition, char *out_file) {
+mmc_raw_dump_internal (const char* in_file, const char *out_file) {
     int ch;
     FILE *in;
     FILE *out;
@@ -475,7 +474,6 @@ mmc_raw_dump (const MmcPartition *partition, char *out_file) {
     unsigned sz = 0;
     unsigned i;
     int ret = -1;
-    char *in_file = partition->device_index;
 
     in  = fopen ( in_file,  "r" );
     if (in == NULL)
@@ -514,6 +512,12 @@ ERROR2:
 ERROR3:
     return ret;
 
+}
+
+// TODO: refactor this to not be a giant copy paste mess
+int
+mmc_raw_dump (const MmcPartition *partition, char *out_file) {
+    return mmc_raw_dump_internal(partition->device_index, out_file);
 }
 
 
@@ -586,11 +590,16 @@ int cmd_mmc_restore_raw_partition(const char *partition, const char *filename)
 int cmd_mmc_backup_raw_partition(const char *partition, const char *filename)
 {
     mmc_scan_partitions();
-    const MmcPartition *p;
-    p = mmc_find_partition_by_name(partition);
-    if (p == NULL)
-        return -1;
-    return mmc_raw_dump(p, filename);
+    if (partition[0] != '/') {
+        const MmcPartition *p;
+        p = mmc_find_partition_by_name(partition);
+        if (p == NULL)
+            return -1;
+        return mmc_raw_dump(p, filename);
+    }
+    else {
+        return mmc_raw_dump_internal(partition, filename);
+    }
 }
 
 int cmd_mmc_erase_raw_partition(const char *partition)
