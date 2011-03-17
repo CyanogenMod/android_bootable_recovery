@@ -579,18 +579,23 @@ ERROR3:
 
 int cmd_mmc_restore_raw_partition(const char *partition, const char *filename)
 {
-    mmc_scan_partitions();
-    const MmcPartition *p;
-    p = mmc_find_partition_by_name(partition);
-    if (p == NULL)
-        return -1;
-    return mmc_raw_copy(p, filename);
+    if (partition[0] != '/') {
+        mmc_scan_partitions();
+        const MmcPartition *p;
+        p = mmc_find_partition_by_name(partition);
+        if (p == NULL)
+            return -1;
+        return mmc_raw_copy(p, filename);
+    }
+    else {
+        return mmc_raw_dump_internal(filename, partition);
+    }
 }
 
 int cmd_mmc_backup_raw_partition(const char *partition, const char *filename)
 {
-    mmc_scan_partitions();
     if (partition[0] != '/') {
+        mmc_scan_partitions();
         const MmcPartition *p;
         p = mmc_find_partition_by_name(partition);
         if (p == NULL)
@@ -604,13 +609,6 @@ int cmd_mmc_backup_raw_partition(const char *partition, const char *filename)
 
 int cmd_mmc_erase_raw_partition(const char *partition)
 {
-    mmc_scan_partitions();
-    const MmcPartition *p;
-    p = mmc_find_partition_by_name(partition);
-    if (p == NULL)
-        return -1;
-
-    // TODO: implement raw wipe
     return 0;
 }
 

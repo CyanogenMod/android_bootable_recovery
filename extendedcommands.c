@@ -519,7 +519,7 @@ void show_partition_menu()
 
 		for (i = 0; i < num_volumes; ++i) {
 			Volume* v = &device_volumes[i];
-			if(strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0)
+			if(strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0 && strcmp("emmc", v->fs_type) != 0 && strcmp("bml", v->fs_type) != 0)
 			{
 				sprintf(&mount_menue[mountable_volumes].mount, "mount %s", v->mount_point);
 				sprintf(&mount_menue[mountable_volumes].unmount, "unmount %s", v->mount_point);
@@ -529,7 +529,7 @@ void show_partition_menu()
 				format_menue[formatable_volumes].v = &device_volumes[i];
 				++formatable_volumes;
 		    }
-		    else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) == 0)
+		    else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("misc", v->mount_point) != 0 && strcmp("mtd", v->fs_type) == 0)
 		    {
 				sprintf(&format_menue[formatable_volumes].txt, "format %s", v->mount_point);
 				format_menue[formatable_volumes].v = &device_volumes[i];
