@@ -341,12 +341,12 @@ run_exec_process ( char **argv) {
 int
 format_ext3_device (const char *device) {
     // Run mke2fs
-    char *const mke2fs[] = {MKE2FS_BIN, "-j", device, NULL};
+    char *const mke2fs[] = {MKE2FS_BIN, "-j", "-q", device, NULL};
     if(run_exec_process(mke2fs))
         return -1;
 
     // Run tune2fs
-    char *const tune2fs[] = {TUNE2FS_BIN, "-j", "-C", "1", device, NULL};
+    char *const tune2fs[] = {TUNE2FS_BIN, "-C", "1", device, NULL};
     if(run_exec_process(tune2fs))
         return -1;
 
