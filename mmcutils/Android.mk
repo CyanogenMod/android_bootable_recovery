@@ -4,7 +4,7 @@ ifeq ($(TARGET_ARCH),arm)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-ifneq ($BOARD_HAS_LARGE_FILESYSTEM,)
+ifeq ($(BOARD_HAS_LARGE_FILESYSTEM),true)
 LOCAL_CFLAGS += -DBOARD_HAS_LARGE_FILESYSTEM
 endif
 
