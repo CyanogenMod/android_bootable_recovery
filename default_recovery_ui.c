@@ -59,11 +59,13 @@ int device_handle_key(int key_code, int visible) {
             case KEY_CAPSLOCK:
             case KEY_DOWN:
             case KEY_VOLUMEDOWN:
+            case KEY_MENU:
                 return HIGHLIGHT_DOWN;
 
             case KEY_LEFTSHIFT:
             case KEY_UP:
             case KEY_VOLUMEUP:
+            case KEY_HOME:
                 return HIGHLIGHT_UP;
 
             case KEY_POWER:
@@ -84,12 +86,14 @@ int device_handle_key(int key_code, int visible) {
             
             case KEY_END:
             case KEY_BACKSPACE:
-            case KEY_BACK:
+            case KEY_SEARCH:
                 if (ui_get_showing_back_button()) {
                     return SELECT_ITEM;
                 }
                 if (!get_allow_toggle_display())
                     return GO_BACK;
+            case KEY_BACK:
+                return GO_BACK;
         }
     }
 
