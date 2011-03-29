@@ -726,21 +726,6 @@ prompt_and_wait() {
                 }
                 break;
 
-            case ITEM_APPLY_SDCARD:
-                if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
-                {
-                    ui_print("\n-- Install from sdcard...\n");
-                    int status = install_package(SDCARD_PACKAGE_FILE);
-                    if (status != INSTALL_SUCCESS) {
-                        ui_set_background(BACKGROUND_ICON_ERROR);
-                        ui_print("Installation aborted.\n");
-                    } else if (!ui_text_visible()) {
-                        return;  // reboot if logs aren't visible
-                    } else {
-                        ui_print("\nInstall from sdcard complete.\n");
-                    }
-                }
-                break;
             case ITEM_INSTALL_ZIP:
                 show_install_update_menu();
                 break;
