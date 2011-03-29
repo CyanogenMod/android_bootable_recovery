@@ -689,6 +689,68 @@ wipe_data(int confirm) {
     ui_print("Data wipe complete.\n");
 }
 
+void show_wipe_menu()
+{
+    static char* headers[] = {  "Wipe Menu",
+                                "",
+                                NULL
+    };
+
+    static char* list[] = { "wipe data/factory reset",
+                            "wipe cache partition",
+                            "wipe dalvik-cache",
+			    "wipe battery stats",
+                            NULL
+    };
+
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    switch (chosen_item)
+    {
+        case 0:
+            wipe_data(ui_text_visible());
+            if (!ui_text_visible()) return;
+            break;
+
+        case 1:
+            if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
+            {
+                ui_print("\n-- Wiping cache...\n");
+                erase_volume("/cache");
+                ui_print("Cache wipe complete.\n");
+                if (!ui_text_visible()) return;
+            }
+            break;
+        case 2:
+        {
+            if (0 != ensure_path_mounted("/data"))
+                break;
+            ensure_path_mounted("/sd-ext");
+            ensure_path_mounted("/cache");
+            if (confirm_selection( "Confirm wipe?", "Yes - Wipe Dalvik Cache")) {
+                __system("rm -r /data/dalvik-cache");
+                __system("rm -r /cache/dalvik-cache");
+                __system("rm -r /sd-ext/dalvik-cache");
+            }
+            ensure_path_unmounted("/data");
+            ui_print("Dalvik Cache wiped.\n");
+            break;
+        }
+        case 3:
+        {
+            if (confirm_selection( "Confirm wipe?", "Yes - Wipe Battery Stats"))
+                wipe_battery_stats();
+            break;
+	    }
+        }
+    }
+
+void wipe_battery_stats()
+{
+    ensure_path_mounted("/data");
+    remove("/data/system/batterystats.bin");
+    ensure_path_unmounted("/data");
+}
+
 static void
 prompt_and_wait() {
     char** headers = prepend_title((const char**)MENU_HEADERS);
@@ -711,23 +773,11 @@ prompt_and_wait() {
                 poweroff=0;
                 return;
 
-            case ITEM_WIPE_DATA:
-                wipe_data(ui_text_visible());
-                if (!ui_text_visible()) return;
-                break;
-
-            case ITEM_WIPE_CACHE:
-                if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
-                {
-                    ui_print("\n-- Wiping cache...\n");
-                    erase_volume("/cache");
-                    ui_print("Cache wipe complete.\n");
-                    if (!ui_text_visible()) return;
-                }
-                break;
-
             case ITEM_INSTALL_ZIP:
                 show_install_update_menu();
+                break;
+            case ITEM_WIPE:
+                show_wipe_menu();
                 break;
             case ITEM_NANDROID:
                 show_nandroid_menu();
