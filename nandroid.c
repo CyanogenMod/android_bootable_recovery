@@ -315,7 +315,21 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     char tmp[PATH_MAX];
 
     ui_print("Checking MD5 sums...\n");
-    sprintf(tmp, "cd %s && md5sum -c nandroid.md5", backup_path);
+    /*
+      # A test that there are no empty files in the md5 sum:
+      # [ "`grep -c '^d41d8cd98f00b204e9800998ecf8427e' nandroid.md5`" -eq 0 ]
+      # because d41...27e is the md5 of a zero length file (^ matches to start of line)
+      # Also need to test that the nandroid.md5 is non-zero:
+      # [ "`wc -l < nandroid.md5`" -gt 0 ]
+      #
+      # Combined:
+      # [ "`wc -l < nandroid.md5`" -gt 0 -a
+      #   "`grep -c '^d41d8cd98f00b204e9800998ecf8427e' nandroid.md5`" -eq 0 ]
+      #
+     */
+    sprintf(tmp, "cd %s && [ \"`wc -l < nandroid.md5`\" -gt 0 -a "
+	    "\"`grep -c '^d41d8cd98f00b204e9800998ecf8427e' nandroid.md5`\""
+	    " -eq 0 ] && md5sum -c nandroid.md5", backup_path);
     if (0 != __system(tmp))
         return print_and_error("MD5 mismatch!\n");
     
