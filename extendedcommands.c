@@ -529,7 +529,7 @@ void show_partition_menu()
 				format_menue[formatable_volumes].v = &device_volumes[i];
 				++formatable_volumes;
 		    }
-		    else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("misc", v->mount_point) != 0 && strcmp("mtd", v->fs_type) == 0)
+		    else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("/misc", v->mount_point) != 0 && strcmp("mtd", v->fs_type) == 0)
 		    {
 				sprintf(&format_menue[formatable_volumes].txt, "format %s", v->mount_point);
 				format_menue[formatable_volumes].v = &device_volumes[i];
