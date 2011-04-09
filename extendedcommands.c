@@ -487,6 +487,12 @@ typedef struct {
     Volume* v;
 } FormatMenuEntry;
 
+int is_safe_to_format(char* name)
+{
+    return !(strcmp(name, "/misc") == 0 || strcmp(name, "/radio") == 0
+            || strcmp(name, "/bootloader") == 0 || strcmp(name, "/recovery") == 0);
+}
+
 void show_partition_menu()
 {
     static char* headers[] = {  "Mounts and Storage Menu",
@@ -525,11 +531,13 @@ void show_partition_menu()
 				sprintf(&mount_menue[mountable_volumes].unmount, "unmount %s", v->mount_point);
 				mount_menue[mountable_volumes].v = &device_volumes[i];
 				++mountable_volumes;
-				sprintf(&format_menue[formatable_volumes].txt, "format %s", v->mount_point);
-				format_menue[formatable_volumes].v = &device_volumes[i];
-				++formatable_volumes;
+				if (is_safe_to_format(v->mount_point)) {
+					sprintf(&format_menue[formatable_volumes].txt, "format %s", v->mount_point);
+					format_menue[formatable_volumes].v = &device_volumes[i];
+					++formatable_volumes;
+				}
 		    }
-		    else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("misc", v->mount_point) != 0 && strcmp("mtd", v->fs_type) == 0)
+		    else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) == 0 && is_safe_to_format(v->mount_point))
 		    {
 				sprintf(&format_menue[formatable_volumes].txt, "format %s", v->mount_point);
 				format_menue[formatable_volumes].v = &device_volumes[i];
