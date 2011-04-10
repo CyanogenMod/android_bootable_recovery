@@ -1,0 +1,54 @@
+on early-init
+    start ueventd
+
+on init
+    export PATH /sbin
+    export ANDROID_ROOT /system
+    export ANDROID_DATA /data
+    export EXTERNAL_STORAGE /sdcard
+
+    symlink /system/etc /etc
+
+    mkdir /boot
+    mkdir /sdcard
+    mkdir /sd-ext
+    mkdir /datadata
+    mkdir /emmc
+    mkdir /system
+    mkdir /data
+    mkdir /cache
+    mount /tmp /tmp tmpfs
+
+on boot
+
+    ifup lo
+    hostname localhost
+    domainname localdomain
+
+    class_start default
+
+service ueventd /sbin/ueventd
+    critical
+
+service choice_fn /sbin/choice_fn
+    oneshot
+
+service recovery /sbin/recovery
+    disabled
+
+service power_test /sbin/power_test
+    disabled
+    oneshot
+
+service offmode_charging /sbin/offmode_charging
+
+service detect_key /sbin/detect_key
+
+service adbd /sbin/adbd recovery
+    disabled
+
+on property:persist.service.adb.enable=1
+    start adbd
+
+on property:persist.service.adb.enable=0
+    stop adbd
