@@ -490,7 +490,8 @@ typedef struct {
 int is_safe_to_format(char* name)
 {
     return !(strcmp(name, "/misc") == 0 || strcmp(name, "/radio") == 0
-            || strcmp(name, "/bootloader") == 0 || strcmp(name, "/recovery") == 0);
+            || strcmp(name, "/bootloader") == 0 || strcmp(name, "/recovery") == 0
+            || strcmp(name, "/boot") == 0);
 }
 
 void show_partition_menu()
