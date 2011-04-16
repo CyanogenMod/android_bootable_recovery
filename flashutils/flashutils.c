@@ -69,7 +69,7 @@ __system(const char *command)
     return (pid == -1 ? -1 : pstat);
 }
 
-static int detect_partition(const char *partition)
+static int detect_partition(const char *partitionType, const char *partition)
 {
     int type = device_flash_type();
     if (strstr(partition, "/dev/block/mtd") != NULL)
@@ -78,12 +78,21 @@ static int detect_partition(const char *partition)
         type = MMC;
     else if (strstr(partition, "/dev/block/bml") != NULL)
         type = BML;
-        
+
+    if (partitionType != NULL) {
+        if (strstr(partitionType, "mtd") != NULL)
+            type = MTD;
+        else if (strstr(partitionType, "emmc") != NULL)
+            type = MMC;
+        else if (strstr(partitionType, "bml") != NULL)
+            type = BML;
+    }
+                
     return type;
 }
-int restore_raw_partition(const char *partition, const char *filename)
+int restore_raw_partition(const char* partitionType, const char *partition, const char *filename)
 {
-    int type = detect_partition(partition);
+    int type = detect_partition(partitionType, partition);
     switch (type) {
         case MTD:
             return cmd_mtd_restore_raw_partition(partition, filename);
@@ -96,9 +105,9 @@ int restore_raw_partition(const char *partition, const char *filename)
     }
 }
 
-int backup_raw_partition(const char *partition, const char *filename)
+int backup_raw_partition(const char* partitionType, const char *partition, const char *filename)
 {
-    int type = detect_partition(partition);
+    int type = detect_partition(partitionType, partition);
     switch (type) {
         case MTD:
             return cmd_mtd_backup_raw_partition(partition, filename);
@@ -111,9 +120,9 @@ int backup_raw_partition(const char *partition, const char *filename)
     }
 }
 
-int erase_raw_partition(const char *partition)
+int erase_raw_partition(const char* partitionType, const char *partition)
 {
-    int type = detect_partition(partition);
+    int type = detect_partition(partitionType, partition);
     switch (type) {
         case MTD:
             return cmd_mtd_erase_raw_partition(partition);
@@ -128,7 +137,7 @@ int erase_raw_partition(const char *partition)
 
 int erase_partition(const char *partition, const char *filesystem)
 {
-    int type = detect_partition(partition);
+    int type = detect_partition(NULL, partition);
     switch (type) {
         case MTD:
             return cmd_mtd_erase_partition(partition, filesystem);
@@ -143,7 +152,7 @@ int erase_partition(const char *partition, const char *filesystem)
 
 int mount_partition(const char *partition, const char *mount_point, const char *filesystem, int read_only)
 {
-    int type = detect_partition(partition);
+    int type = detect_partition(NULL, partition);
     switch (type) {
         case MTD:
             return cmd_mtd_mount_partition(partition, mount_point, filesystem, read_only);
