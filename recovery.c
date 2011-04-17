@@ -794,7 +794,6 @@ main(int argc, char **argv) {
             return setprop_main(argc, argv);
 		return busybox_driver(argc, argv);
 	}
-    handle_chargemode();
     __system("/sbin/postrecoveryboot.sh");
     
     int is_user_initiated_recovery = 0;
