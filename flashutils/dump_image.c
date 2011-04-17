@@ -146,5 +146,5 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    return backup_raw_partition(NULL, argv[1], argv[2]);
+    return backup_raw_partition(argv[1], argv[2]);
 }

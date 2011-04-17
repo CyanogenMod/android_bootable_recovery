@@ -99,5 +99,5 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    return erase_raw_partition(NULL, argv[1]);
+    return erase_raw_partition(argv[1]);
 }

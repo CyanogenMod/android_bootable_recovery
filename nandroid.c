@@ -115,7 +115,7 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
         const char* name = basename(root);
         sprintf(tmp, "%s/%s.img", backup_path, name);
         ui_print("Backing up %s image...\n", name);
-        if (0 != (ret = backup_raw_partition(vol->fs_type, vol->device, tmp))) {
+        if (0 != (ret = backup_raw_partition(vol->device, tmp))) {
             ui_print("Error while backing up %s image!", name);
             return ret;
         }
@@ -294,7 +294,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
         }
         sprintf(tmp, "%s%s.img", backup_path, root);
         ui_print("Restoring %s image...\n", name);
-        if (0 != (ret = restore_raw_partition(vol->fs_type, vol->device, tmp))) {
+        if (0 != (ret = restore_raw_partition(vol->device, tmp))) {
             ui_print("Error while flashing %s image!", name);
             return ret;
         }
