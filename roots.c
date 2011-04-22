@@ -153,7 +153,6 @@ int try_mount(const char* device, const char* mount_point, const char* fs_type, 
     else {
         char mount_cmd[PATH_MAX];
         sprintf(mount_cmd, "mount -t %s -o%s %s %s", fs_type, fs_options, device, mount_point);
-        LOGE("%s\n", mount_cmd);
         ret = __system(mount_cmd);
     }
     if (ret == 0)

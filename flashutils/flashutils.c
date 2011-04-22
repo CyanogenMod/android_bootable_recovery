@@ -10,7 +10,7 @@ int the_flash_type = UNKNOWN;
 int device_flash_type()
 {
     if (the_flash_type == UNKNOWN) {
-        if (access("/dev/block/bml1", F_OK) == 0) {
+        if (access("/dev/block/bml7", F_OK) == 0) {
             the_flash_type = BML;
         } else if (access("/proc/emmc", F_OK) == 0) {
             the_flash_type = MMC;
@@ -78,7 +78,7 @@ static int detect_partition(const char *partition)
         type = MMC;
     else if (strstr(partition, "/dev/block/bml") != NULL)
         type = BML;
-        
+    
     return type;
 }
 int restore_raw_partition(const char *partition, const char *filename)
@@ -107,6 +107,7 @@ int backup_raw_partition(const char *partition, const char *filename)
         case BML:
             return cmd_bml_backup_raw_partition(partition, filename);
         default:
+            printf("unable to detect device type");
             return -1;
     }
 }
