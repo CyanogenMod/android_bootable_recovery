@@ -546,12 +546,29 @@ TTISMSDOS=
 
 SDSIZE=
 SDSIZEMB=
-if [ -z "$SDPATH" ]
+SDINFO=$(cat /etc/fstab | grep /sdcard | awk '{print $1}')
+if [ -L "$SDINFO" ]
 then
-    SDPATH="/dev/block/mmcblk0"
+	SDPATH=$(ls -l $SDINFO | awk '{print $11}')
 else
-    echo Found SDPATH=$SDPATH
+	SDPATH=$SDINFO
 fi
+# we may now have an SDPATH, let's make sure its on mmcblkX or mmcblkXp1
+CHECK_SDPATH1=$(echo $SDPATH | grep mmcblk.$)
+CHECK_SDPATH2=$(echo $SDPATH | grep mmcblk.p1$)
+if [ -z "$CHECK_SDPATH1" ]
+then
+	if [ -z "$CHECK_SDPATH2" ]
+	then
+		echo fail1
+		unset SDPATH
+	else
+		LEN=${#SDPATH}
+		BLKLEN=$(expr $LEN - 2)
+		SDPATH=${SDPATH:0:$BLKLEN}
+	fi
+fi
+
 
 FATSIZE=
 FATTYPE="fat32"
