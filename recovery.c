@@ -783,16 +783,17 @@ main(int argc, char **argv) {
 	        return mkyaffs2image_main(argc, argv);
 	    if (strstr(argv[0], "unyaffs") != NULL)
 	        return unyaffs_main(argc, argv);
-        if (strstr(argv[0], "nandroid"))
-            return nandroid_main(argc, argv);
-        if (strstr(argv[0], "reboot"))
-            return reboot_main(argc, argv);
-        if (strstr(argv[0], "poweroff")){
-            return reboot_main(argc, argv);
-        }
-        if (strstr(argv[0], "setprop"))
-            return setprop_main(argc, argv);
-		return busybox_driver(argc, argv);
+            if (strstr(argv[0], "nandroid"))
+                return nandroid_main(argc, argv);
+            if (strstr(argv[0], "reboot"))
+                return reboot_main(argc, argv);
+            if (strstr(argv[0], "poweroff"))
+                return reboot_main(argc, argv);
+            if (strstr(argv[0], "setprop"))
+                return setprop_main(argc, argv);
+            if (strstr(argv[0], "bml_over_mtd"))
+                return bml_over_mtd_main(argc, argv);
+	return busybox_driver(argc, argv);
 	}
     __system("/sbin/postrecoveryboot.sh");
     

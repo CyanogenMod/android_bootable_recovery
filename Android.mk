@@ -57,7 +57,7 @@ LOCAL_STATIC_LIBRARIES += libext4_utils libz
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmincrypt
 
 LOCAL_STATIC_LIBRARIES += libedify libbusybox libclearsilverregex libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image
-LOCAL_STATIC_LIBRARIES += libflashutils libmtdutils libmmcutils libbmlutils
+LOCAL_STATIC_LIBRARIES += libflashutils libmtdutils libmmcutils libbmlutils libbml_over_mtd
 
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
@@ -66,7 +66,7 @@ LOCAL_C_INCLUDES += system/extras/ext4_utils
 
 include $(BUILD_EXECUTABLE)
 
-RECOVERY_LINKS := edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume
+RECOVERY_LINKS := edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume bml_over_mtd
 
 # nc is provided by external/netcat
 RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
