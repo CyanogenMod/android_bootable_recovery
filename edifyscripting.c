@@ -141,6 +141,10 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
             free(path);
             return StringValue(strdup(""));
         }
+        if (0 != format_volume("/sdcard/.android_secure")) {
+            free(path);
+            return StringValue(strdup(""));
+        }
     }
 
 done:
