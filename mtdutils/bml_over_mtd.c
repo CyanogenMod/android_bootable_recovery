@@ -756,6 +756,7 @@ int main(int argc, char **argv)
 	const MtdPartition* pReservoirPart = mtd_find_partition_by_name(argv[4]);
 	if (pReservoirPart == NULL)
 		return die("Cannot find partition %s", argv[4]);
+
 	int srcPartStartBlock = atoi(argv[3]);
 	int reservoirPartStartBlock = atoi(argv[5]);
 	const unsigned short* pMapping = CreateBlockMapping(pSrcPart, srcPartStartBlock,
