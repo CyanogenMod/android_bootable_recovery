@@ -57,7 +57,6 @@ LOCAL_MODULE_TAGS := eng
 LOCAL_CFLAGS += -Dmain=erase_image_main
 include $(BUILD_STATIC_LIBRARY)
 
-
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := dump_image.c
 LOCAL_MODULE := utility_dump_image
