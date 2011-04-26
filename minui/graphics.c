@@ -96,8 +96,13 @@ static int get_framebuffer(GGLSurface *fb)
     fb->stride = vi.xres;
 #endif
     fb->data = bits;
+#ifdef BOARD_HAS_FB_RGBA8888
+    fb->format = GGL_PIXEL_FORMAT_RGBA_8888;
+    memset(fb->data, 0, vi.yres * vi.xres * 4);
+#else
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
     memset(fb->data, 0, vi.yres * vi.xres * 2);
+#endif
 
     fb++;
 
@@ -109,10 +114,19 @@ static int get_framebuffer(GGLSurface *fb)
     fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length);
 #else
     fb->stride = vi.xres;
+#ifdef BOARD_HAS_FB_RGBA8888
+    fb->data = (void*) (((unsigned) bits) + vi.yres * vi.xres * 4);
+#else
     fb->data = (void*) (((unsigned) bits) + vi.yres * vi.xres * 2);
 #endif
+#endif
+#ifdef BOARD_HAS_FB_RGBA8888
+    fb->format = GGL_PIXEL_FORMAT_RGBA_8888;
+    memset(fb->data, 0, vi.yres * vi.xres * 4);
+#else
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
     memset(fb->data, 0, vi.yres * vi.xres * 2);
+#endif
 
     return fd;
 }
@@ -122,8 +136,13 @@ static void get_memory_surface(GGLSurface* ms) {
   ms->width = vi.xres;
   ms->height = vi.yres;
   ms->stride = vi.xres;
+#ifdef BOARD_HAS_FB_RGBA8888
+  ms->data = malloc(vi.xres * vi.yres * 4);
+  ms->format = GGL_PIXEL_FORMAT_RGBA_8888;
+#else
   ms->data = malloc(vi.xres * vi.yres * 2);
   ms->format = GGL_PIXEL_FORMAT_RGB_565;
+#endif
 }
 
 static void set_active_framebuffer(unsigned n)
@@ -131,7 +150,45 @@ static void set_active_framebuffer(unsigned n)
     if (n > 1) return;
     vi.yres_virtual = vi.yres * 2;
     vi.yoffset = n * vi.yres;
+#ifdef BOARD_HAS_FB_RGBA8888
+    vi.bits_per_pixel = 32;
+#else
     vi.bits_per_pixel = 16;
+#endif
+    switch (vi.bits_per_pixel) {
+    case 16: {
+        vi.red.offset = 11;
+        vi.red.length = 5;
+        vi.red.msb_right = 0;
+        vi.green.offset = 5;
+        vi.green.length = 6;
+        vi.green.msb_right = 0;
+        vi.blue.offset = 0;
+        vi.blue.length = 5;
+        vi.blue.msb_right = 0;
+        vi.transp.offset = 0;
+        vi.transp.length = 0;
+        vi.transp.msb_right = 0;
+        break;
+    }
+    case 32: {
+        vi.red.offset = 16;
+        vi.red.length = 8;
+        vi.red.msb_right = 0;
+        vi.green.offset = 8;
+        vi.green.length = 8;
+        vi.green.msb_right = 0;
+        vi.blue.offset = 0;
+        vi.blue.length = 8;
+        vi.blue.msb_right = 0;
+        vi.transp.offset = 24;
+        vi.transp.length = 8;
+        vi.transp.msb_right = 0;
+        break;
+    }
+    default:
+        break;
+    }
     if (ioctl(gr_fb_fd, FBIOPUT_VSCREENINFO, &vi) < 0) {
         perror("active fb swap failed");
     }
@@ -148,16 +205,27 @@ void gr_flip(void)
     /* flip buffer 180 degrees for devices with physicaly inverted screens */
     unsigned int i;
     for (i = 1; i < (vi.xres * vi.yres); i++) {
+#ifdef BOARD_HAS_FB_RGBA8888
+        unsigned long tmp = gr_mem_surface.data[i];
+        gr_mem_surface.data[i] = gr_mem_surface.data[(vi.xres * vi.yres * 4) - i];
+        gr_mem_surface.data[(vi.xres * vi.yres * 4) - i] = tmp;
+#else
         unsigned short tmp = gr_mem_surface.data[i];
         gr_mem_surface.data[i] = gr_mem_surface.data[(vi.xres * vi.yres * 2) - i];
         gr_mem_surface.data[(vi.xres * vi.yres * 2) - i] = tmp;
+#endif
     }
 #endif
 
     /* copy data from the in-memory surface to the buffer we're about
      * to make active. */
+#ifdef BOARD_HAS_FB_RGBA8888
+    memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
+           vi.xres * vi.yres * 4);
+#else
     memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
            vi.xres * vi.yres * 2);
+#endif
 
     /* inform the display driver */
     set_active_framebuffer(gr_active_fb);
