@@ -354,9 +354,12 @@ void show_mount_usb_storage_menu()
     }
 
     if (write(fd, vol->device, strlen(vol->device)) < 0) {
-        LOGE("Unable to write to ums lunfile (%s)", strerror(errno));
-        close(fd);
-        return -1;
+        LOGI("Unable to write to ums lunfile (%s)", strerror(errno));
+        if (!vol->device2 || (write(fd, vol->device, strlen(vol->device2)) < 0)) {
+            LOGE("Unable to write to ums lunfile (%s)", strerror(errno));
+            close(fd);
+            return -1;
+        }
     }
     static char* headers[] = {  "USB Mass Storage device",
                                 "Leaving this menu unmount",
