@@ -719,9 +719,7 @@ prompt_and_wait() {
             case ITEM_WIPE_CACHE:
                 if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
                 {
-                    ui_print("\n-- Wiping cache...\n");
-                    erase_volume("/cache");
-                    ui_print("Cache wipe complete.\n");
+                    wipe_cache();
                     if (!ui_text_visible()) return;
                 }
                 break;
@@ -957,4 +955,10 @@ main(int argc, char **argv) {
 
 int get_allow_toggle_display() {
     return allow_display_toggle;
+}
+
+void wipe_cache() {
+    ui_print("\n-- Wiping cache...\n");
+    erase_volume("/cache");
+    ui_print("Cache wipe complete.\n");
 }

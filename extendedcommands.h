@@ -8,7 +8,7 @@ void
 toggle_script_asserts();
 
 void
-show_choose_zip_menu();
+show_choose_zip_menu(int wipeCacheDalvik);
 
 int
 do_nandroid_backup(const char* backup_name);
@@ -25,9 +25,6 @@ show_nandroid_menu();
 void
 show_partition_menu();
 
-void
-show_choose_zip_menu();
-
 int
 install_zip(const char* packagefilepath);
 
@@ -42,6 +39,15 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
 void
 wipe_battery_stats();
 
-void create_fstab();
+void 
+create_fstab();
 
-int has_datadata();
+int 
+has_datadata();
+
+void
+wipe_cache();
+
+void
+wipe_dalvik();
+

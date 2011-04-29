@@ -76,13 +76,15 @@ int install_zip(const char* packagefilepath)
 
 char* INSTALL_MENU_ITEMS[] = {  "apply /sdcard/update.zip",
                                 "choose zip from sdcard",
+                                "choose zip + wipe cache/dalvik",
                                 "toggle signature verification",
                                 "toggle script asserts",
                                 NULL };
 #define ITEM_APPLY_SDCARD     0
 #define ITEM_CHOOSE_ZIP       1
-#define ITEM_SIG_CHECK        2
-#define ITEM_ASSERTS          3
+#define ITEM_CHOOSE_ZIP_WIPE  2
+#define ITEM_SIG_CHECK        3
+#define ITEM_ASSERTS          4
 
 void show_install_update_menu()
 {
@@ -108,7 +110,10 @@ void show_install_update_menu()
                 break;
             }
             case ITEM_CHOOSE_ZIP:
-                show_choose_zip_menu();
+                show_choose_zip_menu(0);    // 0 = don't wipe cache and dalvik before installing zip
+                break;
+            case ITEM_CHOOSE_ZIP_WIPE:
+                show_choose_zip_menu(1);    // 1 = wipe cache and dalvik before installing zip
                 break;
             default:
                 return;
@@ -298,7 +303,7 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
     return return_value;
 }
 
-void show_choose_zip_menu()
+void show_choose_zip_menu(int wipeCacheDalvik)
 {
     if (ensure_path_mounted("/sdcard") != 0) {
         LOGE ("Can't mount /sdcard\n");
@@ -313,11 +318,23 @@ void show_choose_zip_menu()
     char* file = choose_file_menu("/sdcard/", ".zip", headers);
     if (file == NULL)
         return;
+
     static char* confirm_install  = "Confirm install?";
+    static char* confirm_install_wipe  = "Confirm wipe cache/dalvik + install?";
     static char confirm[PATH_MAX];
-    sprintf(confirm, "Yes - Install %s", basename(file));
-    if (confirm_selection(confirm_install, confirm))
+   
+    if (wipeCacheDalvik == 1) 
+      sprintf(confirm, "Yes - Wipe + Install %s", basename(file));
+    else
+      sprintf(confirm, "Yes - Install %s", basename(file));
+      
+    if (confirm_selection((wipeCacheDalvik == 1) ? confirm_install_wipe : confirm_install, confirm)) {
+        if (wipeCacheDalvik == 1) {
+            wipe_cache();
+            wipe_dalvik();
+        }
         install_zip(file);
+    }
 }
 
 void show_nandroid_restore_menu()
@@ -876,17 +893,9 @@ void show_advanced_menu()
                 break;
             case 1:
             {
-                if (0 != ensure_path_mounted("/data"))
-                    break;
-                ensure_path_mounted("/sd-ext");
-                ensure_path_mounted("/cache");
                 if (confirm_selection( "Confirm wipe?", "Yes - Wipe Dalvik Cache")) {
-                    __system("rm -r /data/dalvik-cache");
-                    __system("rm -r /cache/dalvik-cache");
-                    __system("rm -r /sd-ext/dalvik-cache");
+                    wipe_dalvik();
                 }
-                ensure_path_unmounted("/data");
-                ui_print("Dalvik Cache wiped.\n");
                 break;
             }
             case 2:
@@ -1165,4 +1174,16 @@ int has_datadata() {
 int volume_main(int argc, char **argv) {
     load_volume_table();
     return 0;
+}
+
+void wipe_dalvik() {
+    if (0 != ensure_path_mounted("/data"))
+        return;
+    ensure_path_mounted("/sd-ext");
+    ensure_path_mounted("/cache");
+    __system("rm -r /data/dalvik-cache");
+    __system("rm -r /cache/dalvik-cache");
+    __system("rm -r /sd-ext/dalvik-cache");
+    ensure_path_unmounted("/data");
+    ui_print("Dalvik Cache wiped.\n");
 }
