@@ -43,17 +43,27 @@ int reboot_main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if(!nosync)
-        sync();
-
     if(force || argc > optind) {
-        if(poweroff)
+        if(poweroff) {
+            if(!nosync)
+                sync();
             ret = __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_POWER_OFF, NULL);
-        else if(argc > optind)
-            ret = __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, argv[optind]);
-        else
+        } else if(argc > optind) {
+#ifdef TARGET_RECOVERY_PRE_COMMAND
+            if (!strncmp(argv[optind],"recovery",8))
+                system( TARGET_RECOVERY_PRE_COMMAND );
+#endif 
+            if(!nosync)
+                sync();
+           ret = __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, argv[optind]);
+        } else {
+            if(!nosync)
+                sync();
             ret = reboot(RB_AUTOBOOT);
+        }
     } else {
+        if(!nosync)
+            sync();
         if(poweroff) {
             property_set("ctl.start", "poweroff");
             ret = 0;
