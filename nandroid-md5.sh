@@ -15,14 +15,9 @@ if [ ! -s ${op} ]; then
 fi
 return ${ret}
 #
-#
-# A test for empty files in the md5 sum:
-# [ "`grep '^d41d8cd98f00b204e9800998ecf8427e' nandroid.md5 | wc -l`" -eq 0 ]
-# because d41...27e is the md5 of a zero length file (^ matches to start of line)
-# Also need to test that the nandroid.md5 is non-zero:
-# [ "`wc -l < nandroid.md5`" -gt 0 ]
-#
-# Combined:
-# [ "`wc -l < nandroid.md5`" -gt 0 -a "`grep '^d41d8cd98f00b204e9800998ecf8427e' nandroid.md5 | wc -l`" -eq 0 ]
-#
+# Script to compute md5sums of a series of files,
+# returning an error if any of the input files
+# is zero length or if the output is zero length:
+# All indicate an sdram that is too full for the
+# backup to succeed.
 #
