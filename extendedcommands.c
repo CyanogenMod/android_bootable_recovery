@@ -490,8 +490,19 @@ typedef struct {
 
 int is_safe_to_format(char* name)
 {
-    return !(strcmp(name, "/misc") == 0 || strcmp(name, "/radio") == 0
-            || strcmp(name, "/bootloader") == 0 || strcmp(name, "/recovery") == 0);
+    char str[255];
+    char* partition;
+    property_get("ro.recovery.format_ingore_paritions", str, "/misc,/radio,/bootloader,/recovery");
+
+    partition = strtok(str, ", ");
+    while (partition != NULL) {
+        if (strcmp(name, partition) == 0) {
+            return 0;
+        }
+        partition = strtok(NULL, ", ");
+    }
+
+    return 1;
 }
 
 void show_partition_menu()
