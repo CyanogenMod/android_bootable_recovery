@@ -92,6 +92,11 @@ int main(int argc, char** argv) {
     RegisterDeviceExtensions();
     FinishRegistration();
 
+    // Setup the ENVIRONMENT to have the package path is it for any
+    // run_program() calls in the updater-script.
+
+    setenv("UPDATE_PACKAGE", package_data, 1);
+
     // Parse the script.
 
     Expr* root;
