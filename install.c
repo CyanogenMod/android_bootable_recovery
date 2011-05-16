@@ -181,6 +181,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
 
     pid_t pid = fork();
     if (pid == 0) {
+        setenv("UPDATE_PACKAGE", path, 1);
         close(pipefd[0]);
         execv(binary, args);
         fprintf(stdout, "E:Can't run %s (%s)\n", binary, strerror(errno));
