@@ -6,3 +6,12 @@ LOCAL_SRC_FILES := bmlutils.c
 LOCAL_MODULE := libbmlutils
 LOCAL_MODULE_TAGS := eng
 include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := bmlwrite
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
+LOCAL_SRC_FILES := bmlwrite.c
+LOCAL_FORCE_STATIC_EXECUTABLE := true
+LOCAL_STATIC_LIBRARIES += libstdc++ libc
+include $(BUILD_EXECUTABLE)
