@@ -64,6 +64,10 @@ ifeq ($(BOARD_USES_BML_OVER_MTD),true)
 LOCAL_STATIC_LIBRARIES += libbml_over_mtd
 endif
 
+ifeq ($(TARGET_HAS_SDCARD_ON_DATA),true)
+	LOCAL_CFLAGS += -DHAS_SDCARD_ON_DATA
+endif
+
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
