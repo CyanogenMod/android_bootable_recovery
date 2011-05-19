@@ -21,6 +21,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <ctype.h>
+#ifdef HAS_SDCARD_ON_DATA
+#include <dirent.h>
+#endif
 
 #include "mtdutils/mtdutils.h"
 #include "mounts.h"
@@ -251,7 +254,53 @@ int ensure_path_unmounted(const char* path) {
     return unmount_mounted_volume(mv);
 }
 
+#ifdef HAS_SDCARD_ON_DATA
+int clear_data (const char *dirname, int not_at_root) {
+  if (0 == strcmp(dirname, "/data/media")){
+    return 0;
+  }
+ 
+  int ret;
+  DIR *dir;
+  struct dirent *entry;
+  char path[PATH_MAX];
+ 
+  if (path == NULL) {
+    ui_print ("Out of memory. ");
+    return 1;
+  }
+ 
+  dir = opendir (dirname);
+  if (dir == NULL)
+    return 0;
+   
+  while ((entry = readdir(dir)) != NULL) {
+    if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){
+      snprintf(path, (size_t) PATH_MAX, "%s/%s", dirname, entry->d_name);
+      if (entry->d_type == DT_DIR) {
+        if (0 != (ret = clear_data (path, 1))) {
+          return ret;
+        }
+      }
+ 
+      if (strcmp(path, "/data/media") && -1 == (ret = remove (path))) {
+        ui_reset_text_col();
+        ui_print("Error removing %s", path);
+        return ret;
+      }
+       
+    }
+  }
+ 
+  closedir(dir);
+  return 0;
+}
+#endif
+
 int format_volume(const char* volume) {
+#ifdef HAS_SDCARD_ON_DATA
+    struct stat file_info;
+#endif
     Volume* v = volume_for_path(volume);
     if (v == NULL) {
         // silent failure for sd-ext
@@ -260,6 +309,16 @@ int format_volume(const char* volume) {
         LOGE("unknown volume \"%s\"\n", volume);
         return -1;
     }
+#ifdef HAS_SDCARD_ON_DATA
+    if (0 != stat("/sdcard/clockworkmod/eraseData", &file_info) && strcmp(v->mount_point, "/data") == 0){
+       int ret;
+       if (0 != (ret = ensure_path_mounted(v->mount_point))){
+	  return ret;
+       }
+
+       return clear_data(v->mount_point, 0);
+    }
+#endif
     if (strcmp(v->fs_type, "ramdisk") == 0) {
         // you can't format the ramdisk.
         LOGE("can't format_volume \"%s\"", volume);
