@@ -162,10 +162,27 @@ int try_mount(const char* device, const char* mount_point, const char* fs_type, 
 }
 
 int ensure_path_mounted(const char* path) {
+#ifdef HAS_SDCARD_ON_DATA
+    struct stat st, file_info;
+#endif
     Volume* v = volume_for_path(path);
     if (v == NULL) {
-        LOGE("unknown volume for path [%s]\n", path);
-        return -1;
+#ifdef HAS_SDCARD_ON_DATA
+       if (strlen("/sdcard")) {
+          if (0 != stat("/data/media", &st)) {
+	     __system("mount /data");
+             if (0 != stat("/sdcard", &st) && 0 != lstat("/sdcard", &file_info)) {
+                symlink("/data/media", "/sdcard");
+             } else {
+                rmdir("/sdcard");
+                symlink("/data/media", "/sdcard");
+             }
+          }
+         return 0;
+       }
+#endif
+      LOGE("unknown volume for path [%s]\n", path);
+      return -1;
     }
     if (strcmp(v->fs_type, "ramdisk") == 0) {
         // the ramdisk is always mounted.
@@ -224,8 +241,17 @@ int ensure_path_mounted(const char* path) {
 }
 
 int ensure_path_unmounted(const char* path) {
+#ifdef HAS_SDCARD_ON_DATA
+    struct stat st;
+#endif
     Volume* v = volume_for_path(path);
     if (v == NULL) {
+#ifdef HAS_SDCARD_ON_DATA
+        if (strlen("/sdcard")) {
+           __system("umount /data");
+	   return 0;
+        }
+#endif
         LOGE("unknown volume for path [%s]\n", path);
         return -1;
     }
@@ -233,6 +259,11 @@ int ensure_path_unmounted(const char* path) {
         // the ramdisk is always mounted; you can't unmount it.
         return -1;
     }
+#ifdef HAS_SDCARD_ON_DATA
+       if (strcmp(v->mount_point, "/data") == 0 && stat("/sdcard/media", &st)) {
+	  return -1;
+       }
+#endif
 
     int result;
     result = scan_mounted_volumes();
