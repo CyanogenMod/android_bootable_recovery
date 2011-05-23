@@ -418,6 +418,7 @@ int confirm_selection(const char* title, const char* confirm)
 
 int format_unknown_device(const char *device, const char* path, const char *fs_type)
 {
+#ifndef NEVER_FORMAT_PARTITIONS
     LOGI("Formatting unknown device.\n");
 
     // device may simply be a name, like "system"
@@ -462,6 +463,14 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         ui_print("Skipping format...\n");
         return 0;
     }
+
+#else
+    LOGI("Deleting from device...\n");
+    if (strlen(path) < 2) {
+        ui_print("Bad path : %s \n", path);
+        return 0;
+    }
+#endif //NEVER_FORMAT_PARTITIONS
 
     static char tmp[PATH_MAX];
     sprintf(tmp, "rm -rf %s/*", path);
