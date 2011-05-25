@@ -245,8 +245,9 @@ try_update_binary(const char *path, ZipArchive *zip) {
     }
 
     if (firmware_type != NULL) {
+        int ret = handle_firmware_update(firmware_type, firmware_filename, zip);
         mzCloseZipArchive(zip);
-        return handle_firmware_update(firmware_type, firmware_filename, zip);
+        return ret;
     }
     return INSTALL_SUCCESS;
 }
