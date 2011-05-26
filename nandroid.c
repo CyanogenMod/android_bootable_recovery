@@ -162,7 +162,7 @@ int nandroid_backup(const char* backup_path)
         serialno[0] = 0;
         property_get("ro.serialno", serialno, "");
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
-        ret = backup_raw_partition(vol->device, tmp);
+        ret = backup_raw_partition(vol->fs_type, vol->device, tmp);
         if (0 != ret)
             return print_and_error("Error while dumping WiMAX image!\n");
     }
@@ -348,7 +348,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
             if (0 != (ret = format_volume("/wimax")))
                 return print_and_error("Error while formatting wimax!\n");
             ui_print("Restoring WiMAX image...\n");
-            if (0 != (ret = restore_raw_partition(vol->device, tmp)))
+            if (0 != (ret = restore_raw_partition(vol->fs_type, vol->device, tmp)))
                 return ret;
         }
     }

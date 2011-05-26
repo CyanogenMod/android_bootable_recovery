@@ -302,7 +302,7 @@ int format_volume(const char* volume) {
     }
 
     if (strcmp(v->fs_type, "emmc") == 0) {
-        return erase_raw_partition(v->device);
+        return erase_raw_partition("emmc", v->device);
     }
 
     if (strcmp(v->fs_type, "ext4") == 0) {
