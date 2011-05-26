@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "cutils/log.h"
+#include "flashutils.h"
 
 #if 0
 #define LOG_TAG "flash_image"

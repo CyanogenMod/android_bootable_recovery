@@ -28,6 +28,9 @@
 #include "common.h"
 #include "make_ext4fs.h"
 
+#include "flashutils/flashutils.h"
+#include "extendedcommands.h"
+
 int num_volumes;
 Volume* device_volumes;
 
@@ -299,10 +302,6 @@ int format_volume(const char* volume) {
             return -1;
         }
         return 0;
-    }
-
-    if (strcmp(v->fs_type, "emmc") == 0) {
-        return erase_raw_partition("emmc", v->device);
     }
 
     if (strcmp(v->fs_type, "ext4") == 0) {

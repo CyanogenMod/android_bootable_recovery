@@ -37,6 +37,25 @@
 
 #include "extendedcommands.h"
 #include "nandroid.h"
+#include "flashutils/flashutils.h"
+#include <libgen.h>
+
+
+void nandroid_generate_timestamp_path(const char* backup_path)
+{
+    time_t t = time(NULL);
+    struct tm *tmp = localtime(&t);
+    if (tmp == NULL)
+    {
+        struct timeval tp;
+        gettimeofday(&tp, NULL);
+        sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+    }
+    else
+    {
+        strftime(backup_path, PATH_MAX, "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+    }
+}
 
 int print_and_error(const char* message) {
     ui_print("%s", message);
@@ -45,7 +64,7 @@ int print_and_error(const char* message) {
 
 int yaffs_files_total = 0;
 int yaffs_files_count = 0;
-void yaffs_callback(char* filename)
+void yaffs_callback(const char* filename)
 {
     char* justfile = basename(filename);
     if (strlen(justfile) < 30)
@@ -56,7 +75,7 @@ void yaffs_callback(char* filename)
     ui_reset_text_col();
 }
 
-void compute_directory_stats(char* directory)
+void compute_directory_stats(const char* directory)
 {
     char tmp[PATH_MAX];
     sprintf(tmp, "find %s | wc -l > /tmp/dircount", directory);
@@ -378,22 +397,6 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     ui_reset_progress();
     ui_print("\nRestore complete!\n");
     return 0;
-}
-
-void nandroid_generate_timestamp_path(char* backup_path)
-{
-    time_t t = time(NULL);
-    struct tm *tmp = localtime(&t);
-    if (tmp == NULL)
-    {
-        struct timeval tp;
-        gettimeofday(&tp, NULL);
-        sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
-    }
-    else
-    {
-        strftime(backup_path, PATH_MAX, "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
-    }
 }
 
 int nandroid_usage()

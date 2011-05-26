@@ -38,6 +38,8 @@
 #include "mounts.h"
 #include "flashutils/flashutils.h"
 #include "edify/expr.h"
+#include <libgen.h>
+
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -638,6 +640,8 @@ int extendedcommand_file_exists()
     struct stat file_info;
     return 0 == stat(EXTENDEDCOMMAND_SCRIPT, &file_info);
 }
+
+void process_volumes();
 
 int edify_main(int argc, char** argv) {
     load_volume_table();
