@@ -70,6 +70,17 @@ __system(const char *command)
     return (pid == -1 ? -1 : pstat);
 }
 
+int get_flash_type(const char* partitionType) {
+    int type = UNSUPPORTED;
+    if (strcmp(partitionType, "mtd") == 0)
+        type = MTD;
+    else if (strcmp(partitionType, "emmc") == 0)
+        type = MMC;
+    else if (strcmp(partitionType, "bml") == 0)
+        type = BML;
+    return type;
+}
+
 static int detect_partition(const char *partitionType, const char *partition)
 {
     int type = device_flash_type();
@@ -81,12 +92,7 @@ static int detect_partition(const char *partitionType, const char *partition)
         type = BML;
 
     if (partitionType != NULL) {
-        if (strstr(partitionType, "mtd") != NULL)
-            type = MTD;
-        else if (strstr(partitionType, "emmc") != NULL)
-            type = MMC;
-        else if (strstr(partitionType, "bml") != NULL)
-            type = BML;
+        type = get_flash_type(partitionType);
     }
 
     printf("partitionType: %s\n", partitionType);

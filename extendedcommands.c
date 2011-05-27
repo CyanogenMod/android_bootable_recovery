@@ -423,7 +423,7 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
     LOGI("Formatting unknown device.\n");
 
     // device may simply be a name, like "system"
-    if (device[0] != '/')
+    if (get_flash_type(fs_type) != UNSUPPORTED)
         return erase_raw_partition(fs_type, device);
 
     // if this is SDEXT:, don't worry about it if it does not exist.

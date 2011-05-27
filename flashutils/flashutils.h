@@ -39,6 +39,7 @@ extern int cmd_bml_mount_partition(const char *partition, const char *mount_poin
 extern int cmd_bml_get_partition_device(const char *partition, char *device);
 
 extern int device_flash_type();
+extern int get_flash_type(const char* fs_type);
 
 enum flash_type {
     UNSUPPORTED = -1,
