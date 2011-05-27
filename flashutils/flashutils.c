@@ -71,6 +71,7 @@ __system(const char *command)
 }
 
 int get_flash_type(const char* partitionType) {
+    printf("get_flash_type partitionType: %s\n", partitionType);
     int type = UNSUPPORTED;
     if (strcmp(partitionType, "mtd") == 0)
         type = MTD;
@@ -78,6 +79,7 @@ int get_flash_type(const char* partitionType) {
         type = MMC;
     else if (strcmp(partitionType, "bml") == 0)
         type = BML;
+    printf("get_flash_type type: %d\n", type);
     return type;
 }
 
