@@ -71,7 +71,6 @@ __system(const char *command)
 }
 
 int get_flash_type(const char* partitionType) {
-    printf("get_flash_type partitionType: %s\n", partitionType);
     int type = UNSUPPORTED;
     if (strcmp(partitionType, "mtd") == 0)
         type = MTD;
@@ -79,7 +78,6 @@ int get_flash_type(const char* partitionType) {
         type = MMC;
     else if (strcmp(partitionType, "bml") == 0)
         type = BML;
-    printf("get_flash_type type: %d\n", type);
     return type;
 }
 
@@ -97,10 +95,7 @@ static int detect_partition(const char *partitionType, const char *partition)
         type = get_flash_type(partitionType);
     }
 
-    printf("partitionType: %s\n", partitionType);
-    printf("partition: %s\n", partition);
-    printf("detected type: %d\n", type);
-    return type;
+  return type;
 }
 int restore_raw_partition(const char* partitionType, const char *partition, const char *filename)
 {
