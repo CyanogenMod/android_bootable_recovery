@@ -95,7 +95,7 @@ static int detect_partition(const char *partitionType, const char *partition)
         type = get_flash_type(partitionType);
     }
 
-  return type;
+    return type;
 }
 int restore_raw_partition(const char* partitionType, const char *partition, const char *filename)
 {
