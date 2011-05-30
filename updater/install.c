@@ -36,6 +36,8 @@
 #include "updater.h"
 #include "applypatch/applypatch.h"
 
+#include "flashutils/flashutils.h"
+
 #ifdef USE_EXT4
 #include "make_ext4fs.h"
 #endif
@@ -698,7 +700,7 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
         goto done;
     }
 
-    if (0 == restore_raw_partition(partition, filename))
+    if (0 == restore_raw_partition(NULL, partition, filename))
         result = strdup(partition);
     else
         result = strdup("");
