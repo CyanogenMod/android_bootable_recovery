@@ -641,8 +641,6 @@ int extendedcommand_file_exists()
     return 0 == stat(EXTENDEDCOMMAND_SCRIPT, &file_info);
 }
 
-void process_volumes();
-
 int edify_main(int argc, char** argv) {
     load_volume_table();
     process_volumes();
