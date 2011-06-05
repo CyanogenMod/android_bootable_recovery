@@ -298,6 +298,50 @@ static void ensure_directory(const char* dir) {
     __system(tmp);
 }
 
+typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, file_event_callback callback);
+
+static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, file_event_callback callback) {
+    return unyaffs(backup_file_image, backup_path, callback);
+}
+
+static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, file_event_callback callback) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cd $(dirname %s) ; tar xvf %s ; exit $?", backup_path, backup_file_image);
+
+    char path[PATH_MAX];
+    FILE *fp = __popen(tmp, "r");
+    if (fp == NULL) {
+        ui_print("Unable to execute tar.\n");
+        return -1;
+    }
+
+    while (fgets(path, PATH_MAX, fp) != NULL) {
+        if (NULL != callback)
+            callback(path);
+    }
+
+    return __pclose(fp);
+}
+
+static nandroid_restore_handler get_restore_handler(const char *backup_path) {
+    Volume *v = volume_for_path(backup_path);
+    if (v == NULL) {
+        ui_print("Unable to find volume.\n");
+        return NULL;
+    }
+    MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
+    if (mv == NULL) {
+        ui_print("Unable to find mounted volume.\n");
+        return NULL;
+    }
+
+    if (strcmp("yaffs2", mv->filesystem) == 0) {
+        return unyaffs_wrapper;
+    }
+
+    return tar_extract_wrapper;
+}
+
 int nandroid_restore_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
     int ret = 0;
     char* name = basename(mount_point);
@@ -334,7 +378,8 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         return ret;
     }
     
-    if (0 != (ret = unyaffs(tmp, mount_point, callback))) {
+    nandroid_restore_handler restore_handler = get_restore_handler(backup_path);
+    if (0 != (ret = restore_handler(tmp, mount_point, callback))) {
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
     }
