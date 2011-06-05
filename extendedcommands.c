@@ -494,7 +494,7 @@ int is_safe_to_format(char* name)
 {
     char str[255];
     char* partition;
-    property_get("ro.recovery.format_ignore_partitions", str, "/misc,/radio,/bootloader,/recovery");
+    property_get("ro.cwm.forbid_format", str, "/misc,/radio,/bootloader,/recovery");
 
     partition = strtok(str, ", ");
     while (partition != NULL) {
