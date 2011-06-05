@@ -105,7 +105,10 @@ static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_fil
 
 static int tar_compress_wrapper(const char* backup_path, const char* backup_file_image, file_event_callback callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; tar cvf %s $(basename %s) ; exit $?", backup_path, backup_file_image, backup_path);
+    if (strcmp(backup_path, "/data") != 0)
+      sprintf(tmp, "cd $(dirname %s) ; tar cvf %s $(basename %s) ; exit $?", backup_path, backup_file_image, backup_path);
+    else
+      sprintf(tmp, "cd $(dirname %s) ; tar cvf %s $(basename %s) ; exit $?", backup_path, backup_file_image, backup_path);
 
     char path[PATH_MAX];
     FILE *fp = __popen(tmp, "r");
