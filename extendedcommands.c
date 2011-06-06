@@ -466,10 +466,16 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
     }
 
     static char tmp[PATH_MAX];
-    sprintf(tmp, "rm -rf %s/*", path);
-    __system(tmp);
-    sprintf(tmp, "rm -rf %s/.*", path);
-    __system(tmp);
+    if (strcmp(path, "/data") == 0) {
+        sprintf(tmp, "for f in $(ls -a | grep ^media$); do rm -rf $f; done");
+        __system(tmp);
+    }
+    else {
+        sprintf(tmp, "rm -rf %s/*", path);
+        __system(tmp);
+        sprintf(tmp, "rm -rf %s/.*", path);
+        __system(tmp);
+    }
 
     ensure_path_unmounted(path);
     return 0;
