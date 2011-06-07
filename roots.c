@@ -169,7 +169,11 @@ int ensure_path_mounted(const char* path) {
     if (v == NULL) {
         // no /sdcard? let's assume /data/media
         if (strstr(path, "/sdcard") == path) {
-            return ensure_path_mounted("/data");
+            if (0 != ensure_path_mounted("/data"))
+                return ret;
+            rmdir("/sdcard");
+            symlink("/data/media", "/sdcard");
+            return 0;
         }
         LOGE("unknown volume for path [%s]\n", path);
         return -1;
