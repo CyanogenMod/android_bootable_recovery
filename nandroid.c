@@ -131,9 +131,10 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
         ui_print("Unable to find volume.\n");
         return NULL;
     }
+    scan_mounted_volumes();
     MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
     if (mv == NULL) {
-        ui_print("Unable to find mounted volume.\n");
+        ui_print("Unable to find mounted volume: %s\n", v->mount_point);
         return NULL;
     }
 
@@ -150,7 +151,7 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     char* name = basename(mount_point);
 
     struct stat file_info;
-    mkyaffs2image_callback callback = NULL;
+    file_event_callback callback = NULL;
     if (0 != stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info)) {
         callback = yaffs_callback;
     }
@@ -163,7 +164,11 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     compute_directory_stats(mount_point);
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
-    nandroid_backup_handler backup_handler = get_backup_handler(backup_path);
+    nandroid_backup_handler backup_handler = get_backup_handler(mount_point);
+    if (backup_handler == NULL) {
+        ui_print("Error finding an appropriate backup handler.\n");
+        return -2;
+    }
     ret = backup_handler(mount_point, tmp, callback);
     if (umount_when_finished) {
         ensure_path_unmounted(mount_point);
@@ -359,7 +364,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
 
     ensure_directory(mount_point);
 
-    unyaffs_callback callback = NULL;
+    file_event_callback callback = NULL;
     if (0 != stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info)) {
         callback = yaffs_callback;
     }
@@ -381,7 +386,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         return ret;
     }
     
-    nandroid_restore_handler restore_handler = get_restore_handler(backup_path);
+    nandroid_restore_handler restore_handler = get_restore_handler(mount_point);
     if (0 != (ret = restore_handler(tmp, mount_point, callback))) {
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
