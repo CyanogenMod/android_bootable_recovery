@@ -337,9 +337,10 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
         ui_print("Unable to find volume.\n");
         return NULL;
     }
+    scan_mounted_volumes();
     MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
     if (mv == NULL) {
-        ui_print("Unable to find mounted volume.\n");
+        ui_print("Unable to find mounted volume: %s\n", v->mount_point);
         return NULL;
     }
 
@@ -387,6 +388,10 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     }
     
     nandroid_restore_handler restore_handler = get_restore_handler(mount_point);
+    if (restore_handler == NULL) {
+        ui_print("Error finding an appropriate restore handler.\n");
+        return -2;
+    }
     if (0 != (ret = restore_handler(tmp, mount_point, callback))) {
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
