@@ -795,7 +795,11 @@ main(int argc, char **argv) {
 		return busybox_driver(argc, argv);
 	}
     __system("/sbin/postrecoveryboot.sh");
-    
+    if (volume_for_path("/sdcard") == NULL) {
+        rmdir("/sdcard");
+        symlink("/data/media", "/sdcard");
+    }
+
     int is_user_initiated_recovery = 0;
     time_t start = time(NULL);
 
