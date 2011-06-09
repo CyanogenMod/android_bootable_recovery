@@ -29,47 +29,6 @@ char* get_default_filesystem()
     return device_flash_type() == MMC ? "ext3" : "yaffs2";
 }
 
-// This was pulled from bionic: The default system command always looks
-// for shell in /system/bin/sh. This is bad.
-#define _PATH_BSHELL "/sbin/sh"
-
-extern char **environ;
-int
-__system(const char *command)
-{
-  pid_t pid;
-    sig_t intsave, quitsave;
-    sigset_t mask, omask;
-    int pstat;
-    char *argp[] = {"sh", "-c", NULL, NULL};
-
-    if (!command)        /* just checking... */
-        return(1);
-
-    argp[2] = (char *)command;
-
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGCHLD);
-    sigprocmask(SIG_BLOCK, &mask, &omask);
-    switch (pid = vfork()) {
-    case -1:            /* error */
-        sigprocmask(SIG_SETMASK, &omask, NULL);
-        return(-1);
-    case 0:                /* child */
-        sigprocmask(SIG_SETMASK, &omask, NULL);
-        execve(_PATH_BSHELL, argp, environ);
-    _exit(127);
-  }
-
-    intsave = (sig_t)  bsd_signal(SIGINT, SIG_IGN);
-    quitsave = (sig_t) bsd_signal(SIGQUIT, SIG_IGN);
-    pid = waitpid(pid, (int *)&pstat, 0);
-    sigprocmask(SIG_SETMASK, &omask, NULL);
-    (void)bsd_signal(SIGINT, intsave);
-    (void)bsd_signal(SIGQUIT, quitsave);
-    return (pid == -1 ? -1 : pstat);
-}
-
 int get_flash_type(const char* partitionType) {
     int type = UNSUPPORTED;
     if (strcmp(partitionType, "mtd") == 0)

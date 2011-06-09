@@ -167,6 +167,16 @@ int try_mount(const char* device, const char* mount_point, const char* fs_type, 
 int ensure_path_mounted(const char* path) {
     Volume* v = volume_for_path(path);
     if (v == NULL) {
+        // no /sdcard? let's assume /data/media
+        if (strstr(path, "/sdcard") == path) {
+            LOGW("using /data/media, no /sdcard found.\n");
+            int ret;
+            if (0 != (ret = ensure_path_mounted("/data")))
+                return ret;
+            rmdir("/sdcard");
+            symlink("/data/media", "/sdcard");
+            return 0;
+        }
         LOGE("unknown volume for path [%s]\n", path);
         return -1;
     }
@@ -227,8 +237,17 @@ int ensure_path_mounted(const char* path) {
 }
 
 int ensure_path_unmounted(const char* path) {
+    // if we are using /data/media, do not ever unmount volumes /data or /sdcard
+    if (volume_for_path("/sdcard") == NULL && (strstr(path, "/sdcard") == path || strstr(path, "/data") == path)) {
+        return 0;
+    }
+
     Volume* v = volume_for_path(path);
     if (v == NULL) {
+        // no /sdcard? let's assume /data/media
+        if (strstr(path, "/sdcard") == path) {
+            return ensure_path_unmounted("/data");
+        }
         LOGE("unknown volume for path [%s]\n", path);
         return -1;
     }

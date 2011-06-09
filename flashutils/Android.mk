@@ -8,7 +8,7 @@ LOCAL_SRC_FILES := flashutils.c
 LOCAL_MODULE := libflashutils
 LOCAL_MODULE_TAGS := eng
 LOCAL_C_INCLUDES += bootable/recovery
-LOCAL_STATIC_LIBRARIES := libmmcutils libmtdutils libbmlutils
+LOCAL_STATIC_LIBRARIES := libmmcutils libmtdutils libbmlutils libcrecovery
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)

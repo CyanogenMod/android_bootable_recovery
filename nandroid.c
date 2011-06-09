@@ -37,9 +37,10 @@
 
 #include "extendedcommands.h"
 #include "nandroid.h"
+#include "mounts.h"
+
 #include "flashutils/flashutils.h"
 #include <libgen.h>
-
 
 void nandroid_generate_timestamp_path(const char* backup_path)
 {
@@ -57,25 +58,31 @@ void nandroid_generate_timestamp_path(const char* backup_path)
     }
 }
 
-int print_and_error(const char* message) {
+static int print_and_error(const char* message) {
     ui_print("%s", message);
     return 1;
 }
 
-int yaffs_files_total = 0;
-int yaffs_files_count = 0;
-void yaffs_callback(const char* filename)
+static int yaffs_files_total = 0;
+static int yaffs_files_count = 0;
+static void yaffs_callback(const char* filename)
 {
-    char* justfile = basename(filename);
-    if (strlen(justfile) < 30)
-        ui_print("%s", justfile);
+    if (filename == NULL)
+        return;
+    const char* justfile = basename(filename);
+    char tmp[PATH_MAX];
+    strcpy(tmp, justfile);
+    if (tmp[strlen(tmp) - 1] == '\n')
+        tmp[strlen(tmp) - 1] = NULL;
+    if (strlen(tmp) < 30)
+        ui_print("%s", tmp);
     yaffs_files_count++;
     if (yaffs_files_total != 0)
         ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
     ui_reset_text_col();
 }
 
-void compute_directory_stats(const char* directory)
+static void compute_directory_stats(const char* directory)
 {
     char tmp[PATH_MAX];
     sprintf(tmp, "find %s | wc -l > /tmp/dircount", directory);
@@ -90,12 +97,62 @@ void compute_directory_stats(const char* directory)
     ui_show_progress(1, 0);
 }
 
+typedef void (*file_event_callback)(const char* filename);
+typedef int (*nandroid_backup_handler)(const char* backup_path, const char* backup_file_image, const file_event_callback callback);
+
+static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_file_image, const file_event_callback callback) {
+    return mkyaffs2image(backup_path, backup_file_image, 0, callback);
+}
+
+static int tar_compress_wrapper(const char* backup_path, const char* backup_file_image, const file_event_callback callback) {
+    char tmp[PATH_MAX];
+    if (strcmp(backup_path, "/data") == 0 && volume_for_path("/sdcard") == NULL)
+      sprintf(tmp, "cd $(dirname %s) ; tar cvf %s --exclude 'media' $(basename %s) ; exit $?", backup_path, backup_file_image, backup_path);
+    else
+      sprintf(tmp, "cd $(dirname %s) ; tar cvf %s $(basename %s) ; exit $?", backup_path, backup_file_image, backup_path);
+
+    FILE *fp = __popen(tmp, "r");
+    if (fp == NULL) {
+        ui_print("Unable to execute tar.\n");
+        return -1;
+    }
+
+    while (fgets(tmp, PATH_MAX, fp) != NULL) {
+        tmp[PATH_MAX - 1] = NULL;
+        if (NULL != callback)
+            yaffs_callback(tmp);
+    }
+
+    return __pclose(fp);
+}
+
+static nandroid_backup_handler get_backup_handler(const char *backup_path) {
+    Volume *v = volume_for_path(backup_path);
+    if (v == NULL) {
+        ui_print("Unable to find volume.\n");
+        return NULL;
+    }
+    scan_mounted_volumes();
+    MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
+    if (mv == NULL) {
+        ui_print("Unable to find mounted volume: %s\n", v->mount_point);
+        return NULL;
+    }
+
+    if (strcmp("yaffs2", mv->filesystem) == 0) {
+        return mkyaffs2image_wrapper;
+    }
+
+    return tar_compress_wrapper;
+}
+
+
 int nandroid_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
     int ret = 0;
     char* name = basename(mount_point);
 
     struct stat file_info;
-    mkyaffs2image_callback callback = NULL;
+    file_event_callback callback = NULL;
     if (0 != stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info)) {
         callback = yaffs_callback;
     }
@@ -108,12 +165,17 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     compute_directory_stats(mount_point);
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
-    ret = mkyaffs2image(mount_point, tmp, 0, callback);
+    nandroid_backup_handler backup_handler = get_backup_handler(mount_point);
+    if (backup_handler == NULL) {
+        ui_print("Error finding an appropriate backup handler.\n");
+        return -2;
+    }
+    ret = backup_handler(mount_point, tmp, callback);
     if (umount_when_finished) {
         ensure_path_unmounted(mount_point);
     }
     if (0 != ret) {
-        ui_print("Error while making a yaffs2 image of %s!\n", mount_point);
+        ui_print("Error while making a backup image of %s!\n", mount_point);
         return ret;
     }
     return 0;
@@ -245,6 +307,51 @@ static void ensure_directory(const char* dir) {
     __system(tmp);
 }
 
+typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, file_event_callback callback);
+
+static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, file_event_callback callback) {
+    return unyaffs(backup_file_image, backup_path, callback);
+}
+
+static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, file_event_callback callback) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cd $(dirname %s) ; tar xvf %s ; exit $?", backup_path, backup_file_image);
+
+    char path[PATH_MAX];
+    FILE *fp = __popen(tmp, "r");
+    if (fp == NULL) {
+        ui_print("Unable to execute tar.\n");
+        return -1;
+    }
+
+    while (fgets(path, PATH_MAX, fp) != NULL) {
+        if (NULL != callback)
+            callback(path);
+    }
+
+    return __pclose(fp);
+}
+
+static nandroid_restore_handler get_restore_handler(const char *backup_path) {
+    Volume *v = volume_for_path(backup_path);
+    if (v == NULL) {
+        ui_print("Unable to find volume.\n");
+        return NULL;
+    }
+    scan_mounted_volumes();
+    MountedVolume *mv = find_mounted_volume_by_mount_point(v->mount_point);
+    if (mv == NULL) {
+        ui_print("Unable to find mounted volume: %s\n", v->mount_point);
+        return NULL;
+    }
+
+    if (strcmp("yaffs2", mv->filesystem) == 0) {
+        return unyaffs_wrapper;
+    }
+
+    return tar_extract_wrapper;
+}
+
 int nandroid_restore_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
     int ret = 0;
     char* name = basename(mount_point);
@@ -259,7 +366,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
 
     ensure_directory(mount_point);
 
-    unyaffs_callback callback = NULL;
+    file_event_callback callback = NULL;
     if (0 != stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info)) {
         callback = yaffs_callback;
     }
@@ -281,7 +388,12 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         return ret;
     }
     
-    if (0 != (ret = unyaffs(tmp, mount_point, callback))) {
+    nandroid_restore_handler restore_handler = get_restore_handler(mount_point);
+    if (restore_handler == NULL) {
+        ui_print("Error finding an appropriate restore handler.\n");
+        return -2;
+    }
+    if (0 != (ret = restore_handler(tmp, mount_point, callback))) {
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
     }

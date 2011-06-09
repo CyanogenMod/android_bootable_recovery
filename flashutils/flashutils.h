@@ -15,8 +15,6 @@ int get_partition_device(const char *partition, char *device);
 int is_mtd_device();
 char* get_default_filesystem();
 
-int __system(const char *command);
-
 extern int cmd_mtd_restore_raw_partition(const char *partition, const char *filename);
 extern int cmd_mtd_backup_raw_partition(const char *partition, const char *filename);
 extern int cmd_mtd_erase_raw_partition(const char *partition);
