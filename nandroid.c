@@ -139,6 +139,17 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
         return NULL;
     }
 
+    if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
+        return tar_compress_wrapper;
+    }
+
+    char str[255];
+    char* partition;
+    property_get("ro.cwm.prefer_tar", str, "false");
+    if (strcmp("true", str) != 0) {
+        return mkyaffs2image_wrapper;
+    }
+
     if (strcmp("yaffs2", mv->filesystem) == 0) {
         return mkyaffs2image_wrapper;
     }
@@ -343,6 +354,17 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     if (mv == NULL) {
         ui_print("Unable to find mounted volume: %s\n", v->mount_point);
         return NULL;
+    }
+
+    if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
+        return tar_extract_wrapper;
+    }
+
+    char str[255];
+    char* partition;
+    property_get("ro.cwm.prefer_tar", str, "false");
+    if (strcmp("true", str) != 0) {
+        return unyaffs_wrapper;
     }
 
     if (strcmp("yaffs2", mv->filesystem) == 0) {

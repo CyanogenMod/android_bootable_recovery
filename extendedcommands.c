@@ -1105,9 +1105,9 @@ int bml_check_volume(const char *path) {
 
 void process_volumes() {
     create_fstab();
-    if (volume_for_path("/sdcard") == NULL) {
-        rmdir("/sdcard");
-        symlink("/data/media", "/sdcard");
+
+    if (is_data_media()) {
+        setup_data_media();
     }
 
     return;
