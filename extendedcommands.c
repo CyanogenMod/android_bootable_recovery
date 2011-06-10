@@ -881,6 +881,7 @@ void show_advanced_menu()
                             "Fix Permissions",
 #ifdef BOARD_HAS_SDCARD_INTERNAL
                             "Partition Internal SD Card",
+                            "Show log",
 #endif
 #endif
                             NULL
@@ -1028,6 +1029,11 @@ void show_advanced_menu()
                     ui_print("Done!\n");
                 else
                     ui_print("An error occured while partitioning your Internal SD Card. Please see /tmp/recovery.log for more details.\n");
+                break;
+            }
+            case 8:
+            {
+                ui_printlogtail(12);
                 break;
             }
         }
