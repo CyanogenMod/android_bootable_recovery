@@ -29,6 +29,8 @@
 #include "minui/minui.h"
 #include "recovery_ui.h"
 
+extern int __system(const char *command);
+
 #ifdef BOARD_HAS_NO_SELECT_BUTTON
 static int gShowBackButton = 1;
 #else
@@ -58,6 +60,7 @@ static gr_surface gProgressBarIndeterminate[PROGRESSBAR_INDETERMINATE_STATES];
 static gr_surface gProgressBarEmpty;
 static gr_surface gProgressBarFill;
 static int ui_has_initialized = 0;
+static int ui_log_stdout = 1;
 
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING], "icon_installing" },
@@ -98,7 +101,7 @@ static int show_text = 0;
 static char menu[MENU_MAX_ROWS][MENU_MAX_COLS];
 static int show_menu = 0;
 static int menu_top = 0, menu_items = 0, menu_sel = 0;
-static int menu_show_start = 0;             // this is line which menu display is starting at 
+static int menu_show_start = 0;             // this is line which menu display is starting at
 
 // Key event input queue
 static pthread_mutex_t key_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -460,7 +463,8 @@ void ui_print(const char *fmt, ...)
     vsnprintf(buf, 256, fmt, ap);
     va_end(ap);
 
-    fputs(buf, stdout);
+    if (ui_log_stdout)
+        fputs(buf, stdout);
 
     // This can get called before ui_init(), so be careful.
     pthread_mutex_lock(&gUpdateMutex);
@@ -479,6 +483,28 @@ void ui_print(const char *fmt, ...)
         update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
+}
+
+void ui_printlogtail(int nb_lines) {
+    char * log_data;
+    char tmp[PATH_MAX];
+    FILE * f;
+    int line=0;
+    //don't log output to recovery.log
+    ui_log_stdout=0;
+    sprintf(tmp, "tail -n %d /tmp/recovery.log > /tmp/tail.log", nb_lines);
+    __system(tmp);
+    f = fopen("/tmp/tail.log", "rb");
+    if (f != NULL) {
+        while (line < nb_lines) {
+            log_data = fgets(tmp, PATH_MAX, f);
+            if (log_data == NULL) break;
+            ui_print("%s", tmp);
+            line++;
+        }
+        fclose(f);
+    }
+    ui_log_stdout=1;
 }
 
 void ui_reset_text_col()
