@@ -29,6 +29,8 @@
 #include "minui/minui.h"
 #include "recovery_ui.h"
 
+extern int __system(const char *command);
+
 #ifdef BOARD_HAS_NO_SELECT_BUTTON
 static int gShowBackButton = 1;
 #else
@@ -479,6 +481,25 @@ void ui_print(const char *fmt, ...)
         update_screen_locked();
     }
     pthread_mutex_unlock(&gUpdateMutex);
+}
+
+void ui_printlogtail(int nb_lines) {
+    char * log_data;
+    char tmp[PATH_MAX];
+    FILE * f;
+    int line=0;
+    sprintf(tmp, "tail -n %d /tmp/recovery.log > /tmp/tail.log", nb_lines);
+    __system(tmp);
+    f = fopen("/tmp/tail.log", "rb");
+    if (f != NULL) {
+        while (line < nb_lines) {
+            log_data = fgets(tmp, PATH_MAX, f);
+            if (log_data == NULL) break;
+            ui_print("%s", tmp);
+            line++;
+        }
+        fclose(f);
+    }
 }
 
 void ui_reset_text_col()
