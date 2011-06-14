@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/reboot.h>
+#include <reboot/reboot.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -894,10 +895,7 @@ void show_advanced_menu()
         switch (chosen_item)
         {
             case 0:
-#ifdef TARGET_RECOVERY_PRE_COMMAND
-                __system( TARGET_RECOVERY_PRE_COMMAND );
-#endif
-                __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, "recovery");
+                reboot_wrapper("recovery");
                 break;
             case 1:
             {

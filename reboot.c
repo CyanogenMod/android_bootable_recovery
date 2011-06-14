@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/reboot.h>
+#include <reboot/reboot.h>
 #include <unistd.h>
 #include <cutils/properties.h>
 
@@ -50,13 +51,9 @@ int reboot_main(int argc, char *argv[])
         if(poweroff)
             ret = __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_POWER_OFF, NULL);
         else if(argc > optind) {
-#ifdef TARGET_RECOVERY_PRE_COMMAND
-            if (!strncmp(argv[optind],"recovery",8))
-                system( TARGET_RECOVERY_PRE_COMMAND );
-#endif 
-           ret = __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, argv[optind]);
+            ret = reboot_wrapper(argv[optind]);
         } else
-            ret = reboot(RB_AUTOBOOT);
+            ret = reboot_wrapper(NULL);
     } else {
         if(poweroff) {
             property_set("ctl.start", "poweroff");
