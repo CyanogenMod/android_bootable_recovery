@@ -18,7 +18,7 @@ LOCAL_SRC_FILES := \
     mounts.c \
     extendedcommands.c \
     nandroid.c \
-    reboot.c \
+    ../../system/core/toolbox/reboot.c \
     edifyscripting.c \
     setprop.c
 
