@@ -288,7 +288,7 @@ int format_volume(const char* volume) {
     if (v == NULL) {
         // no /sdcard? let's assume /data/media
         if (strstr(path, "/sdcard") == path && is_data_media()) {
-            return format_unknown_device(volume);
+        return format_unknown_device(v->device, volume, NULL);
         }
         // silent failure for sd-ext
         if (strcmp(volume, "/sd-ext") == 0)
