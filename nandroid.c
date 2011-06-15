@@ -315,13 +315,13 @@ static void ensure_directory(const char* dir) {
     __system(tmp);
 }
 
-typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, file_event_callback callback);
+typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, int callback);
 
-static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, file_event_callback callback) {
+static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
     return unyaffs(backup_file_image, backup_path, callback);
 }
 
-static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, file_event_callback callback) {
+static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
     char tmp[PATH_MAX];
     sprintf(tmp, "cd $(dirname %s) ; tar xvf %s ; exit $?", backup_path, backup_file_image);
 
@@ -333,8 +333,8 @@ static int tar_extract_wrapper(const char* backup_file_image, const char* backup
     }
 
     while (fgets(path, PATH_MAX, fp) != NULL) {
-        if (NULL != callback)
-            callback(path);
+        if (callback)
+            yaffs_callback(path);
     }
 
     return __pclose(fp);
