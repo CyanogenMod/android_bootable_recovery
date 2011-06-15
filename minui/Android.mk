@@ -19,6 +19,10 @@ ifeq ($(BOARD_HAS_FLIPPED_SCREEN), true)
     LOCAL_CFLAGS += -DBOARD_HAS_FLIPPED_SCREEN
 endif
 
+ifeq ($(BOARD_USE_GR_FLIP_32), true)
+    LOCAL_CFLAGS += -DBOARD_USE_GR_FLIP_32
+endif
+
 LOCAL_MODULE := libminui
 
 include $(BUILD_STATIC_LIBRARY)
