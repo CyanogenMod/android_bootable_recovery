@@ -12,11 +12,12 @@ on init
     mkdir /boot
     mkdir /sdcard
     mkdir /sd-ext
-    mkdir /datadata
+    mkdir /data/data
     mkdir /emmc
     mkdir /system
     mkdir /data
     mkdir /cache
+    mkdir /mtdcache
     mount /tmp /tmp tmpfs
 
 on boot
@@ -41,8 +42,12 @@ service power_test /sbin/power_test
     oneshot
 
 service offmode_charging /sbin/offmode_charging
+    disabled
+    oneshot
 
 service detect_key /sbin/detect_key
+    disabled
+    oneshot
 
 service adbd /sbin/adbd recovery
     disabled

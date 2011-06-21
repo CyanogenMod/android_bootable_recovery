@@ -12,11 +12,12 @@ on init
     mkdir /boot
     mkdir /sdcard
     mkdir /sd-ext
-    mkdir /datadata
+    mkdir /data/data
     mkdir /emmc
     mkdir /system
     mkdir /data
     mkdir /cache
+    mkdir /mtdcache
     mount /tmp /tmp tmpfs
 
 on boot
