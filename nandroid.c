@@ -172,6 +172,8 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     }
     compute_directory_stats(mount_point);
     char tmp[PATH_MAX];
+    char tmp_name[PATH_MAX];
+    strcpy(tmp_name,name);
     sprintf(tmp, "%s/%s.img", backup_path, name);
     nandroid_backup_handler backup_handler = get_backup_handler(mount_point);
     if (backup_handler == NULL) {
@@ -186,6 +188,10 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
         ui_print("Error while making a backup image of %s!\n", mount_point);
         return ret;
     }
+    ui_print("Generating %s md5 sum...\n", tmp_name);
+    sprintf(tmp, "nandroid-md5.sh %s %s", backup_path, tmp_name);
+    if (__system(tmp))
+        ui_print("Error while generating %s md5 sum!\n", tmp_name);
     return 0;
 }
 
@@ -208,13 +214,17 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
             ui_print("Error while backing up %s image!", name);
             return ret;
         }
+        ui_print("Generating %s md5 sum...\n", name);
+        sprintf(tmp, "nandroid-md5.sh %s %s", backup_path, name);
+        if (__system(tmp))
+            ui_print("Error while generating %s md5 sum!\n", name);
         return 0;
     }
 
     return nandroid_backup_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_backup(const char* backup_path)
+int nandroid_backup(const char* backup_path, int backup_recovery, int backup_boot, int backup_system, int backup_data, int backup_cache, int backup_sdext, int backup_wimax)
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     
@@ -237,67 +247,67 @@ int nandroid_backup(const char* backup_path)
     sprintf(tmp, "mkdir -p %s", backup_path);
     __system(tmp);
 
-    if (0 != (ret = nandroid_backup_partition(backup_path, "/boot")))
+    if (backup_boot && (ret = nandroid_backup_partition(backup_path, "/boot")))
         return ret;
 
-    if (0 != (ret = nandroid_backup_partition(backup_path, "/recovery")))
+    if (backup_recovery && (ret = nandroid_backup_partition(backup_path, "/recovery")))
         return ret;
 
     Volume *vol = volume_for_path("/wimax");
-    if (vol != NULL && 0 == stat(vol->device, &s))
+    if (backup_wimax)
     {
-        char serialno[PROPERTY_VALUE_MAX];
-        ui_print("Backing up WiMAX...\n");
-        serialno[0] = 0;
-        property_get("ro.serialno", serialno, "");
-        sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
-        ret = backup_raw_partition(vol->fs_type, vol->device, tmp);
-        if (0 != ret)
-            return print_and_error("Error while dumping WiMAX image!\n");
+        if (vol != NULL && 0 == stat(vol->device, &s))
+        {
+            char serialno[PROPERTY_VALUE_MAX];
+            ui_print("Backing up WiMAX...\n");
+            serialno[0] = 0;
+            property_get("ro.serialno", serialno, "");
+            sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
+            ret = backup_raw_partition(vol->fs_type, vol->device, tmp);
+            ui_print("Generating wimax.%s md5 sum...\n", serialno);
+            sprintf(tmp, "nandroid-md5.sh %s wimax.%s", backup_path, serialno);
+            if (__system(tmp))
+                ui_print("Error while generating wimax.%s md5 sum!\n", serialno);
+            if (0 != ret)
+                return print_and_error("Error while dumping WiMAX image!\n");
+        }
     }
 
-    if (0 != (ret = nandroid_backup_partition(backup_path, "/system")))
+    if (backup_system && (ret = nandroid_backup_partition(backup_path, "/system")))
         return ret;
 
-    if (0 != (ret = nandroid_backup_partition(backup_path, "/data")))
+    if (backup_data && (ret = nandroid_backup_partition(backup_path, "/data")))
         return ret;
 
     if (has_datadata()) {
-        if (0 != (ret = nandroid_backup_partition(backup_path, "/datadata")))
+        if (backup_data && (ret = nandroid_backup_partition(backup_path, "/datadata")))
             return ret;
     }
 
-    if (0 != stat("/sdcard/.android_secure", &s))
+    if (backup_data && stat("/sdcard/.android_secure", &s))
     {
         ui_print("No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n");
     }
     else
     {
-        if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
+        if (backup_data && (ret = nandroid_backup_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
             return ret;
     }
 
-    if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/cache", 0)))
+    if (backup_cache && (ret = nandroid_backup_partition_extended(backup_path,"/cache", 0)))
         return ret;
 
     vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->device, &s))
+    if (backup_sdext && (vol == NULL || 0 != stat(vol->device, &s)))
     {
         ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
     }
     else
     {
-        if (0 != ensure_path_mounted("/sd-ext"))
+        if (backup_sdext && ensure_path_mounted("/sd-ext"))
             ui_print("Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n");
-        else if (0 != (ret = nandroid_backup_partition(backup_path, "/sd-ext")))
+        else if (backup_sdext && (ret = nandroid_backup_partition(backup_path,"/sd-ext")))
             return ret;
-    }
-
-    ui_print("Generating md5 sum...\n");
-    sprintf(tmp, "nandroid-md5.sh %s", backup_path);
-    if (0 != (ret = __system(tmp))) {
-        ui_print("Error while generating md5 sum!\n");
-        return ret;
     }
     
     sync();
@@ -462,11 +472,19 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     char tmp[PATH_MAX];
 
     ui_print("Checking MD5 sums...\n");
+    sprintf(tmp, "cd %s && cat `ls *.md5 && ls -A .*.md5` > md5", backup_path); // dirrrrrty hack. Damn you, stupid busybox version of md5sum!
+    __system(tmp);
+    sprintf(tmp, "cd %s && md5sum -c md5", backup_path);
+    int ret = __system(tmp);
+    sprintf(tmp, "cd %s && rm md5", backup_path);
+    __system(tmp);
+    if(ret)
+        return print_and_error("MD5 mismatch!\n");
+
+    ui_print("Checking MD5 sums...\n");
     sprintf(tmp, "cd %s && md5sum -c nandroid.md5", backup_path);
     if (0 != __system(tmp))
         return print_and_error("MD5 mismatch!\n");
-    
-    int ret;
 
     if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
         return ret;
@@ -546,7 +564,7 @@ int nandroid_main(int argc, char** argv)
         
         char backup_path[PATH_MAX];
         nandroid_generate_timestamp_path(backup_path);
-        return nandroid_backup(backup_path);
+        return nandroid_backup(backup_path, 1, 1, 1, 1, 1, 1, 1);
     }
 
     if (strcmp("restore", argv[1]) == 0)
