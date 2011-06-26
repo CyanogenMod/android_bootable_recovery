@@ -151,7 +151,11 @@ static void set_active_framebuffer(unsigned n)
     if (n > 1) return;
     vi.yres_virtual = vi.yres * 2; 
     vi.yoffset = n * vi.yres;
+#ifdef BOARD_FB_FORCE_24_BPP
+    vi.bits_per_pixel = 24;
+#else
     vi.bits_per_pixel = 16;
+#endif
     if (ioctl(gr_fb_fd, FBIOPUT_VSCREENINFO, &vi) < 0) {
         perror("active fb swap failed");
     }
@@ -184,8 +188,10 @@ void gr_flip(void)
 {
     GGLContext *gl = gr_context;
 
+#ifndef BOARD_FB_SINGLE_BUFFERED
     /* swap front and back buffers */
     gr_active_fb = (gr_active_fb + 1) & 1;
+#endif
 
 #ifdef BOARD_HAS_FLIPPED_SCREEN
     /* flip buffer 180 degrees for devices with physicaly inverted screens */

@@ -23,6 +23,14 @@ ifeq ($(BOARD_USE_GR_FLIP_32), true)
     LOCAL_CFLAGS += -DBOARD_USE_GR_FLIP_32
 endif
 
+ifeq ($(BOARD_FB_SINGLE_BUFFERED), true)
+    LOCAL_CFLAGS += -DBOARD_FB_SINGLE_BUFFERED
+endif
+
+ifeq ($(BOARD_FB_FORCE_24_BPP), true)
+    LOCAL_CFLAGS += -DBOARD_FB_FORCE_24_BPP
+endif
+
 LOCAL_MODULE := libminui
 
 include $(BUILD_STATIC_LIBRARY)
