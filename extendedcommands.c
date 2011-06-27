@@ -894,10 +894,7 @@ void show_advanced_menu()
         switch (chosen_item)
         {
             case 0:
-#ifdef TARGET_RECOVERY_PRE_COMMAND
-                __system(TARGET_RECOVERY_PRE_COMMAND);
-#endif
-                __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, "recovery");
+                reboot_wrapper("recovery");
                 break;
             case 1:
             {
