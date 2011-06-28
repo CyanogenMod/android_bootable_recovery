@@ -88,7 +88,10 @@ ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_SYMLINKS)
 # Now let's do recovery symlinks
 BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
 ifndef BOARD_HAS_SMALL_RECOVERY
-exclude := tune2fs mke2fs
+exclude := tune2fs
+ifeq ($(BOARD_HAS_LARGE_FILESYSTEM),true)
+exclude += mke2fs
+endif
 endif
 RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
 $(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
