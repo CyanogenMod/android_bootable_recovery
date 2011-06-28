@@ -340,7 +340,7 @@ run_exec_process ( char **argv) {
 
 int
 format_ext3_device (const char *device) {
-#ifndef BOARD_HAS_SMALL_RECOVERY
+#ifdef BOARD_HAS_SMALL_RECOVERY
     char *const mke2fs[] = {MKE2FS_BIN, "-j", "-q", device, NULL};
     char *const tune2fs[] = {TUNE2FS_BIN, "-C", "1", device, NULL};
 #else
