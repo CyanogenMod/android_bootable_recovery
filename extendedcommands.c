@@ -876,6 +876,7 @@ void show_advanced_menu()
                             "Wipe Battery Stats",
                             "Report Error",
                             "Key Test",
+                            "Show log",
 #ifndef BOARD_HAS_SMALL_RECOVERY
                             "Partition SD Card",
                             "Fix Permissions",
@@ -894,8 +895,10 @@ void show_advanced_menu()
         switch (chosen_item)
         {
             case 0:
+            {
                 reboot_wrapper("recovery");
                 break;
+            }
             case 1:
             {
                 if (0 != ensure_path_mounted("/data"))
@@ -936,6 +939,11 @@ void show_advanced_menu()
                 break;
             }
             case 5:
+            {
+                ui_printlogtail(12);
+                break;
+            }
+            case 6:
             {
                 static char* ext_sizes[] = { "128M",
                                              "256M",
@@ -978,7 +986,7 @@ void show_advanced_menu()
                     ui_print("An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n");
                 break;
             }
-            case 6:
+            case 7:
             {
                 ensure_path_mounted("/system");
                 ensure_path_mounted("/data");
@@ -987,7 +995,7 @@ void show_advanced_menu()
                 ui_print("Done!\n");
                 break;
             }
-            case 7:
+            case 8:
             {
                 static char* ext_sizes[] = { "128M",
                                              "256M",
