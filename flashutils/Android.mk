@@ -9,6 +9,15 @@ LOCAL_MODULE := libflashutils
 LOCAL_MODULE_TAGS := eng
 LOCAL_C_INCLUDES += bootable/recovery
 LOCAL_STATIC_LIBRARIES := libmmcutils libmtdutils libbmlutils libcrecovery
+
+BOARD_RECOVERY_DEFINES := BOARD_BML_BOOT BOARD_BML_RECOVERY
+
+$(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
+  $(if $($(board_define)), \
+    $(eval LOCAL_CFLAGS += -D$(board_define)=\"$($(board_define))\") \
+  ) \
+  )
+
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)

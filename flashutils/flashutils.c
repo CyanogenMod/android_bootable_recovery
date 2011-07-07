@@ -6,12 +6,20 @@
 
 #include "flashutils/flashutils.h"
 
+#ifndef BOARD_BML_BOOT
+#define BOARD_BML_BOOT              "/dev/block/bml7"
+#endif
+
+#ifndef BOARD_BML_RECOVERY
+#define BOARD_BML_RECOVERY          "/dev/block/bml8"
+#endif
+
 int the_flash_type = UNKNOWN;
 
 int device_flash_type()
 {
     if (the_flash_type == UNKNOWN) {
-        if (access("/dev/block/bml7", F_OK) == 0) {
+        if (access(BOARD_BML_BOOT, F_OK) == 0) {
             the_flash_type = BML;
         } else if (access("/proc/emmc", F_OK) == 0) {
             the_flash_type = MMC;

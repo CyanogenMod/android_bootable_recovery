@@ -1,7 +1,15 @@
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
-LOCAL_CFLAGS += -DBOARD_BOOT_DEVICE=\"$(BOARD_BOOT_DEVICE)\"
+
+BOARD_RECOVERY_DEFINES := BOARD_BML_BOOT BOARD_BML_RECOVERY
+
+$(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
+  $(if $($(board_define)), \
+    $(eval LOCAL_CFLAGS += -D$(board_define)=\"$($(board_define))\") \
+  ) \
+  )
+
 LOCAL_SRC_FILES := bmlutils.c
 LOCAL_MODULE := libbmlutils
 LOCAL_MODULE_TAGS := eng
