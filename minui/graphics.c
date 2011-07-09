@@ -94,11 +94,11 @@ static int get_framebuffer(GGLSurface *fb)
 #ifdef BOARD_HAS_JANKY_BACKBUFFER
     fb->stride = fi.line_length/2;
 #else
-    fb->stride = vi.xres;
+    fb->stride = vi.xres_virtual;
 #endif
     fb->data = bits;
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
-    memset(fb->data, 0, vi.yres * vi.xres * 2);
+    memset(fb->data, 0, vi.yres * vi.xres_virtual * vi.bits_per_pixel / 8);
 
     fb++;
 
@@ -109,11 +109,11 @@ static int get_framebuffer(GGLSurface *fb)
     fb->stride = fi.line_length/2;
     fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length);
 #else
-    fb->stride = vi.xres;
-    fb->data = (void*) (((unsigned) bits) + (vi.yres * vi.xres * vi.bits_per_pixel / 8));
+    fb->stride = vi.xres_virtual;
+    fb->data = (void*) (((unsigned) bits) + (vi.yres * vi.xres_virtual * vi.bits_per_pixel / 8));
 #endif
     fb->format = GGL_PIXEL_FORMAT_RGB_565;
-    memset(fb->data, 0, vi.yres * vi.xres * 2);
+    memset(fb->data, 0, vi.yres * vi.xres_virtual * vi.bits_per_pixel / 8);
 
     return fd;
 }
@@ -122,8 +122,8 @@ static void get_memory_surface(GGLSurface* ms) {
   ms->version = sizeof(*ms);
   ms->width = vi.xres;
   ms->height = vi.yres;
-  ms->stride = vi.xres;
-  ms->data = malloc(vi.xres * vi.yres * 2);
+  ms->stride = vi.xres_virtual;
+  ms->data = malloc(vi.xres_virtual * vi.yres * vi.bits_per_pixel / 8);
   ms->format = GGL_PIXEL_FORMAT_RGB_565;
 }
 
@@ -181,13 +181,13 @@ void gr_flip(void)
     if( vi.bits_per_pixel == 16)
     {
         memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
-               vi.xres * vi.yres * 2);
+               vi.xres_virtual * vi.yres *2);
     }
     else
     {
-        gr_flip_32((unsigned *)gr_framebuffer[gr_active_fb].data,
+        gr_flip_32((unsigned *)gr_framebuffer[gr_active_fb].data, \
                    (unsigned short *)gr_mem_surface.data,
-                   (vi.xres * vi.yres));
+                   (vi.xres_virtual * vi.yres));
     }
 
     /* inform the display driver */
