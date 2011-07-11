@@ -1,0 +1,10 @@
+LOCAL_PATH := $(call my-dir)
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := dedupe.c
+LOCAL_FORCE_STATIC_EXECUTABLE := true
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE := dedupe
+LOCAL_STATIC_LIBRARIES := libcrypto_static
+include $(BUILD_HOST_EXECUTABLE)
