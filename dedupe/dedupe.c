@@ -284,6 +284,7 @@ int main(int argc, char** argv) {
                 sprintf(blob_file, "%s/%s", blob_dir, md5);
                 if (ret = copy_file(filename, blob_file)) {
                     fprintf(stderr, "Unable to copy file %s\n", filename);
+                    fclose(input_manifest);
                     return ret;
                 }
                 
@@ -311,6 +312,7 @@ int main(int argc, char** argv) {
             }
             else {
                 fprintf(stderr, "Unknown type %s\n", type);
+                fclose(input_manifest);
                 return 1;
             }
         }
