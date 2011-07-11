@@ -297,7 +297,8 @@ int main(int argc, char** argv) {
                 
                 symlink(link, filename);
 
-                chmod(filename, mode_oct);
+                // Android has no lchmod, and chmod follows symlinks
+                //chmod(filename, mode_oct);
                 lchown(filename, uid_int, gid_int);
             }
             else if (strcmp(type, "d") == 0) {
@@ -307,6 +308,10 @@ int main(int argc, char** argv) {
 
                 chmod(filename, mode_oct);
                 chown(filename, uid_int, gid_int);
+            }
+            else {
+                fprintf(stderr, "Unknown type %s\n", type);
+                return 1;
             }
         }
         
