@@ -135,7 +135,7 @@ static int store_dir(struct DEDUPE_STORE_CONTEXT *context, struct stat st, const
             return ret;
         }
         
-        if (ret = store_st(context->blob_dir, cst, full_path))
+        if (ret = store_st(context, cst, full_path))
             return ret;
     }
     closedir(dp);
@@ -150,6 +150,7 @@ static int store_link(struct DEDUPE_STORE_CONTEXT *context, struct stat st, cons
         fprintf(stderr, "Error reading symlink\n");
         return errno;
     }
+    link[ret] = '\0';
     fprintf(context->output_manifest, "%s\t\n", link);
     return 0;
 }
@@ -184,7 +185,7 @@ void get_full_path(char *out_path, char *rel_path) {
 
 static char* tokenize(char *out, const char* line, const char sep) {
     while (*line != sep) {
-        if (*line == NULL) {
+        if (*line == '\0') {
             return NULL;
         }
         
@@ -193,9 +194,9 @@ static char* tokenize(char *out, const char* line, const char sep) {
         line++;
     }
     
-    *out = NULL;
+    *out = '\0';
     // resume at the next char
-    return line + 1;
+    return ++line;
 }
 
 static int dec_to_oct(int dec) {
@@ -227,7 +228,7 @@ int main(int argc, char** argv) {
         
         if (!S_ISDIR(st.st_mode)) {
             fprintf(stderr, "%s must be a directory.\n", argv[2]);
-            return;
+            return 1;
         }
         
         char blob_dir[PATH_MAX];
@@ -274,6 +275,8 @@ int main(int argc, char** argv) {
             token = tokenize(filename, token, '\t');
             
             int mode_oct = dec_to_oct(atoi(mode));
+            int uid_int = atoi(uid);
+            int gid_int = atoi(gid);
             int ret;
             printf("%s\t%s\t%s\t%s\t%s\t", type, mode, uid, gid, filename);
             if (strcmp(type, "f") == 0) {
@@ -289,7 +292,7 @@ int main(int argc, char** argv) {
                 }
                 
                 chmod(filename, mode_oct);
-                chown(filename, uid, gid);
+                chown(filename, uid_int, gid_int);
             }
             else if (strcmp(type, "l") == 0) {
                 char link[41];
@@ -299,7 +302,7 @@ int main(int argc, char** argv) {
                 symlink(link, filename);
 
                 chmod(filename, mode_oct);
-                lchown(filename, uid, gid);
+                lchown(filename, uid_int, gid_int);
             }
             else if (strcmp(type, "d") == 0) {
                 printf("\n");
@@ -307,7 +310,7 @@ int main(int argc, char** argv) {
                 mkdir(filename, mode_oct);
 
                 chmod(filename, mode_oct);
-                chown(filename, uid, gid);
+                chown(filename, uid_int, gid_int);
             }
         }
         
