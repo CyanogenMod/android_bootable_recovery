@@ -38,16 +38,12 @@ static int copy_file(const char *dst, const char *src) {
         return 4;
     }
 
-    do {
-        total_read += bytes_read = read(srcfd, buf, 4096);
-        if (!bytes_read)
-            break;
-        if (bytes_read < 4096)
-            memset(&buf[bytes_read], 0, 4096 - bytes_read);
-        if (write(dstfd, buf, 4096) < 4096)
+    while (bytes_read = read(srcfd, buf, 4096)) {
+        total_read += bytes_read;
+        if (write(dstfd, buf, bytes_read) != bytes_read)
             return 5;
-    } while(bytes_read == 4096);
-    
+    }
+
     close(dstfd);
     close(srcfd);
     
