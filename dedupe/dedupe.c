@@ -50,29 +50,29 @@ static int copy_file(const char *dst, const char *src) {
     return 0;
 }
 
-static void do_md5sum(FILE *mfile, unsigned char *rptr) {
+static void do_sha256sum(FILE *mfile, unsigned char *rptr) {
     char rdata[BUFSIZ];
     int rsize;
-    MD5_CTX c;
+    SHA256_CTX c;
     
-    MD5_Init(&c);
+    SHA256_Init(&c);
     while(!feof(mfile)) {
         rsize = fread(rdata, sizeof(char), BUFSIZ, mfile);
         if(rsize > 0) {
-            MD5_Update(&c, rdata, rsize);
+            SHA256_Update(&c, rdata, rsize);
         }
     }
 
-    MD5_Final(rptr, &c);
+    SHA256_Final(rptr, &c);
 }
 
-static int do_md5sum_file(const char* filename, unsigned char *rptr) {
+static int do_sha256sum_file(const char* filename, unsigned char *rptr) {
     FILE *f = fopen(filename, "rb");
     if (f == NULL) {
         fprintf(stderr, "Unable to open file: %s\n", filename);
         return 1;
     }
-    do_md5sum(f, rptr);
+    do_sha256sum(f, rptr);
     fclose(f);
     return 0;
 }
@@ -85,17 +85,17 @@ void print_stat(struct DEDUPE_STORE_CONTEXT *context, char type, struct stat st,
 
 static int store_file(struct DEDUPE_STORE_CONTEXT *context, struct stat st, const char* f) {
     printf("%s\n", f);
-    unsigned char sumdata[SHA_DIGEST_LENGTH];
+    unsigned char sumdata[SHA256_DIGEST_LENGTH];
     int ret;
-    if (ret = do_md5sum_file(f, sumdata)) {
-        fprintf(stderr, "Error calculating md5sum of %s\n", f);
+    if (ret = do_sha256sum_file(f, sumdata)) {
+        fprintf(stderr, "Error calculating sha256sum of %s\n", f);
         return ret; 
     }
-    char psum[41];
+    char psum[128];
     int j;
-    for (j = 0; j < MD5_DIGEST_LENGTH; j++)
+    for (j = 0; j < SHA256_DIGEST_LENGTH; j++)
         sprintf(&psum[(j*2)], "%02x", (int)sumdata[j]);
-    psum[(MD5_DIGEST_LENGTH * 2)] = '\0';
+    psum[(SHA256_DIGEST_LENGTH * 2)] = '\0';
 
     char out_blob[PATH_MAX];
     sprintf(out_blob, "%s/%s", context->blob_dir, psum);
@@ -276,12 +276,15 @@ int main(int argc, char** argv) {
             int ret;
             printf("%s\t%s\t%s\t%s\t%s\t", type, mode, uid, gid, filename);
             if (strcmp(type, "f") == 0) {
-                char md5[41];
-                token = tokenize(md5, token, '\t');
-                printf("%s\n", md5);
+                char sha256[128];
+                token = tokenize(sha256, token, '\t');
+                char sizeStr[32];
+                token = tokenize(sizeStr, token, '\t');
+                int size = atoi(sizeStr);
+                printf("%s\t%d\n", sha256, size);
                 
                 char blob_file[PATH_MAX];
-                sprintf(blob_file, "%s/%s", blob_dir, md5);
+                sprintf(blob_file, "%s/%s", blob_dir, sha256);
                 if (ret = copy_file(filename, blob_file)) {
                     fprintf(stderr, "Unable to copy file %s\n", filename);
                     fclose(input_manifest);
