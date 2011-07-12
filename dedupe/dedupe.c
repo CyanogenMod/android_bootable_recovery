@@ -104,7 +104,7 @@ static int store_file(struct DEDUPE_STORE_CONTEXT *context, struct stat st, cons
         return ret;
     }
     
-    fprintf(context->output_manifest, "%s\t\n", psum);
+    fprintf(context->output_manifest, "%s\t%d\t\n", psum, st.st_size);
     return 0;
 }
 
