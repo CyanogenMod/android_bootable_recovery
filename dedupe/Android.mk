@@ -7,6 +7,7 @@ LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := dedupe
 LOCAL_STATIC_LIBRARIES := libcrypto_static
+LOCAL_C_INCLUDES := external/openssl/include
 include $(BUILD_HOST_EXECUTABLE)
 
 include $(CLEAR_VARS)
