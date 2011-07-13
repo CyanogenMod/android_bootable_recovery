@@ -177,17 +177,17 @@ void gr_flip(void)
 #endif
 
     /* copy data from the in-memory surface to the buffer we're about
-     * to make active. */
-    if( vi.bits_per_pixel == 16)
-    {
-        memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
-               vi.xres_virtual * vi.yres *2);
-    }
-    else
+     * to make active. */ 
+    if(vi.bits_per_pixel == 32)
     {
         gr_flip_32((unsigned *)gr_framebuffer[gr_active_fb].data, \
                    (unsigned short *)gr_mem_surface.data,
                    (vi.xres_virtual * vi.yres));
+    }
+    else
+    {
+        memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
+               vi.xres_virtual * vi.yres *2);
     }
 
     /* inform the display driver */
