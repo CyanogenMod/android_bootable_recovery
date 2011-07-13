@@ -80,6 +80,10 @@ int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
 
     if (strcmp(partition, "recovery") == 0 || strcmp(partition, "recoveryonly") == 0)
         ret = restore_internal(BOARD_BML_RECOVERY, filename);
+
+    // support explicitly provided device paths
+    if (partition[0] == '/')
+        ret = restore_internal(partition, filename);
     return ret;
 }
 
@@ -90,6 +94,10 @@ int cmd_bml_backup_raw_partition(const char *partition, const char *out_file)
         bml = BOARD_BML_BOOT;
     else if (strcmp("recovery", partition) == 0)
         bml = BOARD_BML_RECOVERY;
+    else if (partition[0] == '/') {
+        // support explicitly provided device paths
+        bml = partition;
+    }
     else {
         printf("Invalid partition.\n");
         return -1;
