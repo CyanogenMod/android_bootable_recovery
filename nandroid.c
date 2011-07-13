@@ -277,16 +277,6 @@ int nandroid_backup(const char* backup_path)
             return ret;
     }
 
-    if (0 != stat("/sdcard/Android", &s))
-    {
-        ui_print("No /sdcard/Android found. Skipping backup of application files on external storage.\n");
-    }
-    else
-    {
-        if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/sdcard/Android", 0)))
-            return ret;
-    }
-
     if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/cache", 0)))
         return ret;
 
@@ -522,9 +512,6 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     }
 
     if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
-        return ret;
-
-    if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/sdcard/Android", 0)))
         return ret;
 
     if (restore_cache && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/cache", 0)))
