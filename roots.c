@@ -69,7 +69,7 @@ void load_volume_table() {
     device_volumes[0].fs_options2 = NULL;
     num_volumes = 1;
 
-#ifdef HAS_ROOT_RECOVERY
+#ifdef HAS_BOOT_RECOVERY
     FILE* fstab = fopen("/etcrec/recovery.fstab", "r");
     if (fstab == NULL) {
         LOGE("failed to open /etcrec/recovery.fstab (%s)\n", strerror(errno));
