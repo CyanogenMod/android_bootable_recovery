@@ -23,6 +23,11 @@ LOCAL_SRC_FILES := \
     setprop.c
 
 LOCAL_MODULE := recovery
+ifdef BOARD_HAS_BOOT_RECOVERY
+LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT_SBIN)
+LOCAL_CFLAGS = -DHAS_BOOT_RECOVERY
+endif
+
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
@@ -75,7 +80,11 @@ include $(BUILD_EXECUTABLE)
 RECOVERY_LINKS := edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume
 
 # nc is provided by external/netcat
+ifdef BOARD_HAS_BOOT_RECOVERY
+RECOVERY_SYMLINKS := $(addprefix $(TARGET_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
+else
 RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
+endif
 $(RECOVERY_SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)
 $(RECOVERY_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
 	@echo "Symlink: $@ -> $(RECOVERY_BINARY)"
@@ -93,7 +102,11 @@ ifeq ($(BOARD_HAS_LARGE_FILESYSTEM),true)
 exclude += mke2fs
 endif
 endif
+ifdef BOARD_HAS_BOOT_RECOVERY
+RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
+else
 RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
+endif
 $(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
 $(RECOVERY_BUSYBOX_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
 	@echo "Symlink: $@ -> $(BUSYBOX_BINARY)"
@@ -107,7 +120,11 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := nandroid-md5.sh
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+ifdef BOARD_HAS_BOOT_RECOVERY
+LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT_SBIN)
+else
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+endif
 LOCAL_SRC_FILES := nandroid-md5.sh
 include $(BUILD_PREBUILT)
 
@@ -115,7 +132,11 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := killrecovery.sh
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+ifdef BOARD_HAS_BOOT_RECOVERY
+LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT_SBIN)
+else
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+endif
 LOCAL_SRC_FILES := killrecovery.sh
 include $(BUILD_PREBUILT)
 
