@@ -178,17 +178,17 @@ void gr_flip(void)
 
     /* copy data from the in-memory surface to the buffer we're about
      * to make active. */ 
-    if(vi.bits_per_pixel == 32)
-    {
+        memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
+               vi.xres_virtual * vi.yres *2);
+
+    /* NOTE: for devices with "vi.bits_per_pixel == 32" && RGB8888 you can use following code
+       instead of the above memcpy in your custom graphics.c implementation using 
+       BOARD_CUSTOM_GRAPHICS := device/manufacturer/product/recovery/graphics.c:
+
         gr_flip_32((unsigned *)gr_framebuffer[gr_active_fb].data, \
                    (unsigned short *)gr_mem_surface.data,
                    (vi.xres_virtual * vi.yres));
-    }
-    else
-    {
-        memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
-               vi.xres_virtual * vi.yres *2);
-    }
+    */
 
     /* inform the display driver */
     set_active_framebuffer(gr_active_fb);
