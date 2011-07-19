@@ -206,6 +206,13 @@ int ensure_path_mounted(const char* path) {
         find_mounted_volume_by_mount_point(v->mount_point);
     if (mv) {
         // volume is already mounted
+
+        #ifdef NEVER_UMOUNT_SYSTEM
+        if (strcmp(v->mount_point, "/system") == 0) {
+            __system("mount -o remount,rw /system");
+        }
+        #endif
+
         return 0;
     }
 
@@ -307,6 +314,20 @@ int format_volume(const char* volume) {
         return -1;
 #endif
         return format_unknown_device(v->device, volume, NULL);
+    }
+
+    // force the "rm -rf" method
+    int rmrf_format=0;
+
+    #ifdef NEVER_UMOUNT_SYSTEM
+    if (strcmp(v->mount_point, "/system") == 0) {
+        rmrf_format=1;
+    }
+    #endif
+
+    if (rmrf_format) {
+        // use directly the "rm -rf" method
+        return format_unknown_device(v->device, volume, v->fs_type);
     }
 
     if (ensure_path_unmounted(volume) != 0) {
