@@ -573,22 +573,28 @@ void show_partition_menu()
     for (;;)
     {
 
-		for (i = 0; i < mountable_volumes; i++)
-		{
-			MountMenuEntry* e = &mount_menue[i];
-			Volume* v = e->v;
-			if(is_path_mounted(v->mount_point))
-				options[i] = e->unmount;
-			else
-				options[i] = e->mount;
-		}
+        for (i = 0; i < mountable_volumes; i++)
+        {
+            MountMenuEntry* e = &mount_menue[i];
+            Volume* v = e->v;
+            if(is_path_mounted(v->mount_point)) {
+                options[i] = e->unmount;
+                #ifdef BOARD_NEVER_UMOUNT_SYSTEM
+                if (is_path_mounted_readonly(v->mount_point)) {
+                    options[i] = e->mount;
+                }
+                #endif
+            }
+            else
+                options[i] = e->mount;
+        }
 
-		for (i = 0; i < formatable_volumes; i++)
-		{
-			FormatMenuEntry* e = &format_menue[i];
+        for (i = 0; i < formatable_volumes; i++)
+        {
+            FormatMenuEntry* e = &format_menue[i];
 
-			options[mountable_volumes+i] = e->txt;
-		}
+            options[mountable_volumes+i] = e->txt;
+        }
 
         options[mountable_volumes+formatable_volumes] = "mount USB storage";
         options[mountable_volumes+formatable_volumes + 1] = NULL;
@@ -602,7 +608,7 @@ void show_partition_menu()
         }
         else if (chosen_item < mountable_volumes)
         {
-			MountMenuEntry* e = &mount_menue[chosen_item];
+            MountMenuEntry* e = &mount_menue[chosen_item];
             Volume* v = e->v;
 
             if (is_path_mounted(v->mount_point))
@@ -1190,6 +1196,30 @@ int is_path_mounted(const char* path) {
     }
     return 0;
 }
+
+int is_path_mounted_readonly(const char* path) {
+    Volume* v = volume_for_path(path);
+    if (v == NULL) {
+        return 0;
+    }
+
+    int result;
+    result = scan_mounted_volumes();
+    if (result < 0) {
+        LOGE("failed to scan mounted volumes\n");
+        return 0;
+    }
+
+    const MountedVolume* mv = find_mounted_volume_by_mount_point(v->mount_point);
+    if (mv) {
+        // volume is mounted
+        if (strlen(mv->flags) >=2 && mv->flags[0]=='r' && mv->flags[1]=='o') {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 
 int has_datadata() {
     Volume *vol = volume_for_path("/datadata");
