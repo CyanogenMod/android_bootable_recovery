@@ -44,6 +44,13 @@
 #$(call add-clean-step, find $(OUT_DIR) -type f -name "IGTalkSession*" -print0 | xargs -0 rm -f)
 #$(call add-clean-step, rm -rf $(PRODUCT_OUT)/data/*)
 
+$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/EXECUTABLES/recovery_intermediates)
+
+ifeq ($(BOARD_USES_BOOTMENU),true)
+    $(call add-clean-step, rm -f $(PRODUCT_OUT)/symbols/system/bootmenu/recovery/sbin/recovery)
+    $(call add-clean-step, rm -f $(PRODUCT_OUT)/system/bootmenu/recovery/sbin/recovery)
+endif
+
 # ************************************************
 # NEWER CLEAN STEPS MUST BE AT THE END OF THE LIST
 # ************************************************
