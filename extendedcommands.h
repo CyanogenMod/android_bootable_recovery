@@ -10,12 +10,6 @@ toggle_script_asserts();
 void
 show_choose_zip_menu();
 
-int
-do_nandroid_backup(const char* backup_name);
-
-int
-do_nandroid_restore();
-
 void
 show_nandroid_restore_menu();
 
@@ -57,3 +51,8 @@ void show_install_update_menu();
 int confirm_selection(const char* title, const char* confirm);
 
 int run_and_remove_extendedcommand();
+
+int is_safe_to_format(char* name);
+
+int is_path_mounted(const char* path);
+

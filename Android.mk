@@ -26,8 +26,12 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-RECOVERY_VERSION := ClockworkMod Recovery v4.0.1.0
+RECOVERY_VERSION := ClockworkMod Recovery v4.0.1.1
 LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
+
+# Version suffix, only displayed on screen in headers
+LOCAL_CFLAGS += -DRECOVERY_SUFFIX="-CM7.1"
+
 RECOVERY_API_VERSION := 2
 LOCAL_CFLAGS += -DRECOVERY_API_VERSION=$(RECOVERY_API_VERSION)
 
@@ -69,6 +73,11 @@ LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 LOCAL_C_INCLUDES += system/extras/ext4_utils
+
+ifeq ($(BOARD_USES_BOOTMENU),true)
+	LOCAL_MODULE_PATH := $(PRODUCT_OUT)/system/bootmenu/recovery/sbin
+	LOCAL_CFLAGS += -DNEVER_UMOUNT_SYSTEM
+endif
 
 include $(BUILD_EXECUTABLE)
 
