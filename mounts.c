@@ -22,6 +22,7 @@
 #include <sys/mount.h>
 
 #include "mounts.h"
+#include "common.h"
 
 typedef struct {
     MountedVolume *volumes;
@@ -198,6 +199,12 @@ unmount_mounted_volume(const MountedVolume *volume)
      * to unmount a volume they already unmounted using this
      * function.
      */
+#ifdef NEVER_UMOUNT_SYSTEM
+    if (strcmp(volume->mount_point, "/system") == 0) {
+        printf("Skip system unmount, remount read-only\n");
+        return remount_read_only(volume);
+    }
+#endif
     int ret = umount(volume->mount_point);
     if (ret == 0) {
         free_volume_internals(volume, 1);
