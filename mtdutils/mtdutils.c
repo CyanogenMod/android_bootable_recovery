@@ -586,8 +586,6 @@ int cmd_mtd_restore_raw_partition(const char *partition_name, const char *filena
         return -1;
     }
 
-    // If the first part of the file matches the partition, skip writing
-
     int fd = open(filename, O_RDONLY);
     if (fd < 0)
     {
@@ -601,23 +599,6 @@ int cmd_mtd_restore_raw_partition(const char *partition_name, const char *filena
     {
         printf("error reading %s header", filename);
         return -1;
-    }
-
-    MtdReadContext *in = mtd_read_partition(partition);
-    if (in == NULL) {
-        printf("error opening %s: %s\n", partition, strerror(errno));
-        // just assume it needs re-writing
-    } else {
-        char check[HEADER_SIZE];
-        int checklen = mtd_read_data(in, check, sizeof(check));
-        if (checklen <= 0) {
-            printf("error reading %s: %s\n", partition_name, strerror(errno));
-            // just assume it needs re-writing
-        } else if (checklen == headerlen && !memcmp(header, check, headerlen)) {
-            printf("header is the same, not flashing %s\n", partition_name);
-            return 0;
-        }
-        mtd_read_close(in);
     }
 
     // Skip the header (we'll come back to it), write everything else
