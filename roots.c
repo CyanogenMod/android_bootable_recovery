@@ -69,9 +69,9 @@ void load_volume_table() {
     device_volumes[0].fs_options2 = NULL;
     num_volumes = 1;
 
-    FILE* fstab = fopen("/etc/recovery.fstab", "r");
+    FILE* fstab = fopen(RECOVERY_ETC_PATH "recovery.fstab", "r");
     if (fstab == NULL) {
-        LOGE("failed to open /etc/recovery.fstab (%s)\n", strerror(errno));
+        LOGE("failed to open " RECOVERY_ETC_PATH "recovery.fstab (%s)\n", strerror(errno));
         return;
     }
 

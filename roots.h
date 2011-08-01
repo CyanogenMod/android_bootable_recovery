@@ -19,6 +19,12 @@
 
 #include "common.h"
 
+#ifndef RECOVERY_CUSTOM_ETC_PATH
+#define RECOVERY_ETC_PATH "/etc/"
+#else
+#define RECOVERY_ETC_PATH RECOVERY_CUSTOM_ETC_PATH
+#endif
+
 // Load and parse volume data from /etc/recovery.fstab.
 void load_volume_table();
 
