@@ -60,6 +60,13 @@ else
   LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_KEYMAPPING)
 endif
 
+ifeq ($(BOARD_HAS_RECOVERY_IN_BOOTIMAGE),)
+  RECOVERY_ROOT_PATH := $(TARGET_RECOVERY_ROOT_OUT)
+else
+  RECOVERY_ROOT_PATH := $(TARGET_ROOT_OUT)
+  LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT)/sbin/
+endif
+
 LOCAL_STATIC_LIBRARIES += librebootrecovery
 LOCAL_STATIC_LIBRARIES += libext4_utils libz
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmincrypt
@@ -82,7 +89,7 @@ include $(BUILD_EXECUTABLE)
 RECOVERY_LINKS := edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume
 
 # nc is provided by external/netcat
-RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
+RECOVERY_SYMLINKS := $(addprefix $(RECOVERY_ROOT_PATH)/sbin/,$(RECOVERY_LINKS))
 $(RECOVERY_SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)
 $(RECOVERY_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
 	@echo "Symlink: $@ -> $(RECOVERY_BINARY)"
@@ -100,7 +107,7 @@ ifeq ($(BOARD_HAS_LARGE_FILESYSTEM),true)
 exclude += mke2fs
 endif
 endif
-RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
+RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(RECOVERY_ROOT_PATH)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
 $(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
 $(RECOVERY_BUSYBOX_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
 	@echo "Symlink: $@ -> $(BUSYBOX_BINARY)"
@@ -114,7 +121,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := nandroid-md5.sh
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_MODULE_PATH := $(RECOVERY_ROOT_PATH)/sbin
 LOCAL_SRC_FILES := nandroid-md5.sh
 include $(BUILD_PREBUILT)
 
@@ -122,7 +129,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := killrecovery.sh
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_MODULE_PATH := $(RECOVERY_ROOT_PATH)/sbin
 LOCAL_SRC_FILES := killrecovery.sh
 include $(BUILD_PREBUILT)
 
