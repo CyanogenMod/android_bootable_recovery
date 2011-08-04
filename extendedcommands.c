@@ -862,6 +862,7 @@ void wipe_battery_stats()
     ensure_path_mounted("/data");
     remove("/data/system/batterystats.bin");
     ensure_path_unmounted("/data");
+    ui_print("Battery Stats wiped.\n");
 }
 
 void show_advanced_menu()
