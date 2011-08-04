@@ -1080,6 +1080,9 @@ void create_fstab()
     if (has_datadata()) {
         write_fstab_root("/datadata", file);
     }
+    if (has_emmc()) {
+        write_fstab_root("/emmc", file);
+    }
     write_fstab_root("/system", file);
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
@@ -1194,6 +1197,11 @@ int is_path_mounted(const char* path) {
 
 int has_datadata() {
     Volume *vol = volume_for_path("/datadata");
+    return vol != NULL;
+}
+
+int has_emmc() {
+    Volume *vol = volume_for_path("/emmc");
     return vol != NULL;
 }
 
