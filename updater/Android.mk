@@ -8,9 +8,9 @@ updater_src_files := \
 	updater.c
 
 ifneq ($(BOARD_CUSTOM_UPDATER_FILES),)
-  LOCAL_SRC_FILES += $(BOARD_CUSTOM_UPDATER_FILES)
+updater_src_files +:= $(BOARD_CUSTOM_UPDATER_FILES)
 else
-  LOCAL_SRC_FILES += \
+updater_src_files +:= \
 	install.c 
 endif
 
