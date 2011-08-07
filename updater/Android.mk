@@ -2,10 +2,18 @@
 
 LOCAL_PATH := $(call my-dir)
 
+
+ifneq ($(BOARD_CUSTOM_UPDATER_FILES),)
+updater_src_files := $(BOARD_CUSTOM_UPDATER_FILES)\
+	../mounts.c \
+	updater.c
+else
 updater_src_files := \
 	install.c \
 	../mounts.c \
 	updater.c
+endif
+
 
 #
 # Build a statically-linked binary to include in OTA packages
@@ -18,6 +26,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := eng
 
 LOCAL_SRC_FILES := $(updater_src_files)
+
 
 ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
 LOCAL_CFLAGS += -DUSE_EXT4
