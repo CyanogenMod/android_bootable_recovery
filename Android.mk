@@ -7,8 +7,17 @@ include $(CLEAR_VARS)
 commands_recovery_local_path := $(LOCAL_PATH)
 # LOCAL_CPP_EXTENSION := .c
 
-LOCAL_SRC_FILES := \
+ifneq ($(BOARD_CUSTOM_RECOVERY_FILES),)
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_FILES)
+else
+  LOCAL_SRC_FILES += \
     recovery.c \
+    roots.c \
+    extendedcommands.c
+endif
+
+
+LOCAL_SRC_FILES := \
     bootloader.c \
     install.c \
     roots.c \
@@ -16,7 +25,6 @@ LOCAL_SRC_FILES := \
     verifier.c \
     encryptedfs_provisioning.c \
     mounts.c \
-    extendedcommands.c \
     nandroid.c \
     ../../system/core/toolbox/reboot.c \
     edifyscripting.c \
