@@ -2,10 +2,17 @@
 
 LOCAL_PATH := $(call my-dir)
 
+
 updater_src_files := \
-	install.c \
 	../mounts.c \
 	updater.c
+
+ifneq ($(BOARD_CUSTOM_UPDATER_FILES),)
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_UPDATER_FILES)
+else
+  LOCAL_SRC_FILES += \
+	install.c 
+endif
 
 #
 # Build a statically-linked binary to include in OTA packages
