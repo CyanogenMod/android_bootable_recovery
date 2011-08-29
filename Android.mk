@@ -77,6 +77,11 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 LOCAL_C_INCLUDES += system/extras/ext4_utils
 
+# bootmenu based builds need recovery in system (or prebuilt one)
+ifeq ($(BOARD_USES_BOOTMENU),true)
+    LOCAL_MODULE_PATH := $(PRODUCT_OUT)/system/bootmenu/recovery/sbin
+endif
+
 include $(BUILD_EXECUTABLE)
 
 RECOVERY_LINKS := edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume
