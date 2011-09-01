@@ -176,6 +176,10 @@ void setup_data_media() {
 }
 
 int ensure_path_mounted(const char* path) {
+    return ensure_path_mounted_at_mount_point(path, NULL);
+}
+
+int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point) {
     Volume* v = volume_for_path(path);
     if (v == NULL) {
         // no /sdcard? let's assume /data/media
@@ -202,14 +206,17 @@ int ensure_path_mounted(const char* path) {
         return -1;
     }
 
+    if (NULL == mount_point)
+        mount_point = v->mount_point;
+
     const MountedVolume* mv =
-        find_mounted_volume_by_mount_point(v->mount_point);
+        find_mounted_volume_by_mount_point(mount_point);
     if (mv) {
         // volume is already mounted
         return 0;
     }
 
-    mkdir(v->mount_point, 0755);  // in case it doesn't already exist
+    mkdir(mount_point, 0755);  // in case it doesn't already exist
 
     if (strcmp(v->fs_type, "yaffs2") == 0) {
         // mount an MTD partition as a YAFFS2 filesystem.
@@ -218,21 +225,21 @@ int ensure_path_mounted(const char* path) {
         partition = mtd_find_partition_by_name(v->device);
         if (partition == NULL) {
             LOGE("failed to find \"%s\" partition to mount at \"%s\"\n",
-                 v->device, v->mount_point);
+                 v->device, mount_point);
             return -1;
         }
-        return mtd_mount_partition(partition, v->mount_point, v->fs_type, 0);
+        return mtd_mount_partition(partition, mount_point, v->fs_type, 0);
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
                strcmp(v->fs_type, "ext3") == 0 ||
                strcmp(v->fs_type, "rfs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
-        if ((result = try_mount(v->device, v->mount_point, v->fs_type, v->fs_options)) == 0)
+        if ((result = try_mount(v->device, mount_point, v->fs_type, v->fs_options)) == 0)
             return 0;
-        if ((result = try_mount(v->device2, v->mount_point, v->fs_type, v->fs_options)) == 0)
+        if ((result = try_mount(v->device2, mount_point, v->fs_type, v->fs_options)) == 0)
             return 0;
-        if ((result = try_mount(v->device, v->mount_point, v->fs_type2, v->fs_options2)) == 0)
+        if ((result = try_mount(v->device, mount_point, v->fs_type2, v->fs_options2)) == 0)
             return 0;
-        if ((result = try_mount(v->device2, v->mount_point, v->fs_type2, v->fs_options2)) == 0)
+        if ((result = try_mount(v->device2, mount_point, v->fs_type2, v->fs_options2)) == 0)
             return 0;
         return result;
     } else {
@@ -242,7 +249,7 @@ int ensure_path_mounted(const char* path) {
         return __system(mount_cmd);
     }
 
-    LOGE("unknown fs_type \"%s\" for %s\n", v->fs_type, v->mount_point);
+    LOGE("unknown fs_type \"%s\" for %s\n", v->fs_type, mount_point);
     return -1;
 }
 
