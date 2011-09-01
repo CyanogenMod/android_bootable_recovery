@@ -348,17 +348,23 @@ format_ext3_device (const char *device) {
     char *const tune2fs[] = {TUNE2FS_BIN, "-j", "-C", "1", device, NULL};
 #endif
     // Run mke2fs
-    if(run_exec_process(mke2fs))
+    if(run_exec_process(mke2fs)) {
+        printf("failure while running mke2fs\n");
         return -1;
+    }
 
     // Run tune2fs
-    if(run_exec_process(tune2fs))
+    if(run_exec_process(tune2fs)) {
+        printf("failure while running mke2fs\n");
         return -1;
+    }
 
     // Run e2fsck
     char *const e2fsck[] = {E2FSCK_BIN, "-fy", device, NULL};
-    if(run_exec_process(e2fsck))
+    if(run_exec_process(e2fsck)) {
+        printf("failure while running e2fsck\n");
         return -1;
+    }
 
     return 0;
 }
