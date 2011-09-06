@@ -233,7 +233,24 @@ Value* InstallZipFn(const char* name, State* state, int argc, Expr* argv[]) {
     return StringValue(strdup(path));
 }
 
+Value* MountFn(const char* name, State* state, int argc, Expr* argv[]) {
+    char* result = NULL;
+    if (argc != 1) {
+        return ErrorAbort(state, "%s() expects 1 args, got %d", name, argc);
+    }
+    char* path;
+    if (ReadArgs(state, argv, 1, &path) < 0) {
+        return NULL;
+    }
+    
+    if (0 != ensure_path_mounted(path))
+        return StringValue(strdup(""));
+
+    return StringValue(strdup(path));
+}
+
 void RegisterRecoveryHooks() {
+    RegisterFunction("mount", MountFn);
     RegisterFunction("format", FormatFn);
     RegisterFunction("ui_print", UIPrintFn);
     RegisterFunction("run_program", RunProgramFn);
