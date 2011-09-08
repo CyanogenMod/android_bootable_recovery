@@ -955,6 +955,9 @@ main(int argc, char **argv) {
         prompt_and_wait();
     }
 
+    // If there is a radio image pending, reboot now to install it.
+    maybe_install_firmware_update(send_intent);
+
     // Otherwise, get ready to boot the main system...
     finish_recovery(send_intent);
     if(!poweroff)

@@ -92,6 +92,12 @@ handle_firmware_update(char* type, char* filename, ZipArchive* zip) {
         fclose(f);
     }
 
+    if (remember_firmware_update(type, data, data_size)) {
+        LOGE("Can't store %s image\n", type);
+        free(data);
+        return INSTALL_ERROR;
+    }
+
     free(filename);
 
     return INSTALL_SUCCESS;

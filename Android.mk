@@ -19,6 +19,7 @@ LOCAL_SRC_FILES := \
     extendedcommands.c \
     nandroid.c \
     ../../system/core/toolbox/reboot.c \
+    firmware.c \
     edifyscripting.c \
     setprop.c
 
@@ -36,7 +37,7 @@ else
 RECOVERY_NAME := CWM-based Recovery
 endif
 
-RECOVERY_VERSION := $(RECOVERY_NAME) v5.0.2.1
+RECOVERY_VERSION := $(RECOVERY_NAME) v5.0.2.2
 
 LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
