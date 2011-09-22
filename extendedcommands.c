@@ -834,7 +834,7 @@ int run_and_remove_extendedcommand()
     int ret;
 #ifdef I_AM_KOUSH
     if (0 != (ret = before_run_script(tmp))) {
-        ui_print("Error processing ROM Manager script. Please verify you have ROM Manager v4.4.0.0 or higher installed.\n");
+        ui_print("Error processing ROM Manager script. Please verify that you are performing the backup, restore, or ROM installation from ROM Manager v4.4.0.0 or higher.\n");
         return ret;
     }
 #endif
