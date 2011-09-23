@@ -1,3 +1,6 @@
+// Copyright ClockworkMod, LLC. Reference and porting purposes only. Usage of the extendedcommand API
+// is restricted to those granted explicit permission, or by use of the ROM Manager Recovery API.
+// https://github.com/koush/TestRomManager
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
