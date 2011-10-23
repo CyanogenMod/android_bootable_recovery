@@ -599,6 +599,7 @@ int cmd_mmc_restore_raw_partition(const char *partition, const char *filename)
         return mmc_raw_copy(p, filename);
     }
     else {
+        mmc_raw_dump_internal("/dev/zero", partition);
         return mmc_raw_dump_internal(filename, partition);
     }
 }
