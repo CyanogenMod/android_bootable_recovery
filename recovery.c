@@ -767,7 +767,7 @@ print_property(const char *key, const char *name, void *cookie) {
 
 int
 main(int argc, char **argv) {
-	if (strstr(argv[0], "recovery") == NULL)
+	if (strcmp(basename(argv[0]), "recovery") != 0)
 	{
 	    if (strstr(argv[0], "flash_image") != NULL)
 	        return flash_image_main(argc, argv);

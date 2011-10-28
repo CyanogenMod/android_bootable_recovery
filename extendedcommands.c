@@ -804,7 +804,7 @@ void show_nandroid_menu()
     };
 
     if (volume_for_path("/emmc") == NULL)
-        INSTALL_MENU_ITEMS[3] = NULL;
+        list[3] = NULL;
 
     int chosen_item = get_menu_selection(headers, list, 0, 0);
     switch (chosen_item)
