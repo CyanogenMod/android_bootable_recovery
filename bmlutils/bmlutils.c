@@ -65,7 +65,7 @@ static int restore_internal(const char* bml, const char* filename)
 
 int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
 {
-    if (strcmp(partition, "boot") != 0 && strcmp(partition, "recovery") != 0 && strcmp(partition, "recoveryonly") != 0)
+    if (strcmp(partition, "boot") != 0 && strcmp(partition, "recovery") != 0 && strcmp(partition, "recoveryonly") != 0 && partition[0] != '/')
         return 6;
 
     int ret = -1;
