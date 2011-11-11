@@ -172,8 +172,6 @@ int cmd_bml_get_partition_device(const char *partition, char *device)
     return -1;
 }
 
-int run_exec_process ( char **argv);
-
 int format_rfs_device (const char *device, const char *path) {
     const char *fatsize = "32";
     const char *sectorsize = "1";
@@ -188,17 +186,17 @@ int format_rfs_device (const char *device, const char *path) {
     } 
 
     // dump 10KB of zeros to partition before format due to fat.format bug
-    char ofdevice[PATH_MAX];
-    snprintf(ofdevice, sizeof(ofdevice), "of=%s", device);
-    const char *rfszerodump[] = {"/sbin/dd", "if=/dev/zero", ofdevice, "bs=4096", "count=10", NULL};
-    if(run_exec_process((char **)rfszerodump)) {
-        printf("failure while running rfszerodump\n");
+    char cmd[PATH_MAX];
+
+    sprintf(cmd, "/sbin/dd if=/dev/zero of=%s bs=4096 count=10", device);
+    if(__system(cmd)) {
+        printf("failure while zeroing rfs partition.\n");
         return -1;
     }
 
     // Run fat.format
-    const char *fatformat[] = {"/sbin/fat.format", "-F", fatsize, "-S", "4096", "-s", sectorsize, device, NULL};
-    if(run_exec_process((char **)fatformat)) {
+    sprintf(cmd, "/sbin/fat.format -F %s -S 4096 -s %s %s", fatsize, sectorsize, device);
+    if(__system(cmd)) {
         printf("failure while running fat.format\n");
         return -1;
     }
