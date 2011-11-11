@@ -732,7 +732,7 @@ void show_nandroid_advanced_restore_menu(const char* path)
     };
 
     char tmp[PATH_MAX];
-    sprintf(tmp, "%s/clockworkmod/backup", path);
+    sprintf(tmp, "%s/clockworkmod/backup/", path);
     char* file = choose_file_menu(tmp, NULL, advancedheaders);
     if (file == NULL)
         return;
