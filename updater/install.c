@@ -826,9 +826,10 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
         goto done;
     }
 
+    char* filename = contents->data;
     if (0 == restore_raw_partition(NULL, partition, filename))
         result = strdup(partition);
-    else
+    else {
         result = strdup("");
         goto done;
     }
