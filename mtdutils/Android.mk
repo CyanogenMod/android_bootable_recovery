@@ -1,6 +1,3 @@
-ifneq ($(TARGET_SIMULATOR),true)
-ifeq ($(TARGET_ARCH),arm)
-
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -30,6 +27,3 @@ LOCAL_STATIC_LIBRARIES := libmtdutils libcutils libc
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 include $(BUILD_EXECUTABLE)
 endif
-
-endif	# TARGET_ARCH == arm
-endif	# !TARGET_SIMULATOR

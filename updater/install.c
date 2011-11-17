@@ -25,12 +25,15 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <time.h>
 
 #include "cutils/misc.h"
 #include "cutils/properties.h"
 #include "edify/expr.h"
 #include "mincrypt/sha.h"
 #include "minzip/DirUtil.h"
+#include "minelf/Retouch.h"
 #include "mounts.h"
 #include "mtdutils/mtdutils.h"
 #include "updater.h"
@@ -176,19 +179,23 @@ done:
 }
 
 
-// format(fs_type, partition_type, location)
+// format(fs_type, partition_type, location, fs_size)
 //
-//    fs_type="yaffs2" partition_type="MTD"     location=partition
-//    fs_type="ext4"   partition_type="EMMC"    location=device
+//    fs_type="yaffs2" partition_type="MTD"     location=partition fs_size=<bytes>
+//    fs_type="ext4"   partition_type="EMMC"    location=device    fs_size=<bytes>
+//    if fs_size == 0, then make_ext4fs uses the entire partition.
+//    if fs_size > 0, that is the size to use
+//    if fs_size < 0, then reserve that many bytes at the end of the partition
 Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
     char* result = NULL;
-    if (argc != 3) {
-        return ErrorAbort(state, "%s() expects 3 args, got %d", name, argc);
+    if (argc != 4) {
+        return ErrorAbort(state, "%s() expects 4 args, got %d", name, argc);
     }
     char* fs_type;
     char* partition_type;
     char* location;
-    if (ReadArgs(state, argv, 3, &fs_type, &partition_type, &location) < 0) {
+    char* fs_size;
+    if (ReadArgs(state, argv, 4, &fs_type, &partition_type, &location, &fs_size) < 0) {
         return NULL;
     }
 
@@ -235,8 +242,7 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         result = location;
 #ifdef USE_EXT4
     } else if (strcmp(fs_type, "ext4") == 0) {
-        reset_ext4fs_info();
-        int status = make_ext4fs(location, NULL, NULL, 0, 0, 0);
+        int status = make_ext4fs(location, atoll(fs_size));
         if (status != 0) {
             fprintf(stderr, "%s: make_ext4fs failed (%d) on %s",
                     name, status, location);
@@ -446,6 +452,121 @@ Value* PackageExtractFileFn(const char* name, State* state,
         }
         return v;
     }
+}
+
+
+// retouch_binaries(lib1, lib2, ...)
+Value* RetouchBinariesFn(const char* name, State* state,
+                         int argc, Expr* argv[]) {
+    UpdaterInfo* ui = (UpdaterInfo*)(state->cookie);
+
+    char **retouch_entries  = ReadVarArgs(state, argc, argv);
+    if (retouch_entries == NULL) {
+        return StringValue(strdup("t"));
+    }
+
+    // some randomness from the clock
+    int32_t override_base;
+    bool override_set = false;
+    int32_t random_base = time(NULL) % 1024;
+    // some more randomness from /dev/random
+    FILE *f_random = fopen("/dev/random", "rb");
+    uint16_t random_bits = 0;
+    if (f_random != NULL) {
+        fread(&random_bits, 2, 1, f_random);
+        random_bits = random_bits % 1024;
+        fclose(f_random);
+    }
+    random_base = (random_base + random_bits) % 1024;
+    fprintf(ui->cmd_pipe, "ui_print Random offset: 0x%x\n", random_base);
+    fprintf(ui->cmd_pipe, "ui_print\n");
+
+    // make sure we never randomize to zero; this let's us look at a file
+    // and know for sure whether it has been processed; important in the
+    // crash recovery process
+    if (random_base == 0) random_base = 1;
+    // make sure our randomization is page-aligned
+    random_base *= -0x1000;
+    override_base = random_base;
+
+    int i = 0;
+    bool success = true;
+    while (i < (argc - 1)) {
+        success = success && retouch_one_library(retouch_entries[i],
+                                                 retouch_entries[i+1],
+                                                 random_base,
+                                                 override_set ?
+                                                   NULL :
+                                                   &override_base);
+        if (!success)
+            ErrorAbort(state, "Failed to retouch '%s'.", retouch_entries[i]);
+
+        free(retouch_entries[i]);
+        free(retouch_entries[i+1]);
+        i += 2;
+
+        if (success && override_base != 0) {
+            random_base = override_base;
+            override_set = true;
+        }
+    }
+    if (i < argc) {
+        free(retouch_entries[i]);
+        success = false;
+    }
+    free(retouch_entries);
+
+    if (!success) {
+      Value* v = malloc(sizeof(Value));
+      v->type = VAL_STRING;
+      v->data = NULL;
+      v->size = -1;
+      return v;
+    }
+    return StringValue(strdup("t"));
+}
+
+
+// undo_retouch_binaries(lib1, lib2, ...)
+Value* UndoRetouchBinariesFn(const char* name, State* state,
+                             int argc, Expr* argv[]) {
+    UpdaterInfo* ui = (UpdaterInfo*)(state->cookie);
+
+    char **retouch_entries  = ReadVarArgs(state, argc, argv);
+    if (retouch_entries == NULL) {
+        return StringValue(strdup("t"));
+    }
+
+    int i = 0;
+    bool success = true;
+    int32_t override_base;
+    while (i < (argc-1)) {
+        success = success && retouch_one_library(retouch_entries[i],
+                                                 retouch_entries[i+1],
+                                                 0 /* undo => offset==0 */,
+                                                 NULL);
+        if (!success)
+            ErrorAbort(state, "Failed to unretouch '%s'.",
+                       retouch_entries[i]);
+
+        free(retouch_entries[i]);
+        free(retouch_entries[i+1]);
+        i += 2;
+    }
+    if (i < argc) {
+        free(retouch_entries[i]);
+        success = false;
+    }
+    free(retouch_entries);
+
+    if (!success) {
+      Value* v = malloc(sizeof(Value));
+      v->type = VAL_STRING;
+      v->data = NULL;
+      v->size = -1;
+      return v;
+    }
+    return StringValue(strdup("t"));
 }
 
 
@@ -681,21 +802,26 @@ static bool write_raw_image_cb(const unsigned char* data,
     return false;
 }
 
-// write_raw_image(file, partition)
+// write_raw_image(filename_or_blob, partition)
 Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
     char* result = NULL;
 
-    char* partition;
-    char* filename;
-    if (ReadArgs(state, argv, 2, &filename, &partition) < 0) {
+    Value* partition_value;
+    Value* contents;
+    if (ReadValueArgs(state, argv, 2, &contents, &partition_value) < 0) {
         return NULL;
     }
 
+    if (partition_value->type != VAL_STRING) {
+        ErrorAbort(state, "partition argument to %s must be string", name);
+        goto done;
+    }
+    char* partition = partition_value->data;
     if (strlen(partition) == 0) {
         ErrorAbort(state, "partition argument to %s can't be empty", name);
         goto done;
     }
-    if (strlen(filename) == 0) {
+    if (contents->type == VAL_STRING && strlen((char*) contents->data) == 0) {
         ErrorAbort(state, "file argument to %s can't be empty", name);
         goto done;
     }
@@ -704,10 +830,12 @@ Value* WriteRawImageFn(const char* name, State* state, int argc, Expr* argv[]) {
         result = strdup(partition);
     else
         result = strdup("");
+        goto done;
+    }
 
 done:
-    if (result != partition) free(partition);
-    free(filename);
+    if (result != partition) FreeValue(partition_value);
+    FreeValue(contents);
     return StringValue(result);
 }
 
@@ -980,7 +1108,7 @@ Value* Sha1CheckFn(const char* name, State* state, int argc, Expr* argv[]) {
     return args[i];
 }
 
-// Read a local file and return its contents (the char* returned
+// Read a local file and return its contents (the Value* returned
 // is actually a FileContents*).
 Value* ReadFileFn(const char* name, State* state, int argc, Expr* argv[]) {
     if (argc != 1) {
@@ -993,7 +1121,7 @@ Value* ReadFileFn(const char* name, State* state, int argc, Expr* argv[]) {
     v->type = VAL_BLOB;
 
     FileContents fc;
-    if (LoadFileContents(filename, &fc) != 0) {
+    if (LoadFileContents(filename, &fc, RETOUCH_DONT_MASK) != 0) {
         ErrorAbort(state, "%s() loading \"%s\" failed: %s",
                    name, filename, strerror(errno));
         free(filename);
@@ -1020,6 +1148,8 @@ void RegisterInstallFunctions() {
     RegisterFunction("delete_recursive", DeleteFn);
     RegisterFunction("package_extract_dir", PackageExtractDirFn);
     RegisterFunction("package_extract_file", PackageExtractFileFn);
+    RegisterFunction("retouch_binaries", RetouchBinariesFn);
+    RegisterFunction("undo_retouch_binaries", UndoRetouchBinariesFn);
     RegisterFunction("symlink", SymlinkFn);
     RegisterFunction("set_perm", SetPermFn);
     RegisterFunction("set_perm_recursive", SetPermFn);

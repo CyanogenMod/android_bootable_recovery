@@ -49,6 +49,8 @@ int res_create_surface(const char* name, gr_surface* pSurface) {
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
 
+    *pSurface = NULL;
+
     snprintf(resPath, sizeof(resPath)-1, "/res/images/%s.png", name);
     resPath[sizeof(resPath)-1] = '\0';
     FILE* fp = fopen(resPath, "rb");
@@ -119,13 +121,18 @@ int res_create_surface(const char* name, gr_surface* pSurface) {
     surface->format = (channels == 3) ?
             GGL_PIXEL_FORMAT_RGBX_8888 : GGL_PIXEL_FORMAT_RGBA_8888;
 
+    int alpha = 0;
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
-      png_set_palette_to_rgb(png_ptr);
+        png_set_palette_to_rgb(png_ptr);
+    }
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
+        png_set_tRNS_to_alpha(png_ptr);
+        alpha = 1;
     }
 
     int y;
-    if (channels == 3) {
-        for (y = 0; y < (int)height; ++y) {
+    if (channels == 3 || (channels == 1 && !alpha)) {
+        for (y = 0; y < height; ++y) {
             unsigned char* pRow = pData + y * stride;
             png_read_row(png_ptr, pRow, NULL);
 
@@ -144,7 +151,7 @@ int res_create_surface(const char* name, gr_surface* pSurface) {
             }
         }
     } else {
-        for (y = 0; y < (int)height; ++y) {
+        for (y = 0; y < height; ++y) {
             unsigned char* pRow = pData + y * stride;
             png_read_row(png_ptr, pRow, NULL);
         }
