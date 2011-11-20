@@ -599,7 +599,11 @@ int nandroid_main(int argc, char** argv)
 {
     if (argc > 3 || argc < 2)
         return nandroid_usage();
-    
+
+    // we're being called outside of recovery context
+    // need to load voume table for non-gui context:
+    load_volume_table();
+
     if (strcmp("backup", argv[1]) == 0)
     {
         if (argc != 2)
