@@ -134,6 +134,9 @@ void load_volume_table() {
             device_volumes[num_volumes].device2 =
                 device2 ? strdup(device2) : NULL;
 
+            device_volumes[num_volumes].fs_type2 = NULL;
+            device_volumes[num_volumes].fs_options = NULL;
+            device_volumes[num_volumes].fs_options2 = NULL;
             device_volumes[num_volumes].length = 0;
             if (parse_options(options, device_volumes + num_volumes) != 0) {
                 LOGE("skipping malformed recovery.fstab line: %s\n", original);
