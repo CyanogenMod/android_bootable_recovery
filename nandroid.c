@@ -233,20 +233,19 @@ int nandroid_backup(const char* backup_path)
     }
     
     Volume* volume = volume_for_path(backup_path);
-    if (NULL == volume)
-        return print_and_error("Unable to find volume for backup path.\n");
     int ret;
     struct statfs s;
-    if (0 != (ret = statfs(volume->mount_point, &s)))
-        return print_and_error("Unable to stat backup path.\n");
-    uint64_t bavail = s.f_bavail;
-    uint64_t bsize = s.f_bsize;
-    uint64_t sdcard_free = bavail * bsize;
-    uint64_t sdcard_free_mb = sdcard_free / (uint64_t)(1024 * 1024);
-    ui_print("SD Card space free: %lluMB\n", sdcard_free_mb);
-    if (sdcard_free_mb < 150)
-        ui_print("There may not be enough free space to complete backup... continuing...\n");
-    
+    if (NULL != volume) {
+        if (0 != (ret = statfs(volume->mount_point, &s)))
+            return print_and_error("Unable to stat backup path.\n");
+        uint64_t bavail = s.f_bavail;
+        uint64_t bsize = s.f_bsize;
+        uint64_t sdcard_free = bavail * bsize;
+        uint64_t sdcard_free_mb = sdcard_free / (uint64_t)(1024 * 1024);
+        ui_print("SD Card space free: %lluMB\n", sdcard_free_mb);
+        if (sdcard_free_mb < 150)
+            ui_print("There may not be enough free space to complete backup... continuing...\n");
+    }
     char tmp[PATH_MAX];
     sprintf(tmp, "mkdir -p %s", backup_path);
     __system(tmp);
@@ -436,6 +435,9 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         // This is because some phones (like DroidX) will freak out if you
         // reformat the /system or /data partitions, and not boot due to
         // a locked bootloader.
+        // Other devices, like the Galaxy Nexus, XOOM, and Galaxy Tab 10.1
+        // have a /sdcard symlinked to /data/media. /data is set to "auto"
+        // so that when the format occurs, /data/media is not erased.
         // The "auto" fs type preserves the file system, and does not
         // trigger that lock.
         // Or of volume does not exist (.android_secure), just rm -rf.

@@ -161,7 +161,7 @@ static void
 get_args(int *argc, char ***argv) {
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
-    if (device_flash_type() == MTD) {
+    if (device_flash_type() == MTD || device_flash_type() == MMC) {
         get_bootloader_message(&boot);  // this may fail, leaving a zeroed structure
     }
 

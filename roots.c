@@ -138,6 +138,11 @@ void load_volume_table() {
             device_volumes[num_volumes].fs_options = NULL;
             device_volumes[num_volumes].fs_options2 = NULL;
             device_volumes[num_volumes].length = 0;
+
+            device_volumes[num_volumes].fs_type2 = NULL;
+            device_volumes[num_volumes].fs_options = NULL;
+            device_volumes[num_volumes].fs_options2 = NULL;
+
             if (parse_options(options, device_volumes + num_volumes) != 0) {
                 LOGE("skipping malformed recovery.fstab line: %s\n", original);
             } else {
@@ -213,7 +218,7 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
     if (v == NULL) {
         // no /sdcard? let's assume /data/media
         if (strstr(path, "/sdcard") == path && is_data_media()) {
-            LOGW("using /data/media, no /sdcard found.\n");
+            LOGI("using /data/media, no /sdcard found.\n");
             int ret;
             if (0 != (ret = ensure_path_mounted("/data")))
                 return ret;
