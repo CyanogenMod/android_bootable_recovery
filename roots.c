@@ -134,9 +134,6 @@ void load_volume_table() {
             device_volumes[num_volumes].device2 =
                 device2 ? strdup(device2) : NULL;
 
-            device_volumes[num_volumes].fs_type2 = NULL;
-            device_volumes[num_volumes].fs_options = NULL;
-            device_volumes[num_volumes].fs_options2 = NULL;
             device_volumes[num_volumes].length = 0;
 
             device_volumes[num_volumes].fs_type2 = NULL;
