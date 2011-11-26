@@ -166,7 +166,7 @@ int try_mount(const char* device, const char* mount_point, const char* fs_type, 
 
 int is_data_media() {
     Volume *data = volume_for_path("/data");
-    return data != NULL && strcmp(data->fs_type, "auto") == 0 && volume_for_path("/sdcard") == NULL;
+    return data != NULL && strcmp(data->fs_type, "auto") == 0 || volume_for_path("/sdcard") == NULL;
 }
 
 void setup_data_media() {
@@ -302,6 +302,9 @@ int format_volume(const char* volume) {
             return -1;
         LOGE("unknown volume \"%s\"\n", volume);
         return -1;
+    }
+    if (strstr(volume, "/data") == volume && volume_for_path("/sdcard") == NULL && is_data_media()) {
+	return format_unknown_device(NULL, volume, NULL);
     }
     if (strcmp(v->fs_type, "ramdisk") == 0) {
         // you can't format the ramdisk.
