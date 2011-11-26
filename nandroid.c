@@ -436,8 +436,10 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             printf("Found new backup image: %s\n", tmp);
         }
 
-        // If the fs_type of this volume is "auto", let's revert to using a
-        // rm -rf, rather than trying to do a ext3/ext4/whatever format.
+        // If the fs_type of this volume is "auto" or mount_point is /data
+        // and vol for /sdcard is NULL and is_data_media, let's revert
+        // to using a rm -rf, rather than trying to do a
+        // ext3/ext4/whatever format.
         // This is because some phones (like DroidX) will freak out if you
         // reformat the /system or /data partitions, and not boot due to
         // a locked bootloader.
@@ -449,6 +451,8 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         // Or of volume does not exist (.android_secure), just rm -rf.
         if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
             backup_filesystem = NULL;
+        else if (0 == strcmp(vol->mount_point, "/data") && volume_for_path("/sdcard") == NULL && is_data_media())
+	         backup_filesystem = NULL;
     }
 
     ensure_directory(mount_point);
