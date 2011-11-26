@@ -233,6 +233,12 @@ int nandroid_backup(const char* backup_path)
     }
     
     Volume* volume = volume_for_path(backup_path);
+    if (NULL == volume) {
+      if (strstr(backup_path, "/sdcard") == backup_path && is_data_media())
+          volume = volume_for_path("/data");
+      else
+          return print_and_error("Unable to find volume for backup path.\n");
+    }
     int ret;
     struct statfs s;
     if (NULL != volume) {
