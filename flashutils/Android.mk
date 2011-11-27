@@ -6,7 +6,7 @@ ifeq ($(TARGET_ARCH),arm)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := flashutils.c
 LOCAL_MODULE := libflashutils
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_C_INCLUDES += bootable/recovery
 LOCAL_STATIC_LIBRARIES := libmmcutils libmtdutils libbmlutils libcrecovery
 
@@ -23,8 +23,7 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := flash_image.c
 LOCAL_MODULE := flash_image
-LOCAL_MODULE_TAGS := eng
-#LOCAL_STATIC_LIBRARIES += $(BOARD_FLASH_LIBRARY)
+LOCAL_MODULE_TAGS := optional
 LOCAL_STATIC_LIBRARIES := libflashutils libmtdutils libmmcutils libbmlutils
 LOCAL_SHARED_LIBRARIES := libcutils libc
 include $(BUILD_EXECUTABLE)
@@ -32,7 +31,7 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := dump_image.c
 LOCAL_MODULE := dump_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_STATIC_LIBRARIES := libflashutils libmtdutils libmmcutils libbmlutils
 LOCAL_SHARED_LIBRARIES := libcutils libc
 include $(BUILD_EXECUTABLE)
@@ -40,36 +39,38 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := erase_image.c
 LOCAL_MODULE := erase_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_STATIC_LIBRARIES := libflashutils libmtdutils libmmcutils libbmlutils
 LOCAL_SHARED_LIBRARIES := libcutils libc
 include $(BUILD_EXECUTABLE)
 
+ALL_DEFAULT_INSTALLED_MODULES += $(addprefix $(TARGET_OUT)/bin/, flash_image dump_image erase_image)
+
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := flash_image.c
 LOCAL_MODULE := libflash_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_CFLAGS += -Dmain=flash_image_main
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := dump_image.c
 LOCAL_MODULE := libdump_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_CFLAGS += -Dmain=dump_image_main
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := erase_image.c
 LOCAL_MODULE := liberase_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_CFLAGS += -Dmain=erase_image_main
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := dump_image.c
 LOCAL_MODULE := utility_dump_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := UTILITY_EXECUTABLES
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
 LOCAL_UNSTRIPPED_PATH := $(PRODUCT_OUT)/symbols/utilities
@@ -81,7 +82,7 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := flash_image.c
 LOCAL_MODULE := utility_flash_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := UTILITY_EXECUTABLES
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
 LOCAL_UNSTRIPPED_PATH := $(PRODUCT_OUT)/symbols/utilities
@@ -93,7 +94,7 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := erase_image.c
 LOCAL_MODULE := utility_erase_image
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := UTILITY_EXECUTABLES
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
 LOCAL_UNSTRIPPED_PATH := $(PRODUCT_OUT)/symbols/utilities
