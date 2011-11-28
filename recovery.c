@@ -753,6 +753,11 @@ prompt_and_wait() {
             case ITEM_ADVANCED:
                 show_advanced_menu();
                 break;
+#ifdef BOARD_IS_SAMSUNG            
+            case ITEM_DOWNLOAD:
+                __system("/sbin/reboot download");
+                break;
+#endif                
             case ITEM_POWEROFF:
                 poweroff=1;
                 return;
