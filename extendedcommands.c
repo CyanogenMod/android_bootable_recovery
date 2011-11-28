@@ -1090,7 +1090,7 @@ void show_reboot_menu()
             }
             case 1:
             {
-				reboot_wrapper();
+				poweroff=0;
                 return;
             }
             case 2:
