@@ -30,9 +30,6 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "backup and restore",
                        "mounts and storage",
                        "advanced",
-#ifdef BOARD_IS_SAMSUNG
-					   "download mode",
-#endif					   
                        "power off",
                        NULL };
 
