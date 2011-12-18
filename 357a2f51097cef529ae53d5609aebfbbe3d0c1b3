@@ -1,0 +1,8 @@
+Change-Id: I357a2f51097cef529ae53d5609aebfbbe3d0c1b3
+Code-Review+2: Steve Kondik <shade@chemlab.org>
+Verified+1: Steve Kondik <shade@chemlab.org>
+Submitted-by: Steve Kondik <shade@chemlab.org>
+Submitted-at: Sun, 18 Dec 2011 11:20:04 +0300
+Reviewed-on: http://review.cyanogenmod.com/11013
+Project: CyanogenMod/android_bootable_recovery
+Branch: refs/heads/ics
