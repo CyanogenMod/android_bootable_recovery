@@ -437,7 +437,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         }
 
         // If the fs_type of this volume is "auto" or mount_point is /data
-        // and vol for /sdcard is NULL and is_data_media, let's revert
+        // and is_data_media (redundantly, and vol for /sdcard is NULL), let's revert
         // to using a rm -rf, rather than trying to do a
         // ext3/ext4/whatever format.
         // This is because some phones (like DroidX) will freak out if you
