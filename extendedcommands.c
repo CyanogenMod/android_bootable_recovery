@@ -83,7 +83,11 @@ char* INSTALL_MENU_ITEMS[] = {  "choose zip from sdcard",
                                 "apply /sdcard/update.zip",
                                 "toggle signature verification",
                                 "toggle script asserts",
+#ifdef BOARD_DEFAULT_INTERNAL_SDCARD
+                                "choose zip from external sdcard",
+#else
                                 "choose zip from internal sdcard",
+#endif
                                 NULL };
 #define ITEM_CHOOSE_ZIP       0
 #define ITEM_APPLY_SDCARD     1
@@ -822,9 +826,15 @@ void show_nandroid_menu()
     static char* list[] = { "backup",
                             "restore",
                             "advanced restore",
+#ifdef BOARD_DEFAULT_INTERNAL_SDCARD
+                            "backup to external sdcard",
+                            "restore from external sdcard",
+                            "advanced restore from external sdcard",
+#else
                             "backup to internal sdcard",
                             "restore from internal sdcard",
                             "advanced restore from internal sdcard",
+#endif
                             NULL
     };
 
