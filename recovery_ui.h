@@ -91,7 +91,7 @@ extern char* MENU_HEADERS[];
 extern char* MENU_ITEMS[];
 
 int
-get_menu_selection(char** headers, char** items, int menu_only, int initial_selection);
+get_menu_selection(char** headers, char** items, int menu_only, int initial_selection, int allow_back);
 
 void
 set_sdcard_update_bootloader_message();

@@ -103,7 +103,7 @@ void show_install_update_menu()
     
     for (;;)
     {
-        int chosen_item = get_menu_selection(headers, INSTALL_MENU_ITEMS, 0, 0);
+        int chosen_item = get_menu_selection(headers, INSTALL_MENU_ITEMS, 0, 0, 1);
         switch (chosen_item)
         {
             case ITEM_ASSERTS:
@@ -285,7 +285,7 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
 
         for (;;)
         {
-            int chosen_item = get_menu_selection(headers, list, 0, 0);
+            int chosen_item = get_menu_selection(headers, list, 0, 0, 1);
             if (chosen_item == GO_BACK)
                 break;
             static char ret[PATH_MAX];
@@ -386,7 +386,7 @@ void show_mount_usb_storage_menu()
 
     for (;;)
     {
-        int chosen_item = get_menu_selection(headers, list, 0, 0);
+        int chosen_item = get_menu_selection(headers, list, 0, 0, 1);
         if (chosen_item == GO_BACK || chosen_item == 0)
             break;
     }
@@ -415,7 +415,7 @@ int confirm_selection(const char* title, const char* confirm)
 		char* items[] = { "No",
 						confirm, //" Yes -- wipe partition",   // [1]
 						NULL };
-		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
+		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0, 1);
 		return chosen_item == 1;
 	}
 	else {
@@ -431,7 +431,7 @@ int confirm_selection(const char* title, const char* confirm)
 						"No",
 						"No",
 						NULL };
-		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
+		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0, 1);
 		return chosen_item == 7;
 	}
 	}
@@ -669,6 +669,7 @@ void show_partition_menu()
     static char* confirm_format  = "Confirm format?";
     static char* confirm = "Yes - Format";
     char confirm_string[255];
+    int ptr = 0;
 
     for (;;)
     {
@@ -690,10 +691,13 @@ void show_partition_menu()
 			options[mountable_volumes+i] = e->txt;
 		}
 
+#ifndef BOARD_HAS_MTP
         options[mountable_volumes+formatable_volumes] = "mount USB storage";
-        options[mountable_volumes+formatable_volumes + 1] = NULL;
+        ptr = 1;
+#endif
+        options[mountable_volumes+formatable_volumes + ptr] = NULL;
 
-        int chosen_item = get_menu_selection(headers, &options, 0, 0);
+        int chosen_item = get_menu_selection(headers, &options, 0, 0, 1);
         if (chosen_item == GO_BACK)
             break;
         if (chosen_item == (mountable_volumes+formatable_volumes))
@@ -782,7 +786,7 @@ void show_nandroid_advanced_restore_menu(const char* path)
 
     static char* confirm_restore  = "Confirm restore?";
 
-    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    int chosen_item = get_menu_selection(headers, list, 0, 0, 1);
     switch (chosen_item)
     {
         case 0:
@@ -831,7 +835,7 @@ void show_nandroid_menu()
     if (volume_for_path("/emmc") == NULL || volume_for_path("/sdcard") == NULL && is_data_media())
         list[3] = NULL;
 
-    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    int chosen_item = get_menu_selection(headers, list, 0, 0, 1);
     switch (chosen_item)
     {
         case 0:
@@ -918,7 +922,7 @@ void show_advanced_menu()
 
     for (;;)
     {
-        int chosen_item = get_menu_selection(headers, list, 0, 0);
+        int chosen_item = get_menu_selection(headers, list, 0, 0, 1);
         if (chosen_item == GO_BACK)
             break;
         switch (chosen_item)
@@ -992,11 +996,11 @@ void show_advanced_menu()
                 static char* ext_headers[] = { "Ext Size", "", NULL };
                 static char* swap_headers[] = { "Swap Size", "", NULL };
 
-                int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0);
+                int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0, 1);
                 if (ext_size == GO_BACK)
                     continue;
 
-                int swap_size = get_menu_selection(swap_headers, swap_sizes, 0, 0);
+                int swap_size = get_menu_selection(swap_headers, swap_sizes, 0, 0, 1);
                 if (swap_size == GO_BACK)
                     continue;
 
@@ -1044,7 +1048,7 @@ void show_advanced_menu()
                 static char* ext_headers[] = { "Data Size", "", NULL };
                 static char* swap_headers[] = { "Swap Size", "", NULL };
 
-                int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0);
+                int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0, 1);
                 if (ext_size == GO_BACK)
                     continue;
 

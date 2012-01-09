@@ -430,12 +430,12 @@ prepend_title(char** headers) {
 
 int
 get_menu_selection(char** headers, char** items, int menu_only,
-                   int initial_selection) {
+                   int initial_selection, int allow_back) {
     // throw away keys pressed previously, so user doesn't
     // accidentally trigger menu items.
     ui_clear_key_queue();
 
-    int item_count = ui_start_menu(headers, items, initial_selection);
+    int item_count = ui_start_menu(headers, items, initial_selection, allow_back);
     int selected = initial_selection;
     int chosen_item = -1;
 
@@ -475,7 +475,7 @@ get_menu_selection(char** headers, char** items, int menu_only,
                 case SELECT_ITEM:
                     chosen_item = selected;
                     if (ui_get_showing_back_button()) {
-                        if (chosen_item == item_count) {
+                        if (chosen_item == item_count-1) {
                             chosen_item = GO_BACK;
                         }
                     }
@@ -590,7 +590,7 @@ update_directory(const char* path, const char* unmount_when_done) {
     int result;
     int chosen_item = 0;
     do {
-        chosen_item = get_menu_selection(headers, zips, 1, chosen_item);
+        chosen_item = get_menu_selection(headers, zips, 1, chosen_item, 1);
 
         char* item = zips[chosen_item];
         int item_len = strlen(item);
@@ -668,7 +668,7 @@ wipe_data(int confirm) {
                           " No",
                           NULL };
 
-        int chosen_item = get_menu_selection(title_headers, items, 1, 0);
+        int chosen_item = get_menu_selection(title_headers, items, 1, 0, 1);
         if (chosen_item != 7) {
             return;
         }
@@ -695,7 +695,7 @@ prompt_and_wait() {
         ui_reset_progress();
 
         allow_display_toggle = 1;
-        int chosen_item = get_menu_selection(headers, MENU_ITEMS, 0, 0);
+        int chosen_item = get_menu_selection(headers, MENU_ITEMS, 0, 0, 0);
         allow_display_toggle = 0;
 
         // device-specific code may take some action here.  It may
