@@ -475,7 +475,7 @@ get_menu_selection(char** headers, char** items, int menu_only,
                 case SELECT_ITEM:
                     chosen_item = selected;
                     if (ui_get_showing_back_button()) {
-                        if (chosen_item == item_count) {
+                        if (chosen_item == item_count-1) {
                             chosen_item = GO_BACK;
                         }
                     }

@@ -30,7 +30,16 @@
 
 #include <pixelflinger/pixelflinger.h>
 
-#include "font_10x18.h"
+#if defined(BOARD_XHDPI_RECOVERY)
+    #include "font_15x24.h"
+#elif defined(BOARD_HDPI_RECOVERY)
+    #include "font_10x18.h"
+#elif defined(BOARD_LDPI_RECOVERY)
+    #include "font_7x16.h"
+#else
+    #include "font_10x18.h"
+#endif
+
 #include "minui.h"
 
 #if defined(RECOVERY_BGRA)
