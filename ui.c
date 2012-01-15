@@ -47,12 +47,23 @@ static int gShowBackButton = 0;
 #define MENU_MAX_COLS 64
 #define MENU_MAX_ROWS 250
 
-#ifndef BOARD_LDPI_RECOVERY
+#if defined(BOARD_XHDPI_RECOVERY)
+    #ifdef BOARD_USE_CUSTOM_FONT  // only use big font if we want custom
+        #define CHAR_WIDTH 15
+        #define CHAR_HEIGHT 24
+    #else
+        #define CHAR_WIDTH 10
+        #define CHAR_HEIGHT 18
+    #endif
+#elif defined(BOARD_HDPI_RECOVERY)
   #define CHAR_WIDTH 10
   #define CHAR_HEIGHT 18
-#else
+#elif defined(BOARD_LDPI_RECOVERY)
   #define CHAR_WIDTH 7
   #define CHAR_HEIGHT 16
+#else
+  #define CHAR_WIDTH 10
+  #define CHAR_HEIGHT 18
 #endif
 
 #define UI_WAIT_KEY_TIMEOUT_SEC    3600
