@@ -90,6 +90,9 @@ extern char* MENU_HEADERS[];
 // Text of menu items.
 extern char* MENU_ITEMS[];
 
+// Loosely track the depth of the current menu
+int ui_menu_level;
+
 int
 get_menu_selection(char** headers, char** items, int menu_only, int initial_selection);
 

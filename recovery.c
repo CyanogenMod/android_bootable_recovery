@@ -434,7 +434,8 @@ get_menu_selection(char** headers, char** items, int menu_only,
     // throw away keys pressed previously, so user doesn't
     // accidentally trigger menu items.
     ui_clear_key_queue();
-
+    
+    ++ui_menu_level;
     int item_count = ui_start_menu(headers, items, initial_selection);
     int selected = initial_selection;
     int chosen_item = -1;
@@ -475,7 +476,8 @@ get_menu_selection(char** headers, char** items, int menu_only,
                 case SELECT_ITEM:
                     chosen_item = selected;
                     if (ui_get_showing_back_button()) {
-                        if (chosen_item == item_count) {
+                        if (chosen_item == item_count-1) {
+                            --ui_menu_level;
                             chosen_item = GO_BACK;
                         }
                     }
@@ -483,6 +485,7 @@ get_menu_selection(char** headers, char** items, int menu_only,
                 case NO_ACTION:
                     break;
                 case GO_BACK:
+                    --ui_menu_level;
                     chosen_item = GO_BACK;
                     break;
             }
@@ -693,7 +696,8 @@ prompt_and_wait() {
     for (;;) {
         finish_recovery(NULL);
         ui_reset_progress();
-
+        
+        ui_menu_level = -1;
         allow_display_toggle = 1;
         int chosen_item = get_menu_selection(headers, MENU_ITEMS, 0, 0);
         allow_display_toggle = 0;
