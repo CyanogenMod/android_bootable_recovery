@@ -669,6 +669,7 @@ void show_partition_menu()
     static char* confirm_format  = "Confirm format?";
     static char* confirm = "Yes - Format";
     char confirm_string[255];
+    int ptr = 0;
 
     for (;;)
     {
@@ -690,8 +691,11 @@ void show_partition_menu()
 			options[mountable_volumes+i] = e->txt;
 		}
 
+#ifndef BOARD_HAS_MTP
         options[mountable_volumes+formatable_volumes] = "mount USB storage";
-        options[mountable_volumes+formatable_volumes + 1] = NULL;
+        ptr = 1;
+#endif
+        options[mountable_volumes+formatable_volumes + ptr] = NULL;
 
         int chosen_item = get_menu_selection(headers, &options, 0, 0);
         if (chosen_item == GO_BACK)
