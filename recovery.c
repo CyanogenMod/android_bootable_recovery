@@ -823,7 +823,11 @@ main(int argc, char **argv) {
 		wipe_data = wipe_cache = 1;
 #endif
 		break;
-        case 'c': wipe_cache = 1; break;
+        case 'c': 
+#ifndef BOARD_RECOVERY_ALWAYS_WIPES
+		wipe_cache = 1;
+#endif
+		break;
         case 't': ui_show_text(1); break;
         case '?':
             LOGE("Invalid command argument\n");
