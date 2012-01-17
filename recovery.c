@@ -820,10 +820,14 @@ main(int argc, char **argv) {
         case 'u': update_package = optarg; break;
         case 'w': 
 #ifndef BOARD_RECOVERY_ALWAYS_WIPES
-		wipe_data = wipe_cache = 1;
+            wipe_data = wipe_cache = 1;
 #endif
-		break;
-        case 'c': wipe_cache = 1; break;
+            break;
+        case 'c': 
+#ifndef BOARD_RECOVERY_ALWAYS_WIPES
+            wipe_cache = 1;
+#endif
+            break;
         case 't': ui_show_text(1); break;
         case '?':
             LOGE("Invalid command argument\n");
