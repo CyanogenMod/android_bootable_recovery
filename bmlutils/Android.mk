@@ -10,7 +10,11 @@ $(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
   ) \
   )
 
-LOCAL_SRC_FILES := bmlutils.c
+ifneq ($(BOARD_CUSTOM_RECOVERY_BML_FORMAT),)
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_BML_FORMAT)
+else
+  LOCAL_SRC_FILES += bmlutils.c
+endif
 LOCAL_MODULE := libbmlutils
 LOCAL_MODULE_TAGS := eng
 include $(BUILD_STATIC_LIBRARY)
