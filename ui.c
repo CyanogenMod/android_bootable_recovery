@@ -366,9 +366,6 @@ static int input_callback(int fd, short revents, void *data)
     if (ret)
         return -1;
 
-    if (touch_handle_input(ev))
-      return 0;
-
     if (ev.type == EV_SYN) {
         return 0;
     } else if (ev.type == EV_REL) {
@@ -443,7 +440,6 @@ void ui_init(void)
     ui_has_initialized = 1;
     gr_init();
     ev_init(input_callback, NULL);
-    touch_init(gr_fb_width(), gr_fb_height(), key_pressed, key_queue, &key_queue_len, &key_queue_mutex, &key_queue_cond);
 
     text_col = text_row = 0;
     text_rows = gr_fb_height() / CHAR_HEIGHT;
