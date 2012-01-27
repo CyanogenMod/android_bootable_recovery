@@ -30,26 +30,10 @@
 
 #include <pixelflinger/pixelflinger.h>
 
-#if defined(BOARD_XHDPI_RECOVERY)
-    #ifdef BOARD_USE_CUSTOM_FONT
-        #include "roboto_15x24.h"
-    #else
-        #include "font_10x18.h"     // only use the big font if we want custom
-    #endif
-#elif defined(BOARD_HDPI_RECOVERY)
-    #ifdef BOARD_USE_CUSTOM_FONT
-        #include "roboto_10x18.h"
-    #else
-        #include "font_10x18.h"
-    #endif
-#elif defined(BOARD_LDPI_RECOVERY)
-    #include "font_7x16.h"
+#ifdef BOARD_USE_CUSTOM_RECOVERY_FONT
+#include BOARD_USE_CUSTOM_RECOVERY_FONT
 #else
-    #ifdef BOARD_USE_CUSTOM_FONT
-        #include "roboto_10x18.h"
-    #else
-        #include "font_10x18.h"
-    #endif
+#include "font_10x18.h"
 #endif
 
 #include "minui.h"
