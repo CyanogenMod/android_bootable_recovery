@@ -33,8 +33,6 @@
 #include "minui/minui.h"
 #include "recovery_ui.h"
 
-#include "touch.h"
-
 extern int __system(const char *command);
 
 #ifdef BOARD_HAS_NO_SELECT_BUTTON
