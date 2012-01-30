@@ -340,13 +340,8 @@ run_exec_process ( char **argv) {
 
 int
 format_ext3_device (const char *device) {
-#ifdef BOARD_HAS_LARGE_FILESYSTEM
     char *const mke2fs[] = {MKE2FS_BIN, "-j", "-q", device, NULL};
     char *const tune2fs[] = {TUNE2FS_BIN, "-C", "1", device, NULL};
-#else
-    char *const mke2fs[] = {MKE2FS_BIN, "-j", device, NULL};
-    char *const tune2fs[] = {TUNE2FS_BIN, "-j", "-C", "1", device, NULL};
-#endif
     // Run mke2fs
     if(run_exec_process(mke2fs)) {
         printf("failure while running mke2fs\n");

@@ -912,12 +912,10 @@ void show_advanced_menu()
                             "Report Error",
                             "Key Test",
                             "Show log",
-#ifndef BOARD_HAS_SMALL_RECOVERY
                             "Partition SD Card",
                             "Fix Permissions",
 #ifdef BOARD_HAS_SDCARD_INTERNAL
                             "Partition Internal SD Card",
-#endif
 #endif
                             NULL
     };
