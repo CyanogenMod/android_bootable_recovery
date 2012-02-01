@@ -238,8 +238,8 @@ static void draw_screen_locked(void)
                 row++;
             }
 
-            if (menu_items - menu_show_start + menu_top >= MAX_ROWS)
-                j = MAX_ROWS - menu_top;
+            if (menu_items - menu_show_start + menu_top >= max_menu_rows)
+                j = max_menu_rows - menu_top;
             else
                 j = menu_items - menu_show_start;
 
@@ -254,13 +254,13 @@ static void draw_screen_locked(void)
                     draw_text_line(i - menu_show_start, menu[i]);
                 }
                 row++;
-                if (row == max_menu_rows)
+                if (row >= max_menu_rows)
                     break;
             }
 
-            if (menu_items <= MAX_ROWS)
+            if (menu_items <= max_menu_rows)
                 offset = 1;
-                    
+
             gr_fill(0, (row-offset)*CHAR_HEIGHT+CHAR_HEIGHT/2-1,
                     gr_fb_width(), (row-offset)*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
         }
@@ -444,6 +444,8 @@ void ui_init(void)
     text_col = text_row = 0;
     text_rows = gr_fb_height() / CHAR_HEIGHT;
     max_menu_rows = text_rows - MIN_LOG_ROWS;
+    if (max_menu_rows > MENU_MAX_ROWS)
+        max_menu_rows = MENU_MAX_ROWS;
     if (text_rows > MAX_ROWS) text_rows = MAX_ROWS;
     text_top = 1;
 
