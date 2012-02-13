@@ -478,7 +478,7 @@ Value* RetouchBinariesFn(const char* name, State* state,
         fclose(f_random);
     }
     random_base = (random_base + random_bits) % 1024;
-    fprintf(ui->cmd_pipe, "ui_print Random offset: 0x%x\n", random_base);
+    // fprintf(ui->cmd_pipe, "ui_print Random offset: 0x%x\n", random_base);
     fprintf(ui->cmd_pipe, "ui_print\n");
 
     // make sure we never randomize to zero; this let's us look at a file
