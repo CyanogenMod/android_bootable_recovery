@@ -756,6 +756,260 @@ print_property(const char *key, const char *name, void *cookie) {
     printf("%s=%s\n", key, name);
 }
 
+// open recovery script code
+static const char *SCRIPT_FILE_CACHE = "/cache/recovery/openrecoveryscript";
+static const char *SCRIPT_FILE_TMP = "/tmp/openrecoveryscript";
+#define SCRIPT_COMMAND_SIZE 512
+
+int check_for_script_file(void) {
+	FILE *fp = fopen(SCRIPT_FILE_CACHE, "r");
+	int ret_val = 0;
+	char exec[512];
+
+	if (fp != NULL) {
+		ret_val = 1;
+		LOGI("Script file found: '%s'\n", SCRIPT_FILE_CACHE);
+		fclose(fp);
+		// Copy script file to /tmp
+		strcpy(exec, "cp ");
+		strcat(exec, SCRIPT_FILE_CACHE);
+		strcat(exec, " ");
+		strcat(exec, SCRIPT_FILE_TMP);
+		__system(exec);
+		// Delete the file from /cache
+		strcpy(exec, "rm ");
+		strcat(exec, SCRIPT_FILE_CACHE);
+		// __system(exec);
+	}
+	return ret_val;
+}
+
+int run_script_file(void) {
+	FILE *fp = fopen(SCRIPT_FILE_TMP, "r");
+	int ret_val = 0, cindex, line_len, i, remove_nl;
+	char script_line[SCRIPT_COMMAND_SIZE], command[SCRIPT_COMMAND_SIZE],
+		 value[SCRIPT_COMMAND_SIZE], mount[SCRIPT_COMMAND_SIZE],
+		 value1[SCRIPT_COMMAND_SIZE], value2[SCRIPT_COMMAND_SIZE];
+	char *val_start, *tok;
+	int ors_system = 0;
+	int ors_data = 0;
+	int ors_cache = 0;
+	int ors_recovery = 0;
+	int ors_boot = 0;
+	int ors_andsec = 0;
+	int ors_sdext = 0;
+
+	if (fp != NULL) {
+		while (fgets(script_line, SCRIPT_COMMAND_SIZE, fp) != NULL && ret_val == 0) {
+			cindex = 0;
+			line_len = strlen(script_line);
+			//if (line_len > 2)
+				//continue; // there's a blank line at the end of the file, we're done!
+			ui_print("script line: '%s'\n", script_line);
+			for (i=0; i<line_len; i++) {
+				if ((int)script_line[i] == 32) {
+					cindex = i;
+					i = line_len;
+				}
+			}
+			memset(command, 0, sizeof(command));
+			memset(value, 0, sizeof(value));
+			if ((int)script_line[line_len - 1] == 10)
+					remove_nl = 2;
+				else
+					remove_nl = 1;
+			if (cindex != 0) {
+				strncpy(command, script_line, cindex);
+				ui_print("command is: '%s' and ", command);
+				val_start = script_line;
+				val_start += cindex + 1;
+				strncpy(value, val_start, line_len - cindex - remove_nl);
+				ui_print("value is: '%s'\n", value);
+			} else {
+				strncpy(command, script_line, line_len - remove_nl + 1);
+				ui_print("command is: '%s' and there is no value\n", command);
+			}
+			if (strcmp(command, "install") == 0) {
+				// Install zip
+				ui_print("Installing zip file '%s'\n", value);
+				ret_val = install_zip(value);
+				if (ret_val != INSTALL_SUCCESS) {
+					LOGE("Error installing zip file '%s'\n", value);
+					ret_val = 1;
+				}
+			} else if (strcmp(command, "wipe") == 0) {
+				// Wipe
+				if (strcmp(value, "cache") == 0 || strcmp(value, "/cache") == 0) {
+					ui_print("-- Wiping Cache Partition...\n");
+					erase_volume("/cache");
+					ui_print("-- Cache Partition Wipe Complete!\n");
+				} else if (strcmp(value, "dalvik") == 0 || strcmp(value, "dalvick") == 0 || strcmp(value, "dalvikcache") == 0 || strcmp(value, "dalvickcache") == 0) {
+					ui_print("-- Wiping Dalvik Cache...\n");
+					if (0 != ensure_path_mounted("/data")) {
+						ret_val = 1;
+						break;
+					}
+					ensure_path_mounted("/sd-ext");
+					ensure_path_mounted("/cache");
+					if (confirm_selection( "Confirm wipe?", "Yes - Wipe Dalvik Cache")) {
+						__system("rm -r /data/dalvik-cache");
+						__system("rm -r /cache/dalvik-cache");
+						__system("rm -r /sd-ext/dalvik-cache");
+						ui_print("Dalvik Cache wiped.\n");
+					}
+					ensure_path_unmounted("/data");
+
+					ui_print("-- Dalvik Cache Wipe Complete!\n");
+				} else if (strcmp(value, "data") == 0 || strcmp(value, "/data") == 0 || strcmp(value, "factory") == 0 || strcmp(value, "factoryreset") == 0) {
+					ui_print("-- Wiping Data Partition...\n");
+					wipe_data(0);
+					ui_print("-- Data Partition Wipe Complete!\n");
+				} else {
+					LOGE("Error with wipe command value: '%s'\n", value);
+					ret_val = 1;
+				}
+			} else if (strcmp(command, "backup") == 0) {
+				// Backup
+				char backup_path[PATH_MAX];
+
+				tok = strtok(value, " ");
+				strcpy(value1, tok);
+				tok = strtok(NULL, " ");
+				if (tok != NULL) {
+					memset(value2, 0, sizeof(value2));
+					strcpy(value2, tok);
+					line_len = strlen(tok);
+					if ((int)value2[line_len - 1] == 10 || (int)value2[line_len - 1] == 13) {
+						if ((int)value2[line_len - 1] == 10 || (int)value2[line_len - 1] == 13)
+							remove_nl = 2;
+						else
+							remove_nl = 1;
+					} else
+						remove_nl = 0;
+					strncpy(value2, tok, line_len - remove_nl);
+					ui_print("Backup folder set to '%s'\n", value2);
+					sprintf(backup_path, "/sdcard/clockworkmod/backup/%s", value2);
+				} else {
+					time_t t = time(NULL);
+					struct tm *tmp = localtime(&t);
+					if (tmp == NULL)
+					{
+						struct timeval tp;
+						gettimeofday(&tp, NULL);
+						sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+					}
+					else
+					{
+						strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+					}
+				}
+
+				ui_print("Backup options are ignored in CWMR: '%s'\n", value1);
+				nandroid_backup(backup_path);
+				ui_print("Backup complete!\n");
+			} else if (strcmp(command, "restore") == 0) {
+				// Restore
+				tok = strtok(value, " ");
+				strcpy(value1, tok);
+				ui_print("Restoring '%s'\n", value1);
+				tok = strtok(NULL, " ");
+				if (tok != NULL) {
+					ors_system = 0;
+					ors_data = 0;
+					ors_cache = 0;
+					ors_boot = 0;
+					ors_sdext = 0;
+
+					memset(value2, 0, sizeof(value2));
+					strcpy(value2, tok);
+					ui_print("Setting restore options:\n");
+					line_len = strlen(value2);
+					for (i=0; i<line_len; i++) {
+						if (value2[i] == 'S' || value2[i] == 's') {
+							ors_system = 1;
+							ui_print("System\n");
+						} else if (value2[i] == 'D' || value2[i] == 'd') {
+							ors_data = 1;
+							ui_print("Data\n");
+						} else if (value2[i] == 'C' || value2[i] == 'c') {
+							ors_cache = 1;
+							ui_print("Cache\n");
+						} else if (value2[i] == 'R' || value2[i] == 'r') {
+							ui_print("Option for recovery ignored in CWMR\n");
+						} else if (value2[i] == '1') {
+							ui_print("%s\n", "Option for special1 ignored in CWMR");
+						} else if (value2[i] == '2') {
+							ui_print("%s\n", "Option for special1 ignored in CWMR");
+						} else if (value2[i] == '3') {
+							ui_print("%s\n", "Option for special1 ignored in CWMR");
+						} else if (value2[i] == 'B' || value2[i] == 'b') {
+							ors_boot = 1;
+							ui_print("Boot\n");
+						} else if (value2[i] == 'A' || value2[i] == 'a') {
+							ui_print("Option for android secure ignored in CWMR\n");
+						} else if (value2[i] == 'E' || value2[i] == 'e') {
+							ors_sdext = 1;
+							ui_print("SD-Ext\n");
+						} else if (value2[i] == 'M' || value2[i] == 'm') {
+							ui_print("MD5 check skip option ignored in CWMR\n");
+						}
+					}
+				} else
+					LOGI("No restore options set\n");
+				nandroid_restore(value1, ors_boot, ors_system, ors_data, ors_cache, ors_sdext, 0);
+				ui_print("Restore complete!\n");
+			} else if (strcmp(command, "mount") == 0) {
+				// Mount
+				if (value[0] != '/') {
+					strcpy(mount, "/");
+					strcat(mount, value);
+				} else
+					strcpy(mount, value);
+				ensure_path_mounted(mount);
+				ui_print("Mounted '%s'\n", mount);
+			} else if (strcmp(command, "unmount") == 0 || strcmp(command, "umount") == 0) {
+				// Unmount
+				if (value[0] != '/') {
+					strcpy(mount, "/");
+					strcat(mount, value);
+				} else
+					strcpy(mount, value);
+				ensure_path_unmounted(mount);
+				ui_print("Unmounted '%s'\n", mount);
+			} else if (strcmp(command, "set") == 0) {
+				// Set value
+				tok = strtok(value, " ");
+				strcpy(value1, tok);
+				tok = strtok(NULL, " ");
+				strcpy(value2, tok);
+				ui_print("Setting function disabled in CWMR: '%s' to '%s'\n", value1, value2);
+			} else if (strcmp(command, "mkdir") == 0) {
+				// Make directory (recursive)
+				ui_print("Recursive mkdir disabledin CWMR: '%s'\n", value);
+			} else if (strcmp(command, "reboot") == 0) {
+				// Reboot
+			} else if (strcmp(command, "cmd") == 0) {
+				if (cindex != 0) {
+					__system(value);
+				} else {
+					LOGE("No value given for cmd\n");
+				}
+			} else {
+				LOGE("Unrecognized script command: '%s'\n", command);
+				ret_val = 1;
+			}
+		}
+		fclose(fp);
+		ui_print("Done processing script file\n");
+	} else {
+		LOGE("Error opening script file '%s'\n");
+		return 1;
+	}
+	return ret_val;
+}
+
+// end of open recovery script file code
+
 int
 main(int argc, char **argv) {
 	if (strcmp(basename(argv[0]), "recovery") != 0)
@@ -888,6 +1142,7 @@ main(int argc, char **argv) {
         ui_set_show_text(1);
         ui_set_background(BACKGROUND_ICON_CLOCKWORK);
         
+		if (check_for_script_file()) run_script_file();
         if (extendedcommand_file_exists()) {
             LOGI("Running extendedcommand...\n");
             int ret;
