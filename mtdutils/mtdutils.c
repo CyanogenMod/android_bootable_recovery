@@ -573,12 +573,6 @@ int cmd_mtd_restore_raw_partition(const char *partition_name, const char *filena
     MtdWriteContext *write;
     void *data;
 
-    FILE* f = fopen(filename, "rb");
-    if (f == NULL) {
-        fprintf(stderr, "error opening %s", filename);
-        return -1;
-    }
-
     if (mtd_scan_partitions() <= 0)
     {
         fprintf(stderr, "error scanning partitions");
@@ -591,16 +585,15 @@ int cmd_mtd_restore_raw_partition(const char *partition_name, const char *filena
         return -1;
     }
 
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0)
-    {
-        printf("error opening %s", filename);
-        return -1;
-    }
-    
     MtdWriteContext* ctx = mtd_write_partition(mtd);
     if (ctx == NULL) {
         printf("error writing %s", partition_name);
+        return -1;
+    }
+
+    FILE* f = fopen(filename, "rb");
+    if (f == NULL) {
+        fprintf(stderr, "error opening %s", filename);
         return -1;
     }
 
