@@ -220,9 +220,7 @@ get_args(int *argc, char ***argv) {
         strlcat(boot.recovery, (*argv)[i], sizeof(boot.recovery));
         strlcat(boot.recovery, "\n", sizeof(boot.recovery));
     }
-    if (device_flash_type() == MTD) {
-        set_bootloader_message(&boot);
-    }
+    set_bootloader_message(&boot);
 }
 
 void
@@ -284,12 +282,10 @@ finish_recovery(const char *send_intent) {
     copy_log_file(LAST_LOG_FILE, false);
     chmod(LAST_LOG_FILE, 0640);
 
-    if (device_flash_type() == MTD) {
-        // Reset to mormal system boot so recovery won't cycle indefinitely.
-        struct bootloader_message boot;
-        memset(&boot, 0, sizeof(boot));
-        set_bootloader_message(&boot);
-    }
+    // Reset to normal system boot so recovery won't cycle indefinitely.
+    struct bootloader_message boot;
+    memset(&boot, 0, sizeof(boot));
+    set_bootloader_message(&boot);
 
     // Remove the command file, so recovery won't repeat indefinitely.
     if (ensure_path_mounted(COMMAND_FILE) != 0 ||
