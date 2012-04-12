@@ -44,6 +44,7 @@ int expect(const char* expr_str, const char* expected, int* errors) {
     state.cookie = NULL;
     state.script = strdup(expr_str);
     state.errmsg = NULL;
+    state.flags = 0;
 
     result = Evaluate(&state, e);
     free(state.errmsg);
@@ -204,6 +205,7 @@ int main(int argc, char** argv) {
         state.cookie = NULL;
         state.script = buffer;
         state.errmsg = NULL;
+        state.flags = 0;
 
         char* result = Evaluate(&state, root);
         if (result == NULL) {

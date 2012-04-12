@@ -39,7 +39,14 @@ typedef struct {
     // Should be NULL initially, will be either NULL or a malloc'd
     // pointer after Evaluate() returns.
     char* errmsg;
+
+    // runtime bitwise EDIFY_FLAG_* flags.  eg ignore assert
+    // caller should normally init to 0
+    unsigned int flags;
+
 } State;
+
+#define EDIFY_FLAG_IGNORE_ASSERT 0x1
 
 #define VAL_STRING  1  // data will be NULL-terminated; size doesn't count null
 #define VAL_BLOB    2

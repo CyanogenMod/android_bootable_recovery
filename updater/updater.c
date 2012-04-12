@@ -54,6 +54,13 @@ int main(int argc, char** argv) {
         return 2;
     }
 
+    // Check for EDIFY_FLAGS environment var
+    unsigned int edify_flags = 0;
+    char *edify_flags_str=getenv("EDIFY_FLAGS");
+    if (edify_flags_str) {
+        edify_flags=atoi(edify_flags_str);  // returns 0 if str is not parseable as an int
+    }
+
     // Set up the pipe for sending commands back to the parent process.
 
     int fd = atoi(argv[2]);
@@ -115,6 +122,7 @@ int main(int argc, char** argv) {
     state.cookie = &updater_info;
     state.script = script;
     state.errmsg = NULL;
+    state.flags = edify_flags;
 
     char* result = Evaluate(&state, root);
     if (result == NULL) {
