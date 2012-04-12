@@ -21,7 +21,6 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#include "../extendedcommands.h"
 #include "expr.h"
 
 // Functions should:
