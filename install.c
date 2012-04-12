@@ -37,6 +37,7 @@
 
 #include "extendedcommands.h"
 
+#include "edify/expr.h"
 
 #define ASSUMED_UPDATE_BINARY_NAME  "META-INF/com/google/android/update-binary"
 #define ASSUMED_UPDATE_SCRIPT_NAME  "META-INF/com/google/android/update-script"
@@ -190,6 +191,15 @@ try_update_binary(const char *path, ZipArchive *zip) {
     pid_t pid = fork();
     if (pid == 0) {
         setenv("UPDATE_PACKAGE", path, 1);
+
+        unsigned int edify_flags=0;
+        char edify_flags_str[32];
+        if (!script_assert_enabled) {
+            edify_flags |= EDIFY_FLAG_IGNORE_ASSERT;
+        }
+        sprintf(edify_flags_str, "%d", edify_flags);
+        setenv("EDIFY_FLAGS", edify_flags_str, 1);
+
         close(pipefd[0]);
         execv(binary, args);
         fprintf(stdout, "E:Can't run %s (%s)\n", binary, strerror(errno));

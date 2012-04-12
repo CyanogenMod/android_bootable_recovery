@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 
+#include "../extendedcommands.h"
 #include "expr.h"
 
 // Functions should:
@@ -139,6 +140,11 @@ Value* AbortFn(const char* name, State* state, int argc, Expr* argv[]) {
 
 Value* AssertFn(const char* name, State* state, int argc, Expr* argv[]) {
     int i;
+
+    if (state->flags & EDIFY_FLAG_IGNORE_ASSERT) {
+        return StringValue(strdup(""));
+    }
+
     for (i = 0; i < argc; ++i) {
         char* v = Evaluate(state, argv[i]);
         if (v == NULL) {
