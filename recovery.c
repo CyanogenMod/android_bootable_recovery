@@ -643,6 +643,7 @@ update_directory(const char* path, const char* unmount_when_done) {
 
 static void
 wipe_data(int confirm) {
+/*  This section is no longer needed...
     if (confirm) {
         static char** title_headers = NULL;
 
@@ -672,17 +673,21 @@ wipe_data(int confirm) {
             return;
         }
     }
+*/
 
-    ui_print("\n-- Wiping data...\n");
-    device_wipe_data();
-    erase_volume("/data");
-    erase_volume("/cache");
-    if (has_datadata()) {
-        erase_volume("/datadata");
-    }
-    erase_volume("/sd-ext");
-    erase_volume("/sdcard/.android_secure");
-    ui_print("Data wipe complete.\n");
+    if (confirm_selection("Confirm delete all user data?", "Yes - Wipe all user data"))
+	{
+		ui_print("\n-- Wiping data...\n");
+		device_wipe_data();
+		erase_volume("/data");
+		erase_volume("/cache");
+		if (has_datadata()) {
+		    erase_volume("/datadata");
+		}
+		erase_volume("/sd-ext");
+		erase_volume("/sdcard/.android_secure");
+		ui_print("Data wipe complete.\n");
+	}
 }
 
 static void
