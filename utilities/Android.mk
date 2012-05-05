@@ -52,7 +52,12 @@ include $(BUILD_PREBUILT)
 # endif
 # include $(BUILD_PREBUILT)
 
-BOARD_RECOVERY_RFS_CHECK := $(shell grep rfs $(TARGET_DEVICE_DIR)/recovery.fstab)
+ifneq ($(TARGET_RECOVERY_FSTAB),)
+  BOARD_RECOVERY_RFS_CHECK := $(shell grep rfs $(TARGET_RECOVERY_FSTAB))
+else
+  BOARD_RECOVERY_RFS_CHECK := $(shell grep rfs $(TARGET_DEVICE_DIR)/recovery.fstab)
+endif
+
 ifneq ($(BOARD_RECOVERY_RFS_CHECK),)
 include $(CLEAR_VARS)
 LOCAL_MODULE := fat.format
