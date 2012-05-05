@@ -42,6 +42,23 @@
 #include "flashutils/flashutils.h"
 #include <libgen.h>
 
+/*
+ * A device with a high-res screen or a UI that takes lots of
+ * CPU to update can reduce the frequency of nandroid progress
+ * updates.  For example, onn Galaxy Note, setting this to 20
+ * changes nandroid backup/restore from being CPU-bound by the
+ * recovery process to I/O bound in the tar process as it should be
+ *
+ * Ideally, the UI updating should be fixed to use less CPU
+ * but this is a workaround until someone figures out how to
+ * properly profile the recovery process.
+ */
+#ifdef BOARD_REDUCE_NANDROID_UPDATES
+int update_reduce = BOARD_REDUCE_NANDROID_UPDATES;
+#else
+int update_reduce = 1;
+#endif
+
 void nandroid_generate_timestamp_path(const char* backup_path)
 {
     time_t t = time(NULL);
@@ -71,15 +88,23 @@ static void yaffs_callback(const char* filename)
         return;
     const char* justfile = basename(filename);
     char tmp[PATH_MAX];
-    strcpy(tmp, justfile);
-    if (tmp[strlen(tmp) - 1] == '\n')
-        tmp[strlen(tmp) - 1] = NULL;
-    if (strlen(tmp) < 30)
-        ui_print("%s", tmp);
-    yaffs_files_count++;
-    if (yaffs_files_total != 0)
-        ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
-    ui_reset_text_col();
+    /*
+     * Only update once every BOARD_REDUCE_NANDROID_UPDATES files
+     * Otherwise we waste too much CPU time
+     * updating the UI
+     */
+    if(((yaffs_files_count++) % update_reduce) == 0)
+      {
+        strcpy(tmp, justfile);
+        if (tmp[strlen(tmp) - 1] == '\n')
+          tmp[strlen(tmp) - 1] = NULL;
+        if (strlen(tmp) < 30)
+          ui_print("%s", tmp);
+
+        if (yaffs_files_total != 0)
+          ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
+        ui_reset_text_col();
+      }
 }
 
 static void compute_directory_stats(const char* directory)
