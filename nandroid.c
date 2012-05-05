@@ -42,6 +42,7 @@
 #include "flashutils/flashutils.h"
 #include <libgen.h>
 
+
 void nandroid_generate_timestamp_path(const char* backup_path)
 {
     time_t t = time(NULL);
@@ -63,6 +64,19 @@ static int print_and_error(const char* message) {
     return 1;
 }
 
+static long delta_milliseconds(struct timeval from, struct timeval to) {
+  long delta_sec = (to.tv_sec - from.tv_sec)*1000;
+  long delta_usec = (to.tv_usec - from.tv_usec)/1000;
+  return (delta_sec + delta_usec);
+}
+
+/*
+ * How often nandroid updates text in ms
+ */
+
+#define NANDROID_UPDATE_INTERVAL 1000
+
+static struct timeval lastupdate = (struct timeval) {0};
 static int yaffs_files_total = 0;
 static int yaffs_files_count = 0;
 static void yaffs_callback(const char* filename)
@@ -71,15 +85,29 @@ static void yaffs_callback(const char* filename)
         return;
     const char* justfile = basename(filename);
     char tmp[PATH_MAX];
-    strcpy(tmp, justfile);
-    if (tmp[strlen(tmp) - 1] == '\n')
-        tmp[strlen(tmp) - 1] = NULL;
-    if (strlen(tmp) < 30)
-        ui_print("%s", tmp);
+    struct timeval curtime;
+    gettimeofday(&curtime,NULL);
+    /*
+     * Only update once every NANDROID_UPDATE_INTERVAL
+     * milli seconds.  We don't need frequent progress
+     * updates and updating every file uses WAY
+     * too much CPU time.
+     */
     yaffs_files_count++;
-    if (yaffs_files_total != 0)
-        ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
-    ui_reset_text_col();
+    if(delta_milliseconds(lastupdate,curtime) > NANDROID_UPDATE_INTERVAL)
+      {
+        strcpy(tmp, justfile);
+        if (tmp[strlen(tmp) - 1] == '\n')
+          tmp[strlen(tmp) - 1] = NULL;
+        if (strlen(tmp) < 30) {
+	  lastupdate = curtime;
+          ui_print("%s", tmp);
+	}
+
+        if (yaffs_files_total != 0)
+          ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
+        ui_reset_text_col();
+      }
 }
 
 static void compute_directory_stats(const char* directory)
@@ -103,6 +131,7 @@ typedef int (*nandroid_backup_handler)(const char* backup_path, const char* back
 static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
     char backup_file_image_with_extension[PATH_MAX];
     sprintf(backup_file_image_with_extension, "%s.img", backup_file_image);
+    gettimeofday(&lastupdate,NULL);
     return mkyaffs2image(backup_path, backup_file_image_with_extension, 0, callback ? yaffs_callback : NULL);
 }
 
@@ -118,6 +147,8 @@ static int tar_compress_wrapper(const char* backup_path, const char* backup_file
         ui_print("Unable to execute tar.\n");
         return -1;
     }
+
+    gettimeofday(&lastupdate,NULL);
 
     while (fgets(tmp, PATH_MAX, fp) != NULL) {
         tmp[PATH_MAX - 1] = NULL;
@@ -337,6 +368,7 @@ static void ensure_directory(const char* dir) {
 typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, int callback);
 
 static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+    gettimeofday(&lastupdate,NULL);
     return unyaffs(backup_file_image, backup_path, callback ? yaffs_callback : NULL);
 }
 
@@ -350,6 +382,8 @@ static int tar_extract_wrapper(const char* backup_file_image, const char* backup
         ui_print("Unable to execute tar.\n");
         return -1;
     }
+
+    gettimeofday(&lastupdate,NULL);
 
     while (fgets(path, PATH_MAX, fp) != NULL) {
         if (callback)
