@@ -46,4 +46,6 @@ Volume* get_device_volumes();
 int is_data_media();
 void setup_data_media();
 
+int file_exists(const char * filename);
+
 #endif  // RECOVERY_ROOTS_H_

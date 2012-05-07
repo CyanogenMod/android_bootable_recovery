@@ -16,6 +16,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -394,4 +395,17 @@ int format_volume(const char* volume) {
     return -1;
 #endif
     return format_unknown_device(v->device, volume, v->fs_type);
+}
+
+// checks if a file exists or not
+int file_exists(const char *filename) {
+    FILE *fp;
+
+    fp = fopen(filename, "r");
+    if (fp)
+    {
+        fclose(fp);
+        return 1;
+    }
+    return 0;
 }
