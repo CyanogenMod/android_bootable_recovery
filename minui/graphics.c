@@ -167,7 +167,11 @@ static void get_memory_surface(GGLSurface* ms) {
 static void set_active_framebuffer(unsigned n)
 {
     if (n > 1) return;
+#ifdef QCOM_FB
+    vi.yres_virtual = vi.yres * 2;
+#else
     vi.yres_virtual = vi.yres * PIXEL_SIZE;
+#endif
     vi.yoffset = n * vi.yres;
     vi.bits_per_pixel = PIXEL_SIZE * 8;
     if (ioctl(gr_fb_fd, FBIOPUT_VSCREENINFO, &vi) < 0) {
