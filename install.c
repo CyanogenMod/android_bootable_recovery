@@ -340,13 +340,46 @@ really_install_package(const char *path)
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_print("Finding update package...\n");
     ui_show_indeterminate_progress();
-    LOGI("Update location: %s\n", path);
 
     if (ensure_path_mounted(path) != 0) {
         LOGE("Can't mount %s\n", path);
         return INSTALL_CORRUPT;
     }
 
+    // check if the update package exists at the given path
+    int useAltPath = 0;
+    if (file_exists(path) == 0) {
+        char *altpath = NULL;
+        char sdcard[] = "/sdcard/";
+        char emmc[] = "/emmc/";
+
+        if (strncmp(path, sdcard, 8) == 0) {
+            ui_print("Update package not found at /sdcard, checking /emmc...\n");
+            altpath = malloc(strlen(path) - 2);
+            memcpy(altpath, emmc, 6);
+            memcpy(altpath + 6, path + 8, strlen(path) - 8);
+        } else if (strncmp(path, emmc, 6) == 0) {
+            ui_print("Update package not found at /emmc, checking /sdcard...\n");
+            altpath = malloc(strlen(path) + 2);
+            memcpy(altpath, sdcard, 8);
+            memcpy(altpath + 8, path + 6, strlen(path) - 6);
+        }
+
+        if (ensure_path_mounted(altpath) != 0) {
+            LOGE("Can't mount %s\n", altpath);
+            return INSTALL_CORRUPT;
+        }
+
+        if (file_exists(altpath) == 0) {
+            path = altpath;
+            useAltPath = 1;
+        } else {
+            ui_print("Update package couldn't be found.\n");
+            return INSTALL_CORRUPT;
+        }
+    }
+
+    LOGI("Update location: %s\n", path);
     ui_print("Opening update package...\n");
 
     int err;
@@ -387,7 +420,12 @@ really_install_package(const char *path)
     /* Verify and install the contents of the package.
      */
     ui_print("Installing update...\n");
-    return try_update_binary(path, &zip);
+    int ret = try_update_binary(path, &zip);
+    if(useAltPath == 1) {
+        free(path);
+    }
+
+    return ret;
 }
 
 int
