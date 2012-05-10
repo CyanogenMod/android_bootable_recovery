@@ -71,6 +71,9 @@ static int gr_vt_fd = -1;
 static struct fb_var_screeninfo vi;
 static struct fb_fix_screeninfo fi;
 
+inline size_t roundUpToPageSize(size_t x) {
+    return (x + (PAGE_SIZE-1)) & ~(PAGE_SIZE-1);
+}
 static int get_framebuffer(GGLSurface *fb)
 {
     int fd;
@@ -129,7 +132,8 @@ static int get_framebuffer(GGLSurface *fb)
         return -1;
     }
 
-    bits = mmap(0, fi.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    size_t size = roundUpToPageSize(vi.yres * fi.line_length) * NUM_BUFFERS ;
+    bits = mmap(0,size , PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (bits == MAP_FAILED) {
         perror("failed to mmap framebuffer");
         close(fd);
@@ -142,7 +146,7 @@ static int get_framebuffer(GGLSurface *fb)
     fb->stride = fi.line_length/PIXEL_SIZE;
     fb->data = bits;
     fb->format = PIXEL_FORMAT;
-    memset(fb->data, 0, vi.yres * fi.line_length);
+    memset(fb->data, 0,roundUpToPageSize(vi.yres * fi.line_length));
 
     fb++;
 
@@ -150,10 +154,9 @@ static int get_framebuffer(GGLSurface *fb)
     fb->width = vi.xres;
     fb->height = vi.yres;
     fb->stride = fi.line_length/PIXEL_SIZE;
-    fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length);
+    fb->data = (void*) (((unsigned) bits) + roundUpToPageSize(vi.yres * fi.line_length));
     fb->format = PIXEL_FORMAT;
-    memset(fb->data, 0, vi.yres * fi.line_length);
-
+    memset(fb->data, 0, roundUpToPageSize(vi.yres * fi.line_length));
     return fd;
 }
 
