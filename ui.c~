@@ -865,6 +865,7 @@ int ui_wait_key()
             return key;
         }
     } while (key_queue_len == 0);
+
     return key;
 }
 
