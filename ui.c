@@ -53,6 +53,8 @@ static int gShowBackButton = 0;
 #define CHAR_HEIGHT BOARD_RECOVERY_CHAR_HEIGHT
 
 #define UI_WAIT_KEY_TIMEOUT_SEC    3600
+#define UI_KEY_REPEAT_INTERVAL 100
+#define UI_KEY_WAIT_REPEAT 400
 
 UIParameters ui_parameters = {
     6,       // indeterminate progress bar frames
@@ -113,7 +115,7 @@ static int max_menu_rows;
 // Key event input queue
 static pthread_mutex_t key_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t key_queue_cond = PTHREAD_COND_INITIALIZER;
-static int key_queue[256], key_queue_len = 0;
+static int key_queue[256], key_queue_len = 0, key_vqueue[256], key_last_repeat[KEY_MAX + 1], key_press_time[KEY_MAX + 1];
 static volatile char key_pressed[KEY_MAX + 1];
 
 // Return the current time as a double (including fractions of a second).
@@ -402,10 +404,18 @@ static int input_callback(int fd, short revents, void *data)
         // key-up), so don't record them in the key_pressed
         // table.
         key_pressed[ev.code] = ev.value;
+
+        struct timeval now;
+        gettimeofday(&now, NULL);
+
+        key_press_time[ev.code] = (now.tv_sec * 1000) + (now.tv_usec / 1000);
+        key_last_repeat[ev.code] = 0;
     }
     const int queue_max = sizeof(key_queue) / sizeof(key_queue[0]);
     if (ev.value > 0 && key_queue_len < queue_max) {
-        key_queue[key_queue_len++] = ev.code;
+        key_queue[key_queue_len] = ev.code;
+        key_vqueue[key_queue_len] = ev.value;
+        key_queue_len++;
         pthread_cond_signal(&key_queue_cond);
     }
     pthread_mutex_unlock(&key_queue_mutex);
@@ -779,13 +789,41 @@ int ui_wait_key()
             rc = pthread_cond_timedwait(&key_queue_cond, &key_queue_mutex,
                                         &timeout);
         }
-    } while (usb_connected() && key_queue_len == 0);
+    } while (usb_connected() && (key_queue_len == 0));
 
     int key = -1;
-    if (key_queue_len > 0) {
+    while (key_queue_len > 0) {
         key = key_queue[0];
+        int val = key_vqueue[0];
         memcpy(&key_queue[0], &key_queue[1], sizeof(int) * --key_queue_len);
+        memcpy(&key_vqueue[0], &key_vqueue[1], sizeof(int) * key_queue_len);
+        // Handle long presses
+        if (val == 1) {
+            int now_msec;
+            struct timeval now;
+            gettimeofday(&now, NULL);
+            now_msec = (now.tv_sec * 1000) + (now.tv_usec / 1000);
+
+            if (key_pressed[key] == 1) {
+                key_vqueue[key_queue_len] = key_pressed[key];
+                key_queue[key_queue_len++] = key;
+            } else {
+                key = -2;
+                break;
+            }
+
+            if (now_msec > key_press_time[key] + UI_KEY_WAIT_REPEAT &&
+                now_msec > key_last_repeat[key] + UI_KEY_REPEAT_INTERVAL) { // repeat presses
+                key_last_repeat[key] = now_msec;
+            } else if (key_last_repeat[key] > 0) { // in between
+                key = -2;
+            } else { // first press
+                key_last_repeat[key] = now_msec;
+            }
+        }
+        break;
     }
+
     pthread_mutex_unlock(&key_queue_mutex);
     return key;
 }
