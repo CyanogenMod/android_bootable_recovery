@@ -304,7 +304,7 @@ static int read_block(const MtdPartition *partition, int fd, char *data)
                     after.failed - before.failed, pos);
             // copy the comparison baseline for the next read.
             memcpy(&before, &after, sizeof(struct mtd_ecc_stats));
-        } else if ((mgbb = ioctl(fd, MEMGETBADBLOCK, &pos))) {
+        } else if ((mgbb = ioctl(fd, MEMGETBADBLOCK, &pos)) && !(mgbb = -1 && errno == EOPNOTSUPP)) {
             fprintf(stderr,
                     "mtd: MEMGETBADBLOCK returned %d at 0x%08llx (errno=%d)\n",
                     mgbb, pos, errno);
