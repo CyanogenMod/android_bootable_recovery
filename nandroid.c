@@ -140,7 +140,11 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
         return NULL;
     }
 
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+    if (strcmp(backup_path, "/data") == 0) {
+#else
     if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
+#endif
         return tar_compress_wrapper;
     }
 
@@ -372,7 +376,11 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
         return NULL;
     }
 
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+    if (strcmp(backup_path, "/data") == 0) {
+#else
     if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
+#endif
         return tar_extract_wrapper;
     }
 
@@ -451,8 +459,13 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         // Or of volume does not exist (.android_secure), just rm -rf.
         if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
             backup_filesystem = NULL;
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+        else if (0 == strcmp(vol->mount_point, "/data"))
+            backup_filesystem = NULL;
+#else
         else if (0 == strcmp(vol->mount_point, "/data") && volume_for_path("/sdcard") == NULL && is_data_media())
 	         backup_filesystem = NULL;
+#endif
     }
 
     ensure_directory(mount_point);

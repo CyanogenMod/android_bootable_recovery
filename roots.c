@@ -336,7 +336,11 @@ int format_volume(const char* volume) {
     }
     // check to see if /data is being formatted, and if it is /data/media
     // Note: the /sdcard check is redundant probably, just being safe.
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+    if (strstr(volume, "/data") == volume) {
+#else
     if (strstr(volume, "/data") == volume && volume_for_path("/sdcard") == NULL && is_data_media()) {
+#endif
         return format_unknown_device(NULL, volume, NULL);
     }
     if (strcmp(v->fs_type, "ramdisk") == 0) {
