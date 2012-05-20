@@ -454,9 +454,12 @@ int format_device(const char *device, const char *path, const char *fs_type) {
         LOGE("unknown volume \"%s\"\n", path);
         return -1;
     }
-    if (strstr(path, "/data") == path && volume_for_path("/sdcard") == NULL && is_data_media()) {
+
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+    if (strstr(path, "/data") == path) {
         return format_unknown_device(NULL, path, NULL);
     }
+#endif
     if (strcmp(fs_type, "ramdisk") == 0) {
         // you can't format the ramdisk.
         LOGE("can't format_volume \"%s\"", path);

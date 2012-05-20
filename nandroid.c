@@ -139,11 +139,11 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
         ui_print("Unable to find mounted volume: %s\n", v->mount_point);
         return NULL;
     }
-
-    if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+    if (strcmp(backup_path, "/data") == 0) {
         return tar_compress_wrapper;
     }
-
+#endif
     // cwr5, we prefer tar for everything except yaffs2
     if (strcmp("yaffs2", mv->filesystem) == 0) {
         return mkyaffs2image_wrapper;
@@ -371,11 +371,11 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
         ui_print("Unable to find mounted volume: %s\n", v->mount_point);
         return NULL;
     }
-
-    if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+    if (strcmp(backup_path, "/data") == 0) {
         return tar_extract_wrapper;
     }
-
+#endif
     // cwr 5, we prefer tar for everything unless it is yaffs2
     char str[255];
     char* partition;
@@ -451,8 +451,10 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         // Or of volume does not exist (.android_secure), just rm -rf.
         if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
             backup_filesystem = NULL;
-        else if (0 == strcmp(vol->mount_point, "/data") && volume_for_path("/sdcard") == NULL && is_data_media())
-	         backup_filesystem = NULL;
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+        else if (0 == strcmp(vol->mount_point, "/data"))
+            backup_filesystem = NULL;
+#endif
     }
 
     ensure_directory(mount_point);

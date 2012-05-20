@@ -334,11 +334,11 @@ int format_volume(const char* volume) {
         LOGE("unknown volume \"%s\"\n", volume);
         return -1;
     }
-    // check to see if /data is being formatted, and if it is /data/media
-    // Note: the /sdcard check is redundant probably, just being safe.
-    if (strstr(volume, "/data") == volume && volume_for_path("/sdcard") == NULL && is_data_media()) {
+#ifdef BOARD_USES_DATA_MEDIA_FOR_STORAGE
+    if (strstr(volume, "/data") == volume) {
         return format_unknown_device(NULL, volume, NULL);
     }
+#endif
     if (strcmp(v->fs_type, "ramdisk") == 0) {
         // you can't format the ramdisk.
         LOGE("can't format_volume \"%s\"", volume);
