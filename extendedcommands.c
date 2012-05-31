@@ -594,7 +594,11 @@ int confirm_selection(const char* title, const char* confirm)
         return 1;
 
     char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
-    if (0 == stat("/sdcard/clockworkmod/.one_confirm", &info)) {
+    int one_confirm = 0 == stat("/sdcard/clockworkmod/.one_confirm", &info);
+#ifdef BOARD_TOUCH_RECOVERY
+    one_confirm = 1;
+#endif 
+    if (one_confirm) {
         char* items[] = { "No",
                         confirm, //" Yes -- wipe partition",   // [1]
                         NULL };
@@ -897,14 +901,28 @@ void show_partition_menu()
           options[mountable_volumes + formatable_volumes + 1] = NULL;
         }
         else {
-          options[mountable_volumes + formatable_volumes] = NULL;
+          options[mountable_volumes + formatable_volumes] = "format /data and /data/media (/sdcard)";
+          options[mountable_volumes + formatable_volumes + 1] = NULL;
         }
 
         int chosen_item = get_menu_selection(headers, &options, 0, 0);
         if (chosen_item == GO_BACK)
             break;
         if (chosen_item == (mountable_volumes+formatable_volumes)) {
-            show_mount_usb_storage_menu();
+            if (!is_data_media()) {
+                show_mount_usb_storage_menu();
+            }
+            else {
+                if (!confirm_selection("format /data and /data/media (/sdcard)", confirm))
+                    continue;
+                handle_data_media_format(1);
+                ui_print("Formatting /data...\n");
+                if (0 != format_volume("/data"))
+                    ui_print("Error formatting /data!\n");
+                else
+                    ui_print("Done.\n");
+                handle_data_media_format(0);  
+            }
         }
         else if (chosen_item < mountable_volumes) {
             MountMenuEntry* e = &mount_menu[chosen_item];
@@ -1187,14 +1205,6 @@ void show_nandroid_menu()
     }
 }
 
-void wipe_battery_stats()
-{
-    ensure_path_mounted("/data");
-    remove("/data/system/batterystats.bin");
-    ensure_path_unmounted("/data");
-    ui_print("Battery Stats wiped.\n");
-}
-
 static void partition_sdcard(const char* volume) {
     if (!can_partition(volume)) {
         ui_print("Can't partition device: %s\n", volume);
@@ -1273,7 +1283,6 @@ void show_advanced_menu()
 
     static char* list[] = { "reboot recovery",
                             "wipe dalvik cache",
-                            "wipe battery stats",
                             "report error",
                             "key test",
                             "show log",
@@ -1318,13 +1327,9 @@ void show_advanced_menu()
                 ensure_path_unmounted("/data");
                 break;
             case 2:
-                if (confirm_selection( "Confirm wipe?", "Yes - Wipe Battery Stats"))
-                    wipe_battery_stats();
-                break;
-            case 3:
                 handle_failure(1);
                 break;
-            case 4:
+            case 3:
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
@@ -1339,23 +1344,23 @@ void show_advanced_menu()
                 while (action != GO_BACK);
                 break;
             }
-            case 5:
+            case 4:
                 ui_printlogtail(12);
                 break;
-            case 6:
+            case 5:
                 ensure_path_mounted("/system");
                 ensure_path_mounted("/data");
                 ui_print("Fixing permissions...\n");
                 __system("fix_permissions");
                 ui_print("Done!\n");
                 break;
-            case 7:
+            case 6:
                 partition_sdcard("/sdcard");
                 break;
-            case 8:
+            case 7:
                 partition_sdcard("/external_sd");
                 break;
-            case 9:
+            case 8:
                 partition_sdcard("/emmc");
                 break;
         }
