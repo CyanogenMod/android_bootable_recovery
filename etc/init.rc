@@ -14,6 +14,7 @@ on init
     mkdir /sd-ext
     mkdir /datadata
     mkdir /emmc
+    mkdir /external_sd
     mkdir /system
     mkdir /data
     mkdir /cache

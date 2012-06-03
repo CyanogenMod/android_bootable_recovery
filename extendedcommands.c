@@ -84,7 +84,11 @@ char* INSTALL_MENU_ITEMS[] = {  "choose zip from sdcard",
                                 "apply /sdcard/update.zip",
                                 "toggle signature verification",
                                 "toggle script asserts",
+#ifdef BOARD_INTERNAL_STORAGE_IS_PRIMARY
+                                "choose zip from removable sdcard",
+#else
                                 "choose zip from internal sdcard",
+#endif
                                 NULL };
 #define ITEM_CHOOSE_ZIP       0
 #define ITEM_APPLY_SDCARD     1
@@ -98,10 +102,10 @@ void show_install_update_menu()
                                 "",
                                 NULL
     };
-    
-    if (volume_for_path("/emmc") == NULL)
+
+    if (volume_for_path("/emmc") == NULL && volume_for_path("/external_sd") == NULL)
         INSTALL_MENU_ITEMS[ITEM_CHOOSE_ZIP_INT] = NULL;
-    
+
     for (;;)
     {
         int chosen_item = get_menu_selection(headers, INSTALL_MENU_ITEMS, 0, 0);
@@ -123,7 +127,11 @@ void show_install_update_menu()
                 show_choose_zip_menu("/sdcard/");
                 break;
             case ITEM_CHOOSE_ZIP_INT:
+#ifdef BOARD_INTERNAL_STORAGE_IS_PRIMARY
+                show_choose_zip_menu("/external_sd/");
+#else
                 show_choose_zip_menu("/emmc/");
+#endif
                 break;
             default:
                 return;
@@ -828,9 +836,15 @@ void show_nandroid_menu()
     static char* list[] = { "backup",
                             "restore",
                             "advanced restore",
+#ifdef BOARD_INTERNAL_STORAGE_IS_PRIMARY
+                            "backup to removable sdcard",
+                            "restore from removable sdcard",
+                            "advanced restore from removable sdcard",
+#else
                             "backup to internal sdcard",
                             "restore from internal sdcard",
                             "advanced restore from internal sdcard",
+#endif
                             NULL
     };
 
@@ -873,20 +887,40 @@ void show_nandroid_menu()
                 {
                     struct timeval tp;
                     gettimeofday(&tp, NULL);
-                    sprintf(backup_path, "/emmc/clockworkmod/backup/%d", tp.tv_sec);
+                    sprintf(backup_path, "/%s/clockworkmod/backup/%d",
+#ifdef BOARD_INTERNAL_STORAGE_IS_PRIMARY
+                                    "external_sd",
+#else
+                                    "emmc",
+#endif
+                                    tp.tv_sec);
                 }
                 else
                 {
-                    strftime(backup_path, sizeof(backup_path), "/emmc/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                    strftime(backup_path, sizeof(backup_path),
+#ifdef BOARD_INTERNAL_STORAGE_IS_PRIMARY
+                                    "/external_sd/clockworkmod/backup/%F.%H.%M.%S",
+#else
+                                    "/emmc/clockworkmod/backup/%F.%H.%M.%S",
+#endif
+                                    tmp);
                 }
                 nandroid_backup(backup_path);
             }
             break;
         case 4:
+#ifdef BOARD_INTERNAL_STORAGE_IS_PRIMARY
+            show_nandroid_restore_menu("/external_sd");
+#else
             show_nandroid_restore_menu("/emmc");
+#endif
             break;
         case 5:
+#ifdef BOARD_INTERNAL_STORAGE_IS_PRIMARY
+            show_nandroid_advanced_restore_menu("/external_sd");
+#else
             show_nandroid_advanced_restore_menu("/emmc");
+#endif
             break;
     }
 }
@@ -1114,6 +1148,7 @@ void create_fstab()
     write_fstab_root("/system", file);
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
+    write_fstab_root("/external_sd", file);
     fclose(file);
     LOGI("Completed outputting fstab.\n");
 }
