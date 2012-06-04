@@ -42,7 +42,6 @@
 #include <libgen.h>
 #include "mtdutils/mtdutils.h"
 #include "bmlutils/bmlutils.h"
-#include "cutils/android_reboot.h"
 
 
 int signature_check_enabled = 1;
@@ -929,7 +928,10 @@ void show_advanced_menu()
         {
             case 0:
             {
-                android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
+#ifdef TARGET_RECOVERY_PRE_COMMAND
+                __system(TARGET_RECOVERY_PRE_COMMAND " recovery");
+#endif
+                __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, LINUX_REBOOT_CMD_RESTART2, "recovery");
                 break;
             }
             case 1:
