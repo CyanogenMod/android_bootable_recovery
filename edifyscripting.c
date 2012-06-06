@@ -317,6 +317,9 @@ int run_script_from_buffer(char* script_data, int script_len, char* filename)
 int run_and_remove_extendedcommand()
 {
     char tmp[PATH_MAX];
+    static char* additional_storage = NULL;
+    static char* additional_text;
+
     sprintf(tmp, "cp %s /tmp/%s", EXTENDEDCOMMAND_SCRIPT, basename(EXTENDEDCOMMAND_SCRIPT));
     __system(tmp);
     remove(EXTENDEDCOMMAND_SCRIPT);
@@ -338,15 +341,26 @@ int run_and_remove_extendedcommand()
     struct stat st;
     if (stat("/sdcard/clockworkmod/.salted_hash", &st) != 0) {
         ui_print("SD Card marker not found...\n");
-        if (volume_for_path("/emmc") != NULL) {
-            ui_print("Checking Internal SD Card marker...\n");
-            ensure_path_unmounted("/sdcard");
-            if (ensure_path_mounted_at_mount_point("/emmc", "/sdcard") != 0) {
-                ui_print("Internal SD Card marker not found... continuing anyways.\n");
-                // unmount everything, and remount as normal
-                ensure_path_unmounted("/emmc");
-                ensure_path_unmounted("/sdcard");
 
+        if (volume_for_path(BOARD_EMMC_PATH) != NULL && volume_for_path(BOARD_EXTSDCARD_PATH) == NULL)
+        {
+            additional_storage = BOARD_EMMC_PATH;
+            additional_text = "Internal";
+        }
+        else if (volume_for_path(BOARD_EMMC_PATH) == NULL && volume_for_path(BOARD_EXTSDCARD_PATH) != NULL)
+        {
+            additional_storage = BOARD_EXTSDCARD_PATH;
+            additional_text = "External";
+        }
+
+        if (additional_storage != NULL) {
+            ui_print("Checking %s SD Card marker...\n", additional_text);
+            ensure_path_unmounted("/sdcard");
+            if (ensure_path_mounted_at_mount_point(additional_storage, "/sdcard") != 0) {
+                ui_print("%s SD Card marker not found... continuing anyways.\n", additional_text);
+                // unmount everything, and remount as normal
+                ensure_path_unmounted(additional_storage);
+                ensure_path_unmounted("/sdcard");
                 ensure_path_mounted("/sdcard");
             }
         }
