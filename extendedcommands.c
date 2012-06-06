@@ -84,24 +84,55 @@ char* INSTALL_MENU_ITEMS[] = {  "choose zip from sdcard",
                                 "apply /sdcard/update.zip",
                                 "toggle signature verification",
                                 "toggle script asserts",
-                                "choose zip from internal sdcard",
+                                "choose zip from additional storage",
                                 NULL };
 #define ITEM_CHOOSE_ZIP       0
 #define ITEM_APPLY_SDCARD     1
 #define ITEM_SIG_CHECK        2
 #define ITEM_ASSERTS          3
-#define ITEM_CHOOSE_ZIP_INT   4
+#define ITEM_CHOOSE_ZIP_ADD   4
 
 void show_install_update_menu()
 {
+    static char* additional_storage = NULL;
     static char* headers[] = {  "Apply update from .zip file on SD card",
                                 "",
                                 NULL
     };
     
-    if (volume_for_path("/emmc") == NULL)
-        INSTALL_MENU_ITEMS[ITEM_CHOOSE_ZIP_INT] = NULL;
-    
+    if (volume_for_path("/emmc") == NULL && volume_for_path("/extsdcard") == NULL)
+    {
+        // don't show menu item if there's no emmc and extsdcard defined
+        INSTALL_MENU_ITEMS[ITEM_CHOOSE_ZIP_ADD] = NULL;
+    }
+    else if (volume_for_path("/emmc") != NULL && volume_for_path("/extsdcard") == NULL)
+    {
+        // show menu item for emmc
+        INSTALL_MENU_ITEMS[ITEM_CHOOSE_ZIP_ADD] = "choose zip from internal sdcard";
+        additional_storage = "/emmc/";
+    }
+    else if (volume_for_path("/emmc") == NULL && volume_for_path("/extsdcard") != NULL)
+    {
+        // show menu item for extsdcard
+        INSTALL_MENU_ITEMS[ITEM_CHOOSE_ZIP_ADD] = "choose zip from external sdcard";
+        additional_storage = "/extsdcard/";
+    }
+    else
+    {
+        /*
+         * hide menu to show the developer to not use /emmc and /extsdcard at same time
+         *
+         * Allowed configurations:
+         * emmc storage only                   : /sdcard
+         * external sdcard only                : /sdcard
+         * fused /data/media only              : /sdcard
+         * emmc storage + external sdcard      : /emmc and /sdcard
+         * fused /data/media + external sdcard : /sdcard and /extsdcard
+         *
+         */
+        INSTALL_MENU_ITEMS[ITEM_CHOOSE_ZIP_ADD] = NULL;
+    }
+
     for (;;)
     {
         int chosen_item = get_menu_selection(headers, INSTALL_MENU_ITEMS, 0, 0);
@@ -122,8 +153,9 @@ void show_install_update_menu()
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu("/sdcard/");
                 break;
-            case ITEM_CHOOSE_ZIP_INT:
-                show_choose_zip_menu("/emmc/");
+            case ITEM_CHOOSE_ZIP_ADD:
+                if(additional_storage != NULL)
+                    show_choose_zip_menu(additional_storage);
                 break;
             default:
                 return;
@@ -412,30 +444,30 @@ int confirm_selection(const char* title, const char* confirm)
         return 1;
 
     char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
-	if (0 == stat("/sdcard/clockworkmod/.one_confirm", &info)) {
-		char* items[] = { "No",
-						confirm, //" Yes -- wipe partition",   // [1]
-						NULL };
-		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
-		return chosen_item == 1;
-	}
-	else {
-		char* items[] = { "No",
-						"No",
-						"No",
-						"No",
-						"No",
-						"No",
-						"No",
-						confirm, //" Yes -- wipe partition",   // [7]
-						"No",
-						"No",
-						"No",
-						NULL };
-		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
-		return chosen_item == 7;
-	}
-	}
+    if (0 == stat("/sdcard/clockworkmod/.one_confirm", &info)) {
+        char* items[] = { "No",
+                          confirm, //" Yes -- wipe partition",   // [1]
+                          NULL };
+        int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
+        return chosen_item == 1;
+    }
+    else {
+        char* items[] = { "No",
+                          "No",
+                          "No",
+                          "No",
+                          "No",
+                          "No",
+                          "No",
+                          confirm, //" Yes -- wipe partition",   // [7]
+                          "No",
+                          "No",
+                          "No",
+                          NULL };
+        int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
+        return chosen_item == 7;
+    }
+}
 
 #define MKE2FS_BIN      "/sbin/mke2fs"
 #define TUNE2FS_BIN     "/sbin/tune2fs"
@@ -820,27 +852,68 @@ void show_nandroid_advanced_restore_menu(const char* path)
 
 void show_nandroid_menu()
 {
+    static char* additional_storage = NULL;
     static char* headers[] = {  "Nandroid",
                                 "",
                                 NULL
     };
 
-    static char* list[] = { "backup",
-                            "restore",
-                            "advanced restore",
-                            "backup to internal sdcard",
-                            "restore from internal sdcard",
-                            "advanced restore from internal sdcard",
-                            NULL
-    };
+    static char* NANDROID_MENU_LIST[] = { "backup",
+                                            "restore",
+                                            "advanced restore",
+                                            "backup to additional storage",
+                                            "restore from additional storage",
+                                            "advanced restore from additional storage",
+                                            NULL };
 
-    if (volume_for_path("/emmc") == NULL || volume_for_path("/sdcard") == NULL && is_data_media())
-        list[3] = NULL;
+#define ITEM_BACKUP                           0
+#define ITEM_RESTORE                          1
+#define ITEM_ADVANCED_RESTORE                 2
+#define ITEM_BACKUP_TO_ADDITIONAL             3
+#define ITEM_RESTORE_FROM_ADDITIONAL          4
+#define ITEM_ADVANCED_RESTORE_FROM_ADDITIONAL 5
 
-    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    if (volume_for_path("/emmc") == NULL && volume_for_path("/extsdcard") == NULL)
+    {
+        // don't show menu item if there's no emmc and extsdcard defined
+        NANDROID_MENU_LIST[ITEM_BACKUP_TO_ADDITIONAL] = NULL;
+    }
+    else if (volume_for_path("/emmc") != NULL && volume_for_path("/extsdcard") == NULL)
+    {
+        // show menu item for emmc
+        NANDROID_MENU_LIST[ITEM_BACKUP_TO_ADDITIONAL] = "backup to internal sdcard";
+        NANDROID_MENU_LIST[ITEM_RESTORE_FROM_ADDITIONAL] = "restore from internal sdcard";
+        NANDROID_MENU_LIST[ITEM_ADVANCED_RESTORE_FROM_ADDITIONAL] = "advanced restore from internal sdcard";
+        additional_storage = "/emmc";
+    }
+    else if (volume_for_path("/emmc") == NULL && volume_for_path("/extsdcard") != NULL)
+    {
+        // show menu item for extsdcard
+        NANDROID_MENU_LIST[ITEM_BACKUP_TO_ADDITIONAL] = "backup to external sdcard";
+        NANDROID_MENU_LIST[ITEM_RESTORE_FROM_ADDITIONAL] = "restore from external sdcard";
+        NANDROID_MENU_LIST[ITEM_ADVANCED_RESTORE_FROM_ADDITIONAL] = "advanced restore from external sdcard";
+        additional_storage = "/extsdcard";
+    }
+    else
+    {
+        /*
+         * hide menu to show the developer to not use /emmc and /extsdcard at same time
+         *
+         * Allowed configurations:
+         * emmc storage only                   : /sdcard
+         * external sdcard only                : /sdcard
+         * fused /data/media only              : /sdcard
+         * emmc storage + external sdcard      : /emmc and /sdcard
+         * fused /data/media + external sdcard : /sdcard and /extsdcard
+         *
+         */
+        NANDROID_MENU_LIST[ITEM_BACKUP_TO_ADDITIONAL] = NULL;
+    }
+
+    int chosen_item = get_menu_selection(headers, NANDROID_MENU_LIST, 0, 0);
     switch (chosen_item)
     {
-        case 0:
+        case ITEM_BACKUP:
             {
                 char backup_path[PATH_MAX];
                 time_t t = time(NULL);
@@ -858,35 +931,41 @@ void show_nandroid_menu()
                 nandroid_backup(backup_path);
             }
             break;
-        case 1:
+        case ITEM_RESTORE:
             show_nandroid_restore_menu("/sdcard");
             break;
-        case 2:
+        case ITEM_ADVANCED_RESTORE:
             show_nandroid_advanced_restore_menu("/sdcard");
             break;
-        case 3:
+        case ITEM_BACKUP_TO_ADDITIONAL:
             {
-                char backup_path[PATH_MAX];
-                time_t t = time(NULL);
-                struct tm *tmp = localtime(&t);
-                if (tmp == NULL)
+                if (additional_storage != NULL)
                 {
-                    struct timeval tp;
-                    gettimeofday(&tp, NULL);
-                    sprintf(backup_path, "/emmc/clockworkmod/backup/%d", tp.tv_sec);
+                    char backup_path[PATH_MAX];
+                    time_t t = time(NULL);
+                    struct tm *tmp = localtime(&t);
+                    if (tmp == NULL)
+                    {
+                        struct timeval tp;
+                        gettimeofday(&tp, NULL);
+                        sprintf(backup_path, "%s/clockworkmod/backup/%d", additional_storage, tp.tv_sec);
+                    }
+                    else
+                    {
+                        if (strcmp(additional_storage, "/emmc"))
+                            strftime(backup_path, sizeof(backup_path), "/emmc/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                        else if (strcmp(additional_storage, "/extsdcard"))
+                            strftime(backup_path, sizeof(backup_path), "/extsdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                    }
+                    nandroid_backup(backup_path);
                 }
-                else
-                {
-                    strftime(backup_path, sizeof(backup_path), "/emmc/clockworkmod/backup/%F.%H.%M.%S", tmp);
-                }
-                nandroid_backup(backup_path);
             }
             break;
-        case 4:
-            show_nandroid_restore_menu("/emmc");
+        case ITEM_RESTORE_FROM_ADDITIONAL:
+            show_nandroid_restore_menu(additional_storage);
             break;
-        case 5:
-            show_nandroid_advanced_restore_menu("/emmc");
+        case ITEM_ADVANCED_RESTORE_FROM_ADDITIONAL:
+            show_nandroid_advanced_restore_menu(additional_storage);
             break;
     }
 }
@@ -901,38 +980,82 @@ void wipe_battery_stats()
 
 void show_advanced_menu()
 {
+    static char* additional_storage = NULL;
+    static char* additional_text;
     static char* headers[] = {  "Advanced and Debugging Menu",
                                 "",
                                 NULL
     };
 
-    static char* list[] = { "Reboot Recovery",
-                            "Wipe Dalvik Cache",
-                            "Wipe Battery Stats",
-                            "Report Error",
-                            "Key Test",
-                            "Show log",
-                            "Partition SD Card",
-                            "Fix Permissions",
-#ifdef BOARD_HAS_SDCARD_INTERNAL
-                            "Partition Internal SD Card",
-#endif
-                            NULL
-    };
+    static char* ADVANCED_MENU_LIST[] = { "Reboot Recovery",
+                                            "Wipe Dalvik Cache",
+                                            "Wipe Battery Stats",
+                                            "Report Error",
+                                            "Key Test",
+                                            "Show log",
+                                            "Partition SD Card",
+                                            "Fix Permissions",
+                                            "Partition additional Storage",
+                                            NULL };
+
+#define ITEM_REBOOT                 0
+#define ITEM_WIPE_DALVIK            1
+#define ITEM_WIPE_BATTERY_STATS     2
+#define ITEM_REPORT_ERROR           3
+#define ITEM_KEY_TEST               4
+#define ITEM_SHOW_LOG               5
+#define ITEM_PARTITION_SDCARD       6
+#define ITEM_FIX_PERMISSIONS        7
+#define ITEM_PARTITION_ADDITIONAL   8
+
+    if (volume_for_path("/emmc") == NULL && volume_for_path("/extsdcard") == NULL)
+    {
+        // don't show menu item if there's no emmc and extsdcard defined
+        ADVANCED_MENU_LIST[ITEM_PARTITION_ADDITIONAL] = NULL;
+    }
+    else if (volume_for_path("/emmc") != NULL && volume_for_path("/extsdcard") == NULL)
+    {
+        // show menu item for emmc
+        ADVANCED_MENU_LIST[ITEM_PARTITION_ADDITIONAL] = "Partition internal SD Card";
+        additional_storage = "/emmc";
+        additional_text = "internal";
+    }
+    else if (volume_for_path("/emmc") == NULL && volume_for_path("/extsdcard") != NULL)
+    {
+        // show menu item for extsdcard
+        ADVANCED_MENU_LIST[ITEM_PARTITION_ADDITIONAL] = "Partition external SD Card";
+        additional_storage = "/extsdcard";
+        additional_text = "external";
+    }
+    else
+    {
+        /*
+         * hide menu to show the developer to not use /emmc and /extsdcard at same time
+         *
+         * Allowed configurations:
+         * emmc storage only                   : /sdcard
+         * external sdcard only                : /sdcard
+         * fused /data/media only              : /sdcard
+         * emmc storage + external sdcard      : /emmc and /sdcard
+         * fused /data/media + external sdcard : /sdcard and /extsdcard
+         *
+         */
+        ADVANCED_MENU_LIST[ITEM_PARTITION_ADDITIONAL] = NULL;
+    }
 
     for (;;)
     {
-        int chosen_item = get_menu_selection(headers, list, 0, 0);
+        int chosen_item = get_menu_selection(headers, ADVANCED_MENU_LIST, 0, 0);
         if (chosen_item == GO_BACK)
             break;
         switch (chosen_item)
         {
-            case 0:
+            case ITEM_REBOOT:
             {
                 android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
                 break;
             }
-            case 1:
+            case ITEM_WIPE_DALVIK:
             {
                 if (0 != ensure_path_mounted("/data"))
                     break;
@@ -947,16 +1070,16 @@ void show_advanced_menu()
                 ensure_path_unmounted("/data");
                 break;
             }
-            case 2:
+            case ITEM_WIPE_BATTERY_STATS:
             {
                 if (confirm_selection( "Confirm wipe?", "Yes - Wipe Battery Stats"))
                     wipe_battery_stats();
                 break;
             }
-            case 3:
+            case ITEM_REPORT_ERROR:
                 handle_failure(1);
                 break;
-            case 4:
+            case ITEM_KEY_TEST:
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
@@ -971,12 +1094,12 @@ void show_advanced_menu()
                 while (action != GO_BACK);
                 break;
             }
-            case 5:
+            case ITEM_SHOW_LOG:
             {
                 ui_printlogtail(12);
                 break;
             }
-            case 6:
+            case ITEM_PARTITION_SDCARD:
             {
                 static char* ext_sizes[] = { "128M",
                                              "256M",
@@ -1019,7 +1142,7 @@ void show_advanced_menu()
                     ui_print("An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n");
                 break;
             }
-            case 7:
+            case ITEM_FIX_PERMISSIONS:
             {
                 ensure_path_mounted("/system");
                 ensure_path_mounted("/data");
@@ -1028,22 +1151,22 @@ void show_advanced_menu()
                 ui_print("Done!\n");
                 break;
             }
-            case 8:
+            case ITEM_PARTITION_ADDITIONAL:
             {
                 static char* ext_sizes[] = { "128M",
-                                             "256M",
-                                             "512M",
-                                             "1024M",
-                                             "2048M",
-                                             "4096M",
-                                             NULL };
+                                               "256M",
+                                               "512M",
+                                               "1024M",
+                                               "2048M",
+                                               "4096M",
+                                               NULL };
 
                 static char* swap_sizes[] = { "0M",
-                                              "32M",
-                                              "64M",
-                                              "128M",
-                                              "256M",
-                                              NULL };
+                                                "32M",
+                                                "64M",
+                                                "128M",
+                                                "256M",
+                                                NULL };
 
                 static char* ext_headers[] = { "Data Size", "", NULL };
                 static char* swap_headers[] = { "Swap Size", "", NULL };
@@ -1057,18 +1180,19 @@ void show_advanced_menu()
                     continue;
 
                 char sddevice[256];
-                Volume *vol = volume_for_path("/emmc");
+                Volume *vol = volume_for_path(additional_storage);
                 strcpy(sddevice, vol->device);
                 // we only want the mmcblk, not the partition
                 sddevice[strlen("/dev/block/mmcblkX")] = NULL;
                 char cmd[PATH_MAX];
                 setenv("SDPATH", sddevice, 1);
                 sprintf(cmd, "sdparted -es %s -ss %s -efs ext3 -s", ext_sizes[ext_size], swap_sizes[swap_size]);
-                ui_print("Partitioning Internal SD Card... please wait...\n");
+                ui_print("Partitioning %s SD Card... please wait...\n", additional_text);
+
                 if (0 == __system(cmd))
                     ui_print("Done!\n");
                 else
-                    ui_print("An error occured while partitioning your Internal SD Card. Please see /tmp/recovery.log for more details.\n");
+                    ui_print("An error occured while partitioning your %s SD Card. Please see /tmp/recovery.log for more details.\n", additional_text);
                 break;
             }
         }
@@ -1111,6 +1235,7 @@ void create_fstab()
     write_fstab_root("/data", file);
     write_fstab_root("/datadata", file);
     write_fstab_root("/emmc", file);
+    write_fstab_root("/extsdcard", file);
     write_fstab_root("/system", file);
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
