@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/vfs.h>
 
 #include "common.h"
 #include "install.h"
@@ -41,6 +42,7 @@
 #define ASSUMED_UPDATE_BINARY_NAME  "META-INF/com/google/android/update-binary"
 #define ASSUMED_UPDATE_SCRIPT_NAME  "META-INF/com/google/android/update-script"
 #define PUBLIC_KEYS_FILE "/res/keys"
+#define INCLUDED_BINARY_NAME "/sbin/update-binary"
 
 // The update binary ask us to install a firmware file on reboot.  Set
 // that up.  Takes ownership of type and filename.
@@ -108,38 +110,38 @@ static const char *LAST_INSTALL_FILE = "/cache/recovery/last_install";
 // If the package contains an update binary, extract it and run it.
 static int
 try_update_binary(const char *path, ZipArchive *zip) {
-    const ZipEntry* binary_entry =
-            mzFindZipEntry(zip, ASSUMED_UPDATE_BINARY_NAME);
-    if (binary_entry == NULL) {
-        const ZipEntry* update_script_entry =
-                mzFindZipEntry(zip, ASSUMED_UPDATE_SCRIPT_NAME);
-        if (update_script_entry != NULL) {
-            ui_print("Amend scripting (update-script) is no longer supported.\n");
-            ui_print("Amend scripting was deprecated by Google in Android 1.5.\n");
-            ui_print("It was necessary to remove it when upgrading to the ClockworkMod 3.0 Gingerbread based recovery.\n");
-            ui_print("Please switch to Edify scripting (updater-script and update-binary) to create working update zip packages.\n");
-            return INSTALL_UPDATE_BINARY_MISSING;
+    struct statfs st;
+    char* binary = (char*)malloc(20);
+
+    if (statfs(INCLUDED_BINARY_NAME, &st) != 0) {
+        // No update-binary included in recovery, extract it from the zip
+        strcpy(binary, "/tmp/update_binary");
+        const ZipEntry* binary_entry =
+                mzFindZipEntry(zip, ASSUMED_UPDATE_BINARY_NAME);
+        if (binary_entry == NULL) {
+            mzCloseZipArchive(zip);
+            return INSTALL_CORRUPT;
         }
 
+        unlink(binary);
+        int fd = creat(binary, 0755);
+        if (fd < 0) {
+            mzCloseZipArchive(zip);
+            LOGE("Can't make %s\n", binary);
+            return 1;
+        }
+        bool ok = mzExtractZipEntryToFile(zip, binary_entry, fd);
+        close(fd);
         mzCloseZipArchive(zip);
-        return INSTALL_UPDATE_BINARY_MISSING;
-    }
 
-    char* binary = "/tmp/update_binary";
-    unlink(binary);
-    int fd = creat(binary, 0755);
-    if (fd < 0) {
-        mzCloseZipArchive(zip);
-        LOGE("Can't make %s\n", binary);
-        return 1;
-    }
-    bool ok = mzExtractZipEntryToFile(zip, binary_entry, fd);
-    close(fd);
-
-    if (!ok) {
-        LOGE("Can't copy %s\n", ASSUMED_UPDATE_BINARY_NAME);
-        mzCloseZipArchive(zip);
-        return 1;
+		if (!ok) {
+            LOGE("Can't copy %s\n", ASSUMED_UPDATE_BINARY_NAME);
+            return 1;
+        }
+    } else {
+        // Use the update-binary that is included in the recovery
+        strcpy(binary, INCLUDED_BINARY_NAME);
+        LOGI("Using update-binary included in recovery: '%s'.\n", binary);
     }
 
     int pipefd[2];
