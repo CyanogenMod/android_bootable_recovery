@@ -444,17 +444,16 @@ int confirm_selection(const char* title, const char* confirm)
 int format_device(const char *device, const char *path, const char *fs_type) {
     Volume* v = volume_for_path(path);
     if (v == NULL) {
-        // no /sdcard? let's assume /data/media
-        if (strstr(path, "/sdcard") == path && is_data_media()) {
-            return format_unknown_device(NULL, path, NULL);
-        }
         // silent failure for sd-ext
         if (strcmp(path, "/sd-ext") == 0)
             return -1;
         LOGE("unknown volume \"%s\"\n", path);
         return -1;
     }
-    if (strstr(path, "/data") == path && volume_for_path("/sdcard") == NULL && is_data_media()) {
+    if (is_data_media_volume_path(path)) {
+        return format_unknown_device(NULL, path, NULL);
+    }
+    if (strstr(path, "/data") == path && is_data_media()) {
         return format_unknown_device(NULL, path, NULL);
     }
     if (strcmp(fs_type, "ramdisk") == 0) {
@@ -834,7 +833,7 @@ void show_nandroid_menu()
                             NULL
     };
 
-    if (volume_for_path("/emmc") == NULL || volume_for_path("/sdcard") == NULL && is_data_media())
+    if (volume_for_path("/emmc") == NULL)
         list[3] = NULL;
 
     int chosen_item = get_menu_selection(headers, list, 0, 0);

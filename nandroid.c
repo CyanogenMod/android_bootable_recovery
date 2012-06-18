@@ -264,12 +264,10 @@ int nandroid_backup(const char* backup_path)
     }
     
     Volume* volume = volume_for_path(backup_path);
-    if (NULL == volume) {
-      if (strstr(backup_path, "/sdcard") == backup_path && is_data_media())
-          volume = volume_for_path("/data");
-      else
-          return print_and_error("Unable to find volume for backup path.\n");
-    }
+    if (NULL == volume)
+        return print_and_error("Unable to find volume for backup path.\n");
+    if (is_data_media_volume_path(volume->mount_point))
+        volume = volume_for_path("/data");
     int ret;
     struct statfs s;
     if (NULL != volume) {
@@ -471,22 +469,19 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         }
 
         // If the fs_type of this volume is "auto" or mount_point is /data
-        // and is_data_media (redundantly, and vol for /sdcard is NULL), let's revert
+        // and is_data_media, let's revert
         // to using a rm -rf, rather than trying to do a
         // ext3/ext4/whatever format.
         // This is because some phones (like DroidX) will freak out if you
         // reformat the /system or /data partitions, and not boot due to
         // a locked bootloader.
         // Other devices, like the Galaxy Nexus, XOOM, and Galaxy Tab 10.1
-        // have a /sdcard symlinked to /data/media. /data is set to "auto"
-        // so that when the format occurs, /data/media is not erased.
-        // The "auto" fs type preserves the file system, and does not
-        // trigger that lock.
+        // have a /sdcard symlinked to /data/media.
         // Or of volume does not exist (.android_secure), just rm -rf.
         if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
             backup_filesystem = NULL;
-        else if (0 == strcmp(vol->mount_point, "/data") && volume_for_path("/sdcard") == NULL && is_data_media())
-	         backup_filesystem = NULL;
+        if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
+            backup_filesystem = NULL;
     }
 
     ensure_directory(mount_point);
