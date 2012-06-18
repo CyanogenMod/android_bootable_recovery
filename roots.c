@@ -219,13 +219,8 @@ void setup_data_media() {
 }
 
 int is_data_media_volume_path(const char* path) {
-    int i;
-    for (i = 0; i < num_volumes; i++) {
-        Volume* vol = device_volumes + i;
-        if (strcmp(vol->fs_type, "datamedia") == 0 && strstr(vol->mount_point, path) == vol->mount_point)
-            return 1;
-    }
-    return 0;
+    Volume* v = volume_for_path(path);
+    return strcmp(v->fs_type, "datamedia") == 0;
 }
 
 int ensure_path_mounted(const char* path) {
