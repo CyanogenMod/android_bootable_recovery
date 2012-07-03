@@ -649,7 +649,7 @@ void ui_print(const char *fmt, ...)
     if (ui_nice) {
         struct timeval curtime;
         gettimeofday(&curtime, NULL);
-        if (delta_milliseconds(lastupdate, curtime) > 1000)
+        if (delta_milliseconds(lastupdate, curtime) < 1000)
             return;
         lastupdate = curtime;
     }
