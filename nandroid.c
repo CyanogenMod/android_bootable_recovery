@@ -109,9 +109,9 @@ static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_fil
 static int tar_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
     char tmp[PATH_MAX];
     if (strcmp(backup_path, "/data") == 0 && is_data_media())
-      sprintf(tmp, "cd $(dirname %s) ; tar cvf %s.tar --exclude 'media' $(basename %s) ; exit $?", backup_path, backup_file_image, backup_path);
+      sprintf(tmp, "cd $(dirname %s) ; touch %s.tar ; tar cv --exclude 'media' $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar. ; exit $?", backup_path, backup_file_image, backup_path, backup_file_image);
     else
-      sprintf(tmp, "cd $(dirname %s) ; tar cvf %s.tar $(basename %s) ; exit $?", backup_path, backup_file_image, backup_path);
+      sprintf(tmp, "cd $(dirname %s) ; touch %s.tar ; tar cv $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar. ; exit $?", backup_path, backup_file_image, backup_path, backup_file_image);
 
     FILE *fp = __popen(tmp, "r");
     if (fp == NULL) {
@@ -340,7 +340,7 @@ static int unyaffs_wrapper(const char* backup_file_image, const char* backup_pat
 
 static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; tar xvf %s ; exit $?", backup_path, backup_file_image);
+    sprintf(tmp, "cd $(dirname %s) ; cat %s.* | tar xv ; exit $?", backup_path, backup_file_image);
 
     char path[PATH_MAX];
     FILE *fp = __popen(tmp, "r");
