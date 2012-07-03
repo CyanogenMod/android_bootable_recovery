@@ -621,6 +621,18 @@ void ui_reset_progress()
     pthread_mutex_unlock(&gUpdateMutex);
 }
 
+static long delta_milliseconds(struct timeval from, struct timeval to) {
+    long delta_sec = (to.tv_sec - from.tv_sec)*1000;
+    long delta_usec = (to.tv_usec - from.tv_usec)/1000;
+    return (delta_sec + delta_usec);
+}
+
+static struct timeval lastupdate = (struct timeval) {0};
+static int ui_nice = 0;
+void ui_set_nice(int enabled) {
+    ui_nice = enabled;
+}
+
 void ui_print(const char *fmt, ...)
 {
     char buf[256];
@@ -631,6 +643,16 @@ void ui_print(const char *fmt, ...)
 
     if (ui_log_stdout)
         fputs(buf, stdout);
+
+    // if we are running 'ui nice' mode, we do not want to force a screen update
+    // for this line if not necessary.
+    if (ui_nice) {
+        struct timeval curtime;
+        gettimeofday(&curtime, NULL);
+        if (delta_milliseconds(lastupdate, curtime) > 1000)
+            return;
+        lastupdate = curtime;
+    }
 
     // This can get called before ui_init(), so be careful.
     pthread_mutex_lock(&gUpdateMutex);
