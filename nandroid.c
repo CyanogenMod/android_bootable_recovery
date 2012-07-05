@@ -74,12 +74,13 @@ static void yaffs_callback(const char* filename)
     strcpy(tmp, justfile);
     if (tmp[strlen(tmp) - 1] == '\n')
         tmp[strlen(tmp) - 1] = NULL;
-    if (strlen(tmp) < 30)
-        ui_nice_print("%s", tmp);
+    tmp[ui_get_text_cols() - 1] = '\0';
     yaffs_files_count++;
-    if (yaffs_files_total != 0)
+    ui_nice_print("%s\n", tmp);
+    if (!ui_was_niced() && yaffs_files_total != 0)
         ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
-    ui_reset_text_col();
+    if (!ui_was_niced())
+        ui_delete_line();
 }
 
 static void compute_directory_stats(const char* directory)
@@ -108,10 +109,7 @@ static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_fil
 
 static int tar_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
     char tmp[PATH_MAX];
-    if (strcmp(backup_path, "/data") == 0 && is_data_media())
-      sprintf(tmp, "cd $(dirname %s) ; touch %s.tar ; tar cv --exclude 'media' $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar. ; exit $?", backup_path, backup_file_image, backup_path, backup_file_image);
-    else
-      sprintf(tmp, "cd $(dirname %s) ; touch %s.tar ; tar cv $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar. ; exit $?", backup_path, backup_file_image, backup_path, backup_file_image);
+    sprintf(tmp, "cd $(dirname %s) ; touch %s.tar ; (tar cv %s $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar.) 2> /proc/self/fd/1 ; exit $?", backup_path, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "--exclude 'media'" : "", backup_path, backup_file_image);
 
     FILE *fp = __popen(tmp, "r");
     if (fp == NULL) {
