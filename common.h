@@ -36,6 +36,7 @@ void ui_clear_key_queue();
 void ui_print(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 void ui_printlogtail(int nb_lines);
 
+void ui_delete_line();
 void ui_set_show_text(int value);
 void ui_set_nice(int enabled);
 #define ui_nice_print(...) { ui_set_nice(1); ui_print(__VA_ARGS__); ui_set_nice(0); }
@@ -152,5 +153,7 @@ typedef struct {
 
 // fopen a file, mounting volumes and making parent dirs as necessary.
 FILE* fopen_path(const char *path, const char *mode);
+
+int ui_get_selected_item();
 
 #endif  // RECOVERY_COMMON_H

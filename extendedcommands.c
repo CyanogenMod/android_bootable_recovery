@@ -31,9 +31,6 @@
 #include "roots.h"
 #include "recovery_ui.h"
 
-#include "../../external/yaffs2/yaffs2/utils/mkyaffs2image.h"
-#include "../../external/yaffs2/yaffs2/utils/unyaffs.h"
-
 #include "extendedcommands.h"
 #include "nandroid.h"
 #include "mounts.h"
@@ -54,12 +51,6 @@ toggle_signature_check()
 {
     signature_check_enabled = !signature_check_enabled;
     ui_print("Signature Check: %s\n", signature_check_enabled ? "Enabled" : "Disabled");
-}
-
-void toggle_script_asserts()
-{
-    script_assert_enabled = !script_assert_enabled;
-    ui_print("Script Asserts: %s\n", script_assert_enabled ? "Enabled" : "Disabled");
 }
 
 int install_zip(const char* packagefilepath)
@@ -89,8 +80,7 @@ char* INSTALL_MENU_ITEMS[] = {  "choose zip from sdcard",
 #define ITEM_CHOOSE_ZIP       0
 #define ITEM_APPLY_SDCARD     1
 #define ITEM_SIG_CHECK        2
-#define ITEM_ASSERTS          3
-#define ITEM_CHOOSE_ZIP_INT   4
+#define ITEM_CHOOSE_ZIP_INT   3
 
 void show_install_update_menu()
 {
@@ -107,9 +97,6 @@ void show_install_update_menu()
         int chosen_item = get_menu_selection(headers, INSTALL_MENU_ITEMS, 0, 0);
         switch (chosen_item)
         {
-            case ITEM_ASSERTS:
-                toggle_script_asserts();
-                break;
             case ITEM_SIG_CHECK:
                 toggle_signature_check();
                 break;
@@ -441,6 +428,7 @@ int confirm_selection(const char* title, const char* confirm)
 #define TUNE2FS_BIN     "/sbin/tune2fs"
 #define E2FSCK_BIN      "/sbin/e2fsck"
 
+extern struct selabel_handle *sehandle;
 int format_device(const char *device, const char *path, const char *fs_type) {
     Volume* v = volume_for_path(path);
     if (v == NULL) {
@@ -513,7 +501,7 @@ int format_device(const char *device, const char *path, const char *fs_type) {
             length = v->length;
         }
         reset_ext4fs_info();
-        int result = make_ext4fs(device, length);
+        int result = make_ext4fs(device, length, v->mount_point, sehandle);
         if (result != 0) {
             LOGE("format_volume: make_extf4fs failed on %s\n", device);
             return -1;
@@ -1191,7 +1179,7 @@ void handle_failure(int ret)
         return;
     if (0 != ensure_path_mounted("/sdcard"))
         return;
-    mkdir("/sdcard/clockworkmod", S_IRWXU);
+    mkdir("/sdcard/clockworkmod", S_IRWXU | S_IRWXG | S_IRWXO);
     __system("cp /tmp/recovery.log /sdcard/clockworkmod/recovery.log");
     ui_print("/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.\n");
 }
@@ -1230,4 +1218,48 @@ int has_datadata() {
 int volume_main(int argc, char **argv) {
     load_volume_table();
     return 0;
+}
+
+int verify_root_and_recovery() {
+    if (ensure_path_mounted("/system") != 0)
+        return 0;
+
+    int ret = 0;
+    struct stat st;
+    if (0 == lstat("/system/etc/install-recovery.sh", &st)) {
+        if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
+            ui_show_text(1);
+            ret = 1;
+            if (confirm_selection("ROM may flash stock recovery on boot. Fix?", "Yes - Disable recovery flash")) {
+                __system("chmod -x /system/etc/install-recovery.sh");
+            }
+        }
+    }
+
+    if (0 == lstat("/system/bin/su", &st)) {
+        if (S_ISREG(st.st_mode)) {
+            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system/bin/su)")) {
+                    __system("chmod 6755 /system/bin/su");
+                }
+            }
+        }
+    }
+
+    if (0 == lstat("/system/xbin/su", &st)) {
+        if (S_ISREG(st.st_mode)) {
+            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system/xbin/su)")) {
+                    __system("chmod 6755 /system/xbin/su");
+                }
+            }
+        }
+    }
+
+    ensure_path_unmounted("/system");
+    return ret;
 }

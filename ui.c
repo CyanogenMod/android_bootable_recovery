@@ -36,7 +36,7 @@
 
 extern int __system(const char *command);
 
-#ifdef BOARD_HAS_NO_SELECT_BUTTON
+#if defined(BOARD_HAS_NO_SELECT_BUTTON) || defined(BOARD_TOUCH_RECOVERY)
 static int gShowBackButton = 1;
 #else
 static int gShowBackButton = 0;
@@ -122,6 +122,12 @@ static pthread_cond_t key_queue_cond = PTHREAD_COND_INITIALIZER;
 static int key_queue[256], key_queue_len = 0;
 static unsigned long key_last_repeat[KEY_MAX + 1], key_press_time[KEY_MAX + 1];
 static volatile char key_pressed[KEY_MAX + 1];
+
+static void update_screen_locked(void);
+
+#ifdef BOARD_TOUCH_RECOVERY
+#include "../../vendor/koush/recovery/touch.c"
+#endif
 
 // Return the current time as a double (including fractions of a second).
 static double now() {
@@ -235,6 +241,7 @@ static void draw_screen_locked(void)
         int offset = 0;         // offset of separating bar under menus
         int row = 0;            // current row that we are drawing on
         if (show_menu) {
+#ifndef BOARD_TOUCH_RECOVERY
             gr_color(MENU_TEXT_COLOR);
             gr_fill(0, (menu_top + menu_sel - menu_show_start) * CHAR_HEIGHT,
                     gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*CHAR_HEIGHT+1);
@@ -270,6 +277,9 @@ static void draw_screen_locked(void)
 
             gr_fill(0, (row-offset)*CHAR_HEIGHT+CHAR_HEIGHT/2-1,
                     gr_fb_width(), (row-offset)*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
+#else
+            row = draw_touch_menu(menu, menu_items, menu_top, menu_sel, menu_show_start);
+#endif
         }
 
         gr_color(NORMAL_TEXT_COLOR);
@@ -373,6 +383,11 @@ static int input_callback(int fd, short revents, void *data)
     if (ret)
         return -1;
 
+#ifdef BOARD_TOUCH_RECOVERY
+    if (touch_handle_input(fd, ev))
+      return 0;
+#endif
+
     if (ev.type == EV_SYN) {
         return 0;
     } else if (ev.type == EV_REL) {
@@ -460,10 +475,16 @@ void ui_init(void)
     ui_has_initialized = 1;
     gr_init();
     ev_init(input_callback, NULL);
+#ifdef BOARD_TOUCH_RECOVERY
+    touch_init();
+#endif
 
     text_col = text_row = 0;
     text_rows = gr_fb_height() / CHAR_HEIGHT;
     max_menu_rows = text_rows - MIN_LOG_ROWS;
+#ifdef BOARD_TOUCH_RECOVERY
+    max_menu_rows = get_max_menu_rows(max_menu_rows);
+#endif
     if (max_menu_rows > MENU_MAX_ROWS)
         max_menu_rows = MENU_MAX_ROWS;
     if (text_rows > MAX_ROWS) text_rows = MAX_ROWS;
@@ -640,13 +661,6 @@ int ui_was_niced() {
 int ui_get_text_cols() {
     return text_cols;
 }
-void ui_delete_line() {
-    pthread_mutex_lock(&gUpdateMutex);
-    text[text_row][0] = '\0';
-    text_row = (text_row - 1 + text_rows) % text_rows;
-    text_col = 0;
-    pthread_mutex_unlock(&gUpdateMutex);
-}
 
 void ui_print(const char *fmt, ...)
 {
@@ -665,7 +679,12 @@ void ui_print(const char *fmt, ...)
     if (ui_nice) {
         struct timeval curtime;
         gettimeofday(&curtime, NULL);
-        if (delta_milliseconds(lastupdate, curtime) < NICE_INTERVAL) {
+        long ms = delta_milliseconds(lastupdate, curtime);
+        if (ms < 0) {
+            lastupdate = curtime;
+            ms = NICE_INTERVAL;
+        }
+        if (ms < NICE_INTERVAL) {
             ui_niced = 1;
             return;
         }
@@ -950,4 +969,24 @@ void ui_set_showing_back_button(int showBackButton) {
 
 int ui_get_showing_back_button() {
     return gShowBackButton;
+}
+
+int ui_get_selected_item() {
+  return menu_sel;
+}
+
+int ui_handle_key(int key, int visible) {
+#ifdef BOARD_TOUCH_RECOVERY
+    return touch_handle_key(key, visible);
+#else
+    return device_handle_key(key, visible);
+#endif
+}
+
+void ui_delete_line() {
+    pthread_mutex_lock(&gUpdateMutex);
+    text[text_row][0] = '\0';
+    text_row = (text_row - 1 + text_rows) % text_rows;
+    text_col = 0;
+    pthread_mutex_unlock(&gUpdateMutex);
 }
