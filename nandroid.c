@@ -62,9 +62,9 @@ static int print_and_error(const char* message) {
 
 static int nandroid_backup_bitfield = 0;
 #define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
-static int yaffs_files_total = 0;
-static int yaffs_files_count = 0;
-static void yaffs_callback(const char* filename)
+static int nandroid_files_total = 0;
+static int nandroid_files_count = 0;
+static void nandroid_callback(const char* filename)
 {
     if (filename == NULL)
         return;
@@ -74,10 +74,10 @@ static void yaffs_callback(const char* filename)
     if (tmp[strlen(tmp) - 1] == '\n')
         tmp[strlen(tmp) - 1] = NULL;
     tmp[ui_get_text_cols() - 1] = '\0';
-    yaffs_files_count++;
+    nandroid_files_count++;
     ui_nice_print("%s\n", tmp);
-    if (!ui_was_niced() && yaffs_files_total != 0)
-        ui_set_progress((float)yaffs_files_count / (float)yaffs_files_total);
+    if (!ui_was_niced() && nandroid_files_total != 0)
+        ui_set_progress((float)nandroid_files_count / (float)nandroid_files_total);
     if (!ui_was_niced())
         ui_delete_line();
 }
@@ -91,8 +91,8 @@ static void compute_directory_stats(const char* directory)
     FILE* f = fopen("/tmp/dircount", "r");
     fread(count_text, 1, sizeof(count_text), f);
     fclose(f);
-    yaffs_files_count = 0;
-    yaffs_files_total = atoi(count_text);
+    nandroid_files_count = 0;
+    nandroid_files_total = atoi(count_text);
     ui_reset_progress();
     ui_show_progress(1, 0);
 }
@@ -117,7 +117,7 @@ static int tar_compress_wrapper(const char* backup_path, const char* backup_file
     while (fgets(tmp, PATH_MAX, fp) != NULL) {
         tmp[PATH_MAX - 1] = NULL;
         if (callback)
-            yaffs_callback(tmp);
+            nandroid_callback(tmp);
     }
 
     return __pclose(fp);
@@ -160,7 +160,7 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
     while (fgets(tmp, PATH_MAX, fp) != NULL) {
         tmp[PATH_MAX - 1] = NULL;
         if (callback)
-            yaffs_callback(tmp);
+            nandroid_callback(tmp);
     }
 
     return __pclose(fp);
@@ -382,7 +382,7 @@ static int tar_extract_wrapper(const char* backup_file_image, const char* backup
     while (fgets(tmp, PATH_MAX, fp) != NULL) {
         tmp[PATH_MAX - 1] = NULL;
         if (callback)
-            yaffs_callback(tmp);
+            nandroid_callback(tmp);
     }
 
     return __pclose(fp);
@@ -408,7 +408,7 @@ static int dedupe_extract_wrapper(const char* backup_file_image, const char* bac
 
     while (fgets(path, PATH_MAX, fp) != NULL) {
         if (callback)
-            yaffs_callback(path);
+            nandroid_callback(path);
     }
 
     return __pclose(fp);
@@ -585,7 +585,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
-    yaffs_files_total = 0;
+    nandroid_files_total = 0;
 
     if (ensure_path_mounted(backup_path) != 0)
         return print_and_error("Can't mount backup path\n");
