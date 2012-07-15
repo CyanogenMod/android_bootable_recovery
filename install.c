@@ -371,7 +371,9 @@ really_install_package(const char *path)
         LOGI("verify_file returned %d\n", err);
         if (err != VERIFY_SUCCESS) {
             LOGE("signature verification failed\n");
-            return INSTALL_CORRUPT;
+            ui_show_text(1);
+            if (!confirm_selection("Install Untrusted Package?", "Yes - Install untrusted zip"))
+                return INSTALL_CORRUPT;
         }
     }
 

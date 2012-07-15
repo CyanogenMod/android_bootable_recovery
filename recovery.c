@@ -43,6 +43,7 @@
 
 #include "extendedcommands.h"
 #include "flashutils/flashutils.h"
+#include "dedupe/dedupe.h"
 
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 's' },
@@ -455,9 +456,10 @@ get_menu_selection(char** headers, char** items, int menu_only,
             }
         }
 
-        int action = device_handle_key(key, visible);
+        int action = ui_handle_key(key, visible);
 
         int old_selected = selected;
+        selected = ui_get_selected_item();
 
         if (action < 0) {
             switch (action) {
@@ -489,6 +491,8 @@ get_menu_selection(char** headers, char** items, int menu_only,
             chosen_item = action;
         }
 
+#ifndef BOARD_HAS_NO_SELECT_BUTTON
+#ifndef BOARD_TOUCH_RECOVERY
         if (abs(selected - old_selected) > 1) {
             wrap_count++;
             if (wrap_count == 3) {
@@ -503,6 +507,8 @@ get_menu_selection(char** headers, char** items, int menu_only,
                 }
             }
         }
+#endif
+#endif
     }
 
     ui_end_menu();
@@ -756,6 +762,8 @@ int
 main(int argc, char **argv) {
     if (strcmp(basename(argv[0]), "recovery") != 0)
     {
+        if (strstr(argv[0], "dedupe") != NULL)
+            return dedupe_main(argc, argv);
         if (strstr(argv[0], "flash_image") != NULL)
             return flash_image_main(argc, argv);
         if (strstr(argv[0], "volume") != NULL)
@@ -906,6 +914,8 @@ main(int argc, char **argv) {
     if (status != INSTALL_SUCCESS || ui_text_visible()) {
         prompt_and_wait();
     }
+
+    verify_root_and_recovery();
 
     // If there is a radio image pending, reboot now to install it.
     maybe_install_firmware_update(send_intent);
