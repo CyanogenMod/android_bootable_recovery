@@ -42,6 +42,7 @@ void ui_set_nice(int enabled);
 #define ui_nice_print(...) { ui_set_nice(1); ui_print(__VA_ARGS__); ui_set_nice(0); }
 int ui_was_niced();
 int ui_get_text_cols();
+void ui_increment_frame();
 
 // Display some header text followed by a menu of items, which appears
 // at the top of the screen (in place of any scrolling ui_print()
