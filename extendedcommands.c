@@ -77,7 +77,6 @@ int install_zip(const char* packagefilepath)
 char* INSTALL_MENU_ITEMS[] = {  "choose zip from sdcard",
                                 "apply /sdcard/update.zip",
                                 "toggle signature verification",
-                                "toggle script asserts",
                                 "choose zip from internal sdcard",
                                 NULL };
 #define ITEM_CHOOSE_ZIP       0
