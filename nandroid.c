@@ -78,6 +78,7 @@ static void nandroid_callback(const char* filename)
         tmp[strlen(tmp) - 1] = NULL;
     tmp[ui_get_text_cols() - 1] = '\0';
     nandroid_files_count++;
+    ui_increment_frame();
     ui_nice_print("%s\n", tmp);
     if (!ui_was_niced() && nandroid_files_total != 0)
         ui_set_progress((float)nandroid_files_count / (float)nandroid_files_total);
@@ -88,7 +89,7 @@ static void nandroid_callback(const char* filename)
 static void compute_directory_stats(const char* directory)
 {
     char tmp[PATH_MAX];
-    sprintf(tmp, "find %s | wc -l > /tmp/dircount", directory);
+    sprintf(tmp, "find %s | %s wc -l > /tmp/dircount", directory, strcmp(directory, "/data") == 0 && is_data_media() ? "grep -v /data/media |" : "");
     __system(tmp);
     char count_text[100];
     FILE* f = fopen("/tmp/dircount", "r");

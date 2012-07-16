@@ -70,6 +70,7 @@ static gr_surface *gInstallationOverlay;
 static gr_surface *gProgressBarIndeterminate;
 static gr_surface gProgressBarEmpty;
 static gr_surface gProgressBarFill;
+static gr_surface gBackground;
 static int ui_has_initialized = 0;
 static int ui_log_stdout = 1;
 
@@ -84,6 +85,7 @@ static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_ERROR], "icon_firmware_error" },
     { &gProgressBarEmpty,               "progress_empty" },
     { &gProgressBarFill,                "progress_fill" },
+    { &gBackground,                "stitch" },
     { NULL,                             NULL },
 };
 
@@ -156,8 +158,20 @@ static void draw_install_overlay_locked(int frame) {
 static void draw_background_locked(int icon)
 {
     gPagesIdentical = 0;
-    gr_color(0, 0, 0, 255);
-    gr_fill(0, 0, gr_fb_width(), gr_fb_height());
+    // gr_color(0, 0, 0, 255);
+    // gr_fill(0, 0, gr_fb_width(), gr_fb_height());
+
+    {
+        int bw = gr_get_width(gBackground);
+        int bh = gr_get_height(gBackground);
+        int bx = 0;
+        int by = 0;
+        for (by = 0; by < gr_fb_height(); by += bh) {
+            for (bx = 0; bx < gr_fb_width(); bx += bw) {
+                gr_blit(gBackground, 0, 0, bw, bh, bx, by);
+            }
+        }
+    }
 
     if (icon) {
         gr_surface surface = gBackgroundIcon[icon];
@@ -680,19 +694,15 @@ void ui_print(const char *fmt, ...)
         struct timeval curtime;
         gettimeofday(&curtime, NULL);
         long ms = delta_milliseconds(lastupdate, curtime);
-        if (ms < 0) {
-            lastupdate = curtime;
-            ms = NICE_INTERVAL;
-        }
-        if (ms < NICE_INTERVAL) {
+        if (ms < NICE_INTERVAL && ms >= 0) {
             ui_niced = 1;
             return;
         }
-        lastupdate = curtime;
     }
 
     // This can get called before ui_init(), so be careful.
     pthread_mutex_lock(&gUpdateMutex);
+    gettimeofday(&lastupdate, NULL);
     if (text_rows > 0 && text_cols > 0) {
         char *ptr;
         for (ptr = buf; *ptr != '\0'; ++ptr) {
@@ -989,4 +999,9 @@ void ui_delete_line() {
     text_row = (text_row - 1 + text_rows) % text_rows;
     text_col = 0;
     pthread_mutex_unlock(&gUpdateMutex);
+}
+
+void ui_increment_frame() {
+    gInstallingFrame =
+        (gInstallingFrame + 1) % ui_parameters.installing_frames;
 }
