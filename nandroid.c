@@ -365,6 +365,8 @@ int nandroid_backup(const char* backup_path)
         return ret;
     }
     
+    sprintf(tmp, "chmod -R 777 %s", backup_path);
+    __system(tmp);
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
