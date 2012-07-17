@@ -246,8 +246,9 @@ static void draw_screen_locked(void)
     draw_progress_locked();
 
     if (show_text) {
-        gr_color(0, 0, 0, 160);
-        gr_fill(0, 0, gr_fb_width(), gr_fb_height());
+        // don't "disable" the background anymore with this...
+        // gr_color(0, 0, 0, 160);
+        // gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
         int total_rows = gr_fb_height() / CHAR_HEIGHT;
         int i = 0;
