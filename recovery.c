@@ -800,6 +800,10 @@ main(int argc, char **argv) {
     int is_user_initiated_recovery = 0;
     time_t start = time(NULL);
 
+    // Recovery needs to install world-readable files, so clear umask
+    // set by init
+    umask(0);
+
     // If these fail, there's not really anywhere to complain...
     freopen(TEMPORARY_LOG_FILE, "a", stdout); setbuf(stdout, NULL);
     freopen(TEMPORARY_LOG_FILE, "a", stderr); setbuf(stderr, NULL);
