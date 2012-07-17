@@ -31,7 +31,7 @@ static int copy_file(const char *src, const char *dst) {
     if (srcfd < 0)
         return 3;
 
-    dstfd = open(dst, O_RDWR | O_CREAT | O_TRUNC, 0600);
+    dstfd = open(dst, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (dstfd < 0) {
         close(srcfd);
         return 4;
