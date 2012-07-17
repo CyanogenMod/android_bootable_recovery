@@ -245,6 +245,20 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
     char* return_value = NULL;
     int dir_len = strlen(directory);
 
+    i = 0;
+    while (headers[i]) {
+        i++;
+    }
+    const char** fixed_headers = (const char*)malloc((i + 3) * sizeof(char*));
+    i = 0;
+    while (headers[i]) {
+        fixed_headers[i] = headers[i];
+        i++;
+    }
+    fixed_headers[i] = directory;
+    fixed_headers[i + 1] = "";
+    fixed_headers[i + 2 ] = NULL;
+
     char** files = gather_files(directory, fileExtensionOrDirectory, &numFiles);
     char** dirs = NULL;
     if (fileExtensionOrDirectory != NULL)
@@ -272,7 +286,7 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
 
         for (;;)
         {
-            int chosen_item = get_menu_selection(headers, list, 0, 0);
+            int chosen_item = get_menu_selection(fixed_headers, list, 0, 0);
             if (chosen_item == GO_BACK)
                 break;
             static char ret[PATH_MAX];
@@ -296,6 +310,7 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
 
     free_string_array(files);
     free_string_array(dirs);
+    free(fixed_headers);
     return return_value;
 }
 

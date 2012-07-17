@@ -299,7 +299,7 @@ int nandroid_backup(const char* backup_path)
             ui_print("There may not be enough free space to complete backup... continuing...\n");
     }
     char tmp[PATH_MAX];
-    sprintf(tmp, "mkdir -p %s", backup_path);
+    sprintf(tmp, "mkdir -p %s ; chmod 777 %s", backup_path, backup_path);
     __system(tmp);
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "/boot")))
@@ -376,7 +376,7 @@ typedef int (*format_function)(char* root);
 
 static void ensure_directory(const char* dir) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "mkdir -p %s", dir);
+    sprintf(tmp, "mkdir -p %s ; chmod 777 %s", dir, dir);
     __system(tmp);
 }
 
