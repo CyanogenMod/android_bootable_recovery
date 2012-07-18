@@ -103,7 +103,7 @@ typedef int (*nandroid_backup_handler)(const char* backup_path, const char* back
 
 static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; mkyaffs2image . %s ; exit $?", backup_path, backup_file_image);
+    sprintf(tmp, "cd %s ; mkyaffs2image . %s.img ; exit $?", backup_path, backup_file_image);
 
     FILE *fp = __popen(tmp, "r");
     if (fp == NULL) {
@@ -386,7 +386,7 @@ typedef int (*nandroid_restore_handler)(const char* backup_file_image, const cha
 
 static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; unyaffs %s ; exit $?", backup_path, backup_file_image);
+    sprintf(tmp, "cd %s ; unyaffs %s ; exit $?", backup_path, backup_file_image);
     FILE *fp = __popen(tmp, "r");
     if (fp == NULL) {
         ui_print("Unable to execute unyaffs.\n");
