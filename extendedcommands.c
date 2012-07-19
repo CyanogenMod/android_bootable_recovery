@@ -94,11 +94,11 @@ void show_install_update_menu()
 
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
-        other_sd = "/emmc";
+        other_sd = "/emmc/";
         install_menu_items[3] = "choose zip from internal sdcard";
     }
     else if (volume_for_path("/external_sd") != NULL) {
-        other_sd = "/external_sd";
+        other_sd = "/external_sd/";
         install_menu_items[3] = "choose zip from external sdcard";
     }
     
