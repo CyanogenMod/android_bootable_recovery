@@ -109,20 +109,50 @@ static int store_file(struct DEDUPE_STORE_CONTEXT *context, struct stat st, cons
         sprintf(&psum[(j*2)], "%02x", (int)sumdata[j]);
     psum[(SHA256_DIGEST_LENGTH * 2)] = '\0';
 
+    // if a hash is abcdefg,
+    // the output blob name is abc/defg
+    // this is to get around vfat having a 64k directory size limit (usually around 20k files)
     char out_blob[PATH_MAX];
     char tmp_out_blob[PATH_MAX];
-    sprintf(out_blob, "%s/%s", context->blob_dir, psum);
+    char key[SHA256_DIGEST_LENGTH + SHA256_DIGEST_LENGTH / 3 + 3];
+    // int i = 0;
+    // int keyIndex = 0;
+    // while (psum[i]) {
+    //     key[keyIndex] = psum[i];
+    //     i++;
+    //     keyIndex++;
+    //     if (i % 2 == 0 && psum[i]) {
+    //         key[keyIndex] = '/';
+    //         keyIndex++;
+    //     }
+    // }
+    strcpy(key, psum);
+    key[3] = '/';
+    key[4] = NULL;
+    strcat(key, psum + 3);
+    sprintf(out_blob, "%s/%s", context->blob_dir, key);
     sprintf(tmp_out_blob, "%s.tmp", out_blob);
+    mkdir(dirname(out_blob), S_IRWXU | S_IRWXG | S_IRWXO);
 
     // don't copy the file if it exists? not quite sure how I feel about this.
+    int size = (int)st.st_size;
     struct stat file_info;
-    if (stat(out_blob, &file_info) && ((ret = copy_file(f, tmp_out_blob)) || (ret = rename(tmp_out_blob, out_blob)))) {
-        fprintf(stderr, "Error copying blob %s\n", f);
-        return ret;
+    // verify the file exists and is of the same size
+    int file_ok = stat(out_blob, &file_info) == 0;
+    if (file_ok) {
+        int existing_size = file_info.st_size;
+        if (existing_size != size)
+            file_ok = 0;
+    }
+    if (!file_ok) {
+        // copy to the tmp file
+        if ((ret = copy_file(f, tmp_out_blob)) || (ret = rename(tmp_out_blob, out_blob))) {
+            fprintf(stderr, "Error copying blob %s\n", f);
+            return ret;
+        }
     }
 
-    int size = (int)st.st_size;
-    fprintf(context->output_manifest, "%s\t%d\t\n", psum, size);
+    fprintf(context->output_manifest, "%s\t%d\t\n", key, size);
     return 0;
 }
 
@@ -231,6 +261,40 @@ static int dec_to_oct(int dec) {
     }
 
     return ret;
+}
+
+void recursive_delete_skip_gc(char* dirname) {
+    DIR *dp = opendir(dirname);
+    if (dp == NULL) {
+        fprintf(stderr, "Error opening directory: %s\n", dirname);
+        return;
+    }
+    struct dirent *ep;
+    while (ep = readdir(dp)) {
+        if (strcmp(ep->d_name, ".") == 0)
+            continue;
+        if (strcmp(ep->d_name, "..") == 0)
+            continue;
+        if (strcmp(ep->d_name, ".gc") == 0)
+            continue;
+        struct stat cst;
+        int ret;
+        char blob[PATH_MAX];
+        sprintf(blob, "%s/%s", dirname, ep->d_name);
+        if ((ret = lstat(blob, &cst))) {
+            fprintf(stderr, "Error opening: %s\n", ep->d_name);
+            continue;
+        }
+
+        if (S_ISDIR(cst.st_mode)) {
+            recursive_delete_skip_gc(blob);
+        }
+
+        if (remove(blob)) {
+            fprintf(stderr, "Error removing: %s\n", ep->d_name);
+        }
+    }
+    closedir(dp);
 }
 
 int dedupe_main(int argc, char** argv) {
@@ -408,56 +472,37 @@ int dedupe_main(int argc, char** argv) {
                 int ret;
                 // printf("%s\n", filename);
                 if (strcmp(type, "f") == 0) {
-                    char sha256[128];
-                    token = tokenize(sha256, token, '\t');
+                    char key[128];
+                    token = tokenize(key, token, '\t');
                     char sizeStr[32];
                     token = tokenize(sizeStr, token, '\t');
                     int size = atoi(sizeStr);
                     
-                    sprintf(blob, "%s/%s", blob_dir, sha256);
+                    sprintf(blob, "%s/%s", blob_dir, key);
                     char dst[PATH_MAX];
-                    sprintf(dst, "%s/%s", gc_dir, sha256);
+                    sprintf(dst, "%s/%s", gc_dir, key);
                     struct stat file_info;
-                    if (stat(blob, &file_info) == 0)
+                    if (stat(blob, &file_info) == 0) {
+                        // keys can have a single parent directory. make sure it exists
+                        mkdir(dirname(dst), S_IRWXU | S_IRWXG | S_IRWXO);
                         rename(blob, dst);
+                    }
                 }
             }
             fclose(input_manifest);
         }
 
-        DIR *dp = opendir(blob_dir);
-        if (dp == NULL) {
-            fprintf(stderr, "Error opening directory: %s\n", blob_dir);
-            return 1;
-        }
-        struct dirent *ep;
-        while (ep = readdir(dp)) {
-            if (strcmp(ep->d_name, ".") == 0)
-                continue;
-            if (strcmp(ep->d_name, "..") == 0)
-                continue;
-            struct stat cst;
-            int ret;
-            sprintf(blob, "%s/%s", blob_dir, ep->d_name);
-            if ((ret = lstat(blob, &cst))) {
-                fprintf(stderr, "Error opening: %s\n", ep->d_name);
-                continue;
-            }
+        // rm -rf
+        recursive_delete_skip_gc(blob_dir);
 
-            if (S_ISREG(cst.st_mode)) {
-                if (remove(blob)) {
-                    fprintf(stderr, "Error removing: %s\n", ep->d_name);
-                }
-            }
-        }
-        closedir(dp);
-
+        // move .gc over
         char dst[PATH_MAX];
-        dp = opendir(gc_dir);
+        DIR *dp = opendir(gc_dir);
         if (dp == NULL) {
             fprintf(stderr, "Error opening directory: %s\n", gc_dir);
             return 1;
         }
+        struct dirent *ep;
         while (ep = readdir(dp)) {
             if (strcmp(ep->d_name, ".") == 0)
                 continue;
@@ -472,10 +517,8 @@ int dedupe_main(int argc, char** argv) {
                 continue;
             }
 
-            if (S_ISREG(cst.st_mode)) {
-                if (rename(blob, dst)) {
-                    fprintf(stderr, "Error moving: %s\n", ep->d_name);
-                }
+            if (rename(blob, dst)) {
+                fprintf(stderr, "Error moving: %s\n", ep->d_name);
             }
         }
         closedir(dp);
