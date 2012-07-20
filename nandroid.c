@@ -58,6 +58,12 @@ void nandroid_generate_timestamp_path(const char* backup_path)
     }
 }
 
+static void ensure_directory(const char* dir) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "mkdir -p %s ; chmod 777 %s", dir, dir);
+    __system(tmp);
+}
+
 static int print_and_error(const char* message) {
     ui_print("%s", message);
     return 1;
@@ -153,6 +159,7 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
     d = dirname(blob_dir);
     strcpy(blob_dir, d);
     strcat(blob_dir, "/blobs");
+    ensure_directory(blob_dir);
 
     if (!(nandroid_backup_bitfield & NANDROID_FIELD_DEDUPE_CLEARED_SPACE)) {
         nandroid_backup_bitfield |= NANDROID_FIELD_DEDUPE_CLEARED_SPACE;
@@ -293,8 +300,7 @@ int nandroid_backup(const char* backup_path)
             ui_print("There may not be enough free space to complete backup... continuing...\n");
     }
     char tmp[PATH_MAX];
-    sprintf(tmp, "mkdir -p %s ; chmod 777 %s", backup_path, backup_path);
-    __system(tmp);
+    ensure_directory(backup_path);
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "/boot")))
         return ret;
@@ -367,14 +373,6 @@ int nandroid_backup(const char* backup_path)
     ui_reset_progress();
     ui_print("\nBackup complete!\n");
     return 0;
-}
-
-typedef int (*format_function)(char* root);
-
-static void ensure_directory(const char* dir) {
-    char tmp[PATH_MAX];
-    sprintf(tmp, "mkdir -p %s ; chmod 777 %s", dir, dir);
-    __system(tmp);
 }
 
 typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, int callback);
