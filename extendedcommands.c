@@ -936,13 +936,13 @@ void show_nandroid_menu()
             {
                 char backup_path[PATH_MAX];
                 time_t t = time(NULL);
-                struct tm *tmp = localtime(&t);
-                if (tmp == NULL)
+                struct tm *timeptr = localtime(&t);
+                if (timeptr == NULL)
                 {
                     struct timeval tp;
                     gettimeofday(&tp, NULL);
                     if (other_sd != NULL) {
-                        sprintf(backup_path, "/%s/clockworkmod/backup/%d", other_sd, tp.tv_sec);
+                        sprintf(backup_path, "%s/clockworkmod/backup/%d", other_sd, tp.tv_sec);
                     }
                     else {
                         break;
@@ -952,7 +952,7 @@ void show_nandroid_menu()
                 {
                     if (other_sd != NULL) {
                         char tmp[PATH_MAX];
-                        strftime(tmp, sizeof(tmp), "/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                        strftime(tmp, sizeof(tmp), "clockworkmod/backup/%F.%H.%M.%S", timeptr);
                         // this sprintf results in:
                         // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
                         sprintf(backup_path, "%s/%s", other_sd, tmp);

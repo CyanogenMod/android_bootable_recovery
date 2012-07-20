@@ -228,14 +228,6 @@ static int store_st(struct DEDUPE_STORE_CONTEXT *context, struct stat st, const 
     }
 }
 
-void get_full_path(char *out_path, char *rel_path) {
-    char tmp[PATH_MAX];
-    getcwd(tmp, PATH_MAX);
-    chdir(rel_path);
-    getcwd(out_path, PATH_MAX);
-    chdir(tmp);
-}
-
 static char* tokenize(char *out, const char* line, const char sep) {
     while (*line != sep) {
         if (*line == '\0') {
@@ -265,10 +257,10 @@ static int dec_to_oct(int dec) {
     return ret;
 }
 
-void recursive_delete_skip_gc(char* dirname) {
-    DIR *dp = opendir(dirname);
+void recursive_delete_skip_gc(char* d) {
+    DIR *dp = opendir(d);
     if (dp == NULL) {
-        fprintf(stderr, "Error opening directory: %s\n", dirname);
+        fprintf(stderr, "Error opening directory: %s\n", d);
         return;
     }
     struct dirent *ep;
@@ -282,7 +274,7 @@ void recursive_delete_skip_gc(char* dirname) {
         struct stat cst;
         int ret;
         char blob[PATH_MAX];
-        sprintf(blob, "%s/%s", dirname, ep->d_name);
+        sprintf(blob, "%s/%s", d, ep->d_name);
         if ((ret = lstat(blob, &cst))) {
             fprintf(stderr, "Error opening: %s\n", ep->d_name);
             continue;
@@ -297,6 +289,11 @@ void recursive_delete_skip_gc(char* dirname) {
         }
     }
     closedir(dp);
+}
+
+static int check_file(const char* f) {
+    struct stat cst;
+    return lstat(f, &cst);
 }
 
 int dedupe_main(int argc, char** argv) {
@@ -331,7 +328,7 @@ int dedupe_main(int argc, char** argv) {
             return 1;
         }
         mkdir(argv[3], S_IRWXU | S_IRWXG | S_IRWXO);
-        get_full_path(context.blob_dir, argv[3]);
+        realpath(argv[3], context.blob_dir);
         chdir(argv[2]);
         context.excludes = argv + 5;
         context.exclude_count = argc - 5;
@@ -352,7 +349,7 @@ int dedupe_main(int argc, char** argv) {
 
         char blob_dir[PATH_MAX];
         char *output_dir = argv[4];
-        get_full_path(blob_dir, argv[3]);
+        realpath(argv[3], blob_dir);
 
         printf("%s\n" , output_dir);
         mkdir(output_dir, S_IRWXU | S_IRWXG | S_IRWXO);
@@ -462,11 +459,19 @@ int dedupe_main(int argc, char** argv) {
         }
         
         char blob_dir[PATH_MAX];
-        get_full_path(blob_dir, argv[2]);
+        realpath(argv[2], blob_dir);
+        if (check_file(blob_dir)) {
+            fprintf(stderr, "Unable to open blobs dir: %s\n", blob_dir);
+            return 1;
+        }
 
         char gc_dir[PATH_MAX];
         sprintf(gc_dir, "%s/%s", blob_dir, ".gc");
         mkdir(gc_dir, S_IRWXU | S_IRWXG | S_IRWXO);
+        if (check_file(gc_dir)) {
+            fprintf(stderr, "Unable to open gc dir: %s\n", gc_dir);
+            return 1;
+        }
 
         char blob[PATH_MAX];
         int i;
