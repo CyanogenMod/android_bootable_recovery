@@ -367,6 +367,31 @@ void show_nandroid_restore_menu(const char* path)
         nandroid_restore(file, 1, 1, 1, 1, 1, 0);
 }
 
+void show_nandroid_delete_menu(const char* path)
+{
+    if (ensure_path_mounted(path) != 0) {
+        LOGE("Can't mount %s\n", path);
+        return;
+    }
+
+    static char* headers[] = {  "Choose an image to delete",
+                                "",
+                                NULL
+    };
+
+    char tmp[PATH_MAX];
+    sprintf(tmp, "%s/clockworkmod/backup/", path);
+    char* file = choose_file_menu(tmp, NULL, headers);
+    if (file == NULL)
+        return;
+
+    if (confirm_selection("Confirm delete?", "Yes - Delete")) {
+        // nandroid_restore(file, 1, 1, 1, 1, 1, 0);
+        sprintf(tmp, "rm -rf %s", file);
+        __system(tmp);
+    }
+}
+
 #ifndef BOARD_UMS_LUNFILE
 #define BOARD_UMS_LUNFILE	"/sys/devices/platform/usb_mass_storage/lun0/file"
 #endif
@@ -828,6 +853,17 @@ void show_nandroid_advanced_restore_menu(const char* path)
     }
 }
 
+static void run_dedupe_gc(const char* other_sd) {
+    ensure_path_mounted("/sdcard");
+    dedupe_gc("/sdcard/clockworkmod/blobs");
+    if (other_sd) {
+        ensure_path_mounted(other_sd);
+        char tmp[PATH_MAX];
+        sprintf(tmp, "%s/clockworkmod/blobs", other_sd);
+        dedupe_gc(tmp);
+    }
+}
+
 void show_nandroid_menu()
 {
     static char* headers[] = {  "Nandroid",
@@ -837,7 +873,10 @@ void show_nandroid_menu()
 
     char* list[] = { "backup",
                             "restore",
+                            "delete",
                             "advanced restore",
+                            "free nandroid space",
+                            NULL,
                             NULL,
                             NULL,
                             NULL,
@@ -847,15 +886,17 @@ void show_nandroid_menu()
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc";
-        list[3] = "backup to internal sdcard";
-        list[4] = "restore from internal sdcard";
-        list[5] = "advanced restore from internal sdcard";
+        list[5] = "backup to internal sdcard";
+        list[6] = "restore from internal sdcard";
+        list[7] = "advanced restore from internal sdcard";
+        list[8] = "delete from internal sdcard";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd";
-        list[3] = "backup to external sdcard";
-        list[4] = "restore from external sdcard";
-        list[5] = "advanced restore from external sdcard";
+        list[5] = "backup to external sdcard";
+        list[6] = "restore from external sdcard";
+        list[7] = "advanced restore from external sdcard";
+        list[8] = "delete from external sdcard";
     }
 
     int chosen_item = get_menu_selection(headers, list, 0, 0);
@@ -883,9 +924,15 @@ void show_nandroid_menu()
             show_nandroid_restore_menu("/sdcard");
             break;
         case 2:
-            show_nandroid_advanced_restore_menu("/sdcard");
+            show_nandroid_delete_menu("/sdcard");
             break;
         case 3:
+            show_nandroid_advanced_restore_menu("/sdcard");
+            break;
+        case 4:
+            run_dedupe_gc(other_sd);
+            break;
+        case 5:
             {
                 char backup_path[PATH_MAX];
                 time_t t = time(NULL);
@@ -917,14 +964,19 @@ void show_nandroid_menu()
                 nandroid_backup(backup_path);
             }
             break;
-        case 4:
+        case 6:
             if (other_sd != NULL) {
                 show_nandroid_restore_menu(other_sd);
             }
             break;
-        case 5:
+        case 7:
             if (other_sd != NULL) {
                 show_nandroid_advanced_restore_menu(other_sd);
+            }
+            break;
+        case 8:
+            if (other_sd != NULL) {
+                show_nandroid_delete_menu(other_sd);
             }
             break;
     }

@@ -139,6 +139,19 @@ static int tar_compress_wrapper(const char* backup_path, const char* backup_file
     return __pclose(fp);
 }
 
+void dedupe_gc(const char* blob_dir) {
+    char backup_dir[PATH_MAX];
+    strcpy(backup_dir, blob_dir);
+    char *d = dirname(backup_dir);
+    strcpy(backup_dir, d);
+    strcat(backup_dir, "/backup");
+    ui_print("Freeing space...\n");
+    char tmp[PATH_MAX];
+    sprintf(tmp, "dedupe gc %s $(find %s -name '*.dup')", blob_dir, backup_dir);
+    __system(tmp);
+    ui_print("Done freeing space.\n");
+}
+
 static int dedupe_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
     char tmp[PATH_MAX];
     char blob_dir[PATH_MAX];
@@ -153,16 +166,7 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
 
     if (!(nandroid_backup_bitfield & NANDROID_FIELD_DEDUPE_CLEARED_SPACE)) {
         nandroid_backup_bitfield |= NANDROID_FIELD_DEDUPE_CLEARED_SPACE;
-        char base_dir[PATH_MAX];
-        strcpy(base_dir, backup_file_image);
-        d = dirname(base_dir);
-        strcpy(base_dir, d);
-        d = dirname(base_dir);
-        strcpy(base_dir, d);
-        ui_print("Freeing space...\n");
-        sprintf(tmp, "dedupe gc %s $(find %s -name '*.dup')", blob_dir, base_dir);
-        // ui_print("%s\n", tmp);
-        __system(tmp);
+        dedupe_gc(blob_dir);
     }
 
     sprintf(tmp, "dedupe c %s %s %s.dup %s", backup_path, blob_dir, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "./media" : "");
