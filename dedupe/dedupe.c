@@ -3,10 +3,12 @@
 #include <openssl/md5.h>
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
+#include <assert.h>
 #include <errno.h>
 #include <dirent.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <sys/wait.h>
@@ -20,6 +22,7 @@
 #include <sys/wait.h>
 
 #define DEDUPE_VERSION 2
+#define ARRAY_CAPACITY 1000
 
 static int copy_file(const char *src, const char *dst) {
     char buf[4096];
@@ -260,19 +263,60 @@ static int dec_to_oct(int dec) {
     return ret;
 }
 
-void recursive_delete_skip_gc(char* d) {
+struct array {
+    void** data;
+    int size;
+    int capacity;
+};
+
+static void array_init(struct array* arr, int capacity) {
+    arr->data = malloc(sizeof(void*) * capacity);
+    assert(arr->data != NULL);
+    arr->size = 0;
+    arr->capacity = capacity;
+}
+
+static void array_free(struct array* arr, int free_members) {
+    if (free_members) {
+        int i;
+        for (i = 0; i < arr->size; i++) {
+            free(arr->data[i]);
+        }
+    }
+
+    if (arr->data != NULL) {
+        free(arr->data);
+        arr->data = NULL;
+    }
+    arr->size = 0;
+    arr->capacity = 0;
+}
+
+static void array_add(struct array* arr, void* val) {
+    if (arr->size == arr->capacity) {
+        // Expand array
+        arr->capacity *= 2;
+        arr->data = realloc(arr->data, sizeof(void*) * arr->capacity);
+        assert(arr->data != NULL);
+    }
+    arr->data[arr->size++] = val;
+}
+
+static int string_compare(const void* a, const void* b) {
+    return strcmp(*(char**) a, *(char **) b);
+}
+
+static void recursive_list_dir(char* d, struct array *arr) {
     DIR *dp = opendir(d);
     if (dp == NULL) {
         fprintf(stderr, "Error opening directory: %s\n", d);
         return;
     }
     struct dirent *ep;
-    while (ep = readdir(dp)) {
+    while ((ep = readdir(dp))) {
         if (strcmp(ep->d_name, ".") == 0)
             continue;
         if (strcmp(ep->d_name, "..") == 0)
-            continue;
-        if (strcmp(ep->d_name, ".gc") == 0)
             continue;
         struct stat cst;
         int ret;
@@ -284,12 +328,11 @@ void recursive_delete_skip_gc(char* d) {
         }
 
         if (S_ISDIR(cst.st_mode)) {
-            recursive_delete_skip_gc(blob);
+            recursive_list_dir(blob, arr);
+            continue;
         }
 
-        if (remove(blob)) {
-            fprintf(stderr, "Error removing: %s\n", ep->d_name);
-        }
+        array_add(arr, strdup(blob));
     }
     closedir(dp);
 }
@@ -468,13 +511,10 @@ int dedupe_main(int argc, char** argv) {
             return 1;
         }
 
-        char gc_dir[PATH_MAX];
-        sprintf(gc_dir, "%s/%s", blob_dir, ".gc");
-        mkdir(gc_dir, S_IRWXU | S_IRWXG | S_IRWXO);
-        if (check_file(gc_dir)) {
-            fprintf(stderr, "Unable to open gc dir: %s\n", gc_dir);
-            return 1;
-        }
+        struct array used_files;
+        struct array all_files;
+        array_init(&used_files, ARRAY_CAPACITY);
+        array_init(&all_files, ARRAY_CAPACITY);
 
         char blob[PATH_MAX];
         int i;
@@ -483,7 +523,8 @@ int dedupe_main(int argc, char** argv) {
             FILE *input_manifest = fopen(argv[i], "rb");
             if (input_manifest == NULL) {
                 fprintf(stderr, "Unable to open input manifest %s\n", argv[i]);
-                return 1;
+                failure = 1;
+                goto out;
             }
 
             char line[PATH_MAX];
@@ -531,52 +572,39 @@ int dedupe_main(int argc, char** argv) {
                     char sizeStr[32];
                     token = tokenize(sizeStr, token, '\t');
                     int size = atoi(sizeStr);
-                    
+
                     sprintf(blob, "%s/%s", blob_dir, key);
-                    char dst[PATH_MAX];
-                    sprintf(dst, "%s/%s", gc_dir, key);
-                    struct stat file_info;
-                    if (stat(blob, &file_info) == 0) {
-                        // keys can have a single parent directory. make sure it exists
-                        mkdir(dirname(dst), S_IRWXU | S_IRWXG | S_IRWXO);
-                        rename(blob, dst);
-                    }
+                    array_add(&used_files, strdup(blob));
                 }
             }
             fclose(input_manifest);
         }
 
-        // rm -rf
-        if (!failure)
-            recursive_delete_skip_gc(blob_dir);
+        recursive_list_dir(blob_dir, &all_files);
 
-        // move .gc over
-        char dst[PATH_MAX];
-        DIR *dp = opendir(gc_dir);
-        if (dp == NULL) {
-            fprintf(stderr, "Error opening directory: %s\n", gc_dir);
-            return 1;
-        }
-        struct dirent *ep;
-        while (ep = readdir(dp)) {
-            if (strcmp(ep->d_name, ".") == 0)
-                continue;
-            if (strcmp(ep->d_name, "..") == 0)
-                continue;
-            struct stat cst;
-            int ret;
-            sprintf(blob, "%s/%s", gc_dir, ep->d_name);
-            sprintf(dst, "%s/%s", blob_dir, ep->d_name);
-            if ((ret = lstat(blob, &cst))) {
-                fprintf(stderr, "Error opening: %s\n", ep->d_name);
-                continue;
+        qsort(used_files.data, used_files.size, sizeof(void*), string_compare);
+        qsort(all_files.data, all_files.size, sizeof(void*), string_compare);
+
+        // Search for unused files
+        int j = 0;
+        for (i = 0; i < all_files.size; i++) {
+            int cmp;
+            while (j < used_files.size &&
+                (cmp = strcmp(used_files.data[j], all_files.data[i])) < 0) {
+                j++;
             }
 
-            if (rename(blob, dst)) {
-                fprintf(stderr, "Error moving: %s\n", ep->d_name);
+            if (cmp > 0 || j >= used_files.size) {
+                if (remove(all_files.data[i])) {
+                    fprintf(stderr, "Error removing: %s\n", all_files.data[i]);
+                }
+                printf("Delete: %s\n", all_files.data[i]);
             }
         }
-        closedir(dp);
+
+        out:
+        array_free(&used_files, 1);
+        array_free(&all_files, 1);
 
         return failure;
     }
