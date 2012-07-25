@@ -266,6 +266,12 @@ try_update_binary(const char *path, ZipArchive *zip) {
 //
 //  "{64,0xc926ad21,{1795090719,...,-695002876},{-857949815,...,1175080310}}"
 //
+// For key versions newer than the original 2048-bit e=3 keys
+// supported by Android, the string is preceded by a version
+// identifier, eg:
+//
+//  "v2 {64,0xc926ad21,{1795090719,...,-695002876},{-857949815,...,1175080310}}"
+//
 // (Note that the braces and commas in this example are actual
 // characters the parser expects to find in the file; the ellipses
 // indicate more numbers omitted from this example.)
