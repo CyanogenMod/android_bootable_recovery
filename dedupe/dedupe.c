@@ -183,13 +183,16 @@ static int store_dir(struct DEDUPE_STORE_CONTEXT *context, struct stat st, const
         if (i != context->exclude_count)
             continue;
         if (0 != (ret = lstat(full_path, &cst))) {
-            fprintf(stderr, "Error opening: %s\n", ep->d_name);
+            fprintf(stderr, "Error opening: %s\n", full_path);
             closedir(dp);
             return ret;
         }
 
-        if (ret = store_st(context, cst, full_path))
+        if (ret = store_st(context, cst, full_path)) {
+            fprintf(stderr, "Error storing: %s\n", full_path);
+            closedir(dp);
             return ret;
+        }
     }
     closedir(dp);
     return 0;

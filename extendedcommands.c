@@ -643,7 +643,7 @@ int is_safe_to_format(char* name)
 {
     char str[255];
     char* partition;
-    property_get("ro.cwm.forbid_format", str, "/misc,/radio,/bootloader,/recovery,/efs");
+    property_get("ro.cwm.forbid_format", str, "/misc,/radio,/bootloader,/recovery,/efs,/wimax");
 
     partition = strtok(str, ", ");
     while (partition != NULL) {
@@ -804,7 +804,7 @@ void show_nandroid_advanced_restore_menu(const char* path)
     if (file == NULL)
         return;
 
-    static char* headers[] = {  "Nandroid Advanced Restore",
+    static char* headers[] = {  "Advanced Restore",
                                 "",
                                 NULL
     };
@@ -868,7 +868,7 @@ static void run_dedupe_gc(const char* other_sd) {
 
 void show_nandroid_menu()
 {
-    static char* headers[] = {  "Nandroid",
+    static char* headers[] = {  "Backup and Restore",
                                 "",
                                 NULL
     };
@@ -877,7 +877,7 @@ void show_nandroid_menu()
                             "restore",
                             "delete",
                             "advanced restore",
-                            "free nandroid space",
+                            "free unused backup data",
                             NULL,
                             NULL,
                             NULL,
