@@ -855,12 +855,12 @@ void show_nandroid_advanced_restore_menu(const char* path)
 
 static void run_dedupe_gc(const char* other_sd) {
     ensure_path_mounted("/sdcard");
-    dedupe_gc("/sdcard/clockworkmod/blobs");
+    nandroid_dedupe_gc("/sdcard/clockworkmod/blobs");
     if (other_sd) {
         ensure_path_mounted(other_sd);
         char tmp[PATH_MAX];
         sprintf(tmp, "%s/clockworkmod/blobs", other_sd);
-        dedupe_gc(tmp);
+        nandroid_dedupe_gc(tmp);
     }
 }
 
