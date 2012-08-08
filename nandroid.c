@@ -145,7 +145,7 @@ static int tar_compress_wrapper(const char* backup_path, const char* backup_file
     return __pclose(fp);
 }
 
-void dedupe_gc(const char* blob_dir) {
+void nandroid_dedupe_gc(const char* blob_dir) {
     char backup_dir[PATH_MAX];
     strcpy(backup_dir, blob_dir);
     char *d = dirname(backup_dir);
@@ -173,7 +173,7 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
 
     if (!(nandroid_backup_bitfield & NANDROID_FIELD_DEDUPE_CLEARED_SPACE)) {
         nandroid_backup_bitfield |= NANDROID_FIELD_DEDUPE_CLEARED_SPACE;
-        dedupe_gc(blob_dir);
+        nandroid_dedupe_gc(blob_dir);
     }
 
     sprintf(tmp, "dedupe c %s %s %s.dup %s", backup_path, blob_dir, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "./media" : "");
@@ -194,14 +194,23 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
 }
 
 static nandroid_backup_handler default_backup_handler = dedupe_compress_wrapper;
+static char forced_backup_format[5] = "";
+void nandroid_force_backup_format(const char* fmt) {
+    strcpy(forced_backup_format, fmt);
+}
 static void refresh_default_backup_handler() {
     char fmt[5];
-    ensure_path_mounted("/sdcard");
-    FILE* f = fopen("/sdcard/clockworkmod/.default_backup_format", "r");
-    if (NULL == f)
-        return;
-    fread(fmt, 1, sizeof(fmt), f);
-    fclose(f);
+    if (strlen(forced_backup_format) > 0) {
+        strcpy(fmt, forced_backup_format);
+    }
+    else {
+        ensure_path_mounted("/sdcard");
+        FILE* f = fopen("/sdcard/clockworkmod/.default_backup_format", "r");
+        if (NULL == f)
+            return;
+        fread(fmt, 1, sizeof(fmt), f);
+        fclose(f);
+    }
     fmt[3] = NULL;
     if (0 == strcmp(fmt, "tar"))
         default_backup_handler = tar_compress_wrapper;
@@ -224,6 +233,9 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
     if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
         return default_backup_handler;
     }
+
+    if (strlen(forced_backup_format) > 0)
+        return default_backup_handler;
 
     // cwr5, we prefer dedupe for everything except yaffs2
     if (strcmp("yaffs2", mv->filesystem) == 0) {
