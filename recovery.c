@@ -767,6 +767,8 @@ int
 main(int argc, char **argv) {
     if (strcmp(basename(argv[0]), "recovery") != 0)
     {
+        if (strstr(argv[0], "minizip") != NULL)
+            return minizip_main(argc, argv);
         if (strstr(argv[0], "dedupe") != NULL)
             return dedupe_main(argc, argv);
         if (strstr(argv[0], "flash_image") != NULL)

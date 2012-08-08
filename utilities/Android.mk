@@ -24,34 +24,6 @@ LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
 
-# include $(CLEAR_VARS)
-# LOCAL_MODULE := e2fsck
-# LOCAL_MODULE_TAGS := optional
-# LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-# LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
-# LOCAL_SRC_FILES := $(LOCAL_MODULE)
-# include $(BUILD_PREBUILT)
-
-# include $(CLEAR_VARS)
-# LOCAL_MODULE := tune2fs
-# LOCAL_MODULE_TAGS := optional
-# LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-# LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
-# LOCAL_SRC_FILES := $(LOCAL_MODULE)
-# include $(BUILD_PREBUILT)
-
-# include $(CLEAR_VARS)
-# LOCAL_MODULE := mke2fs
-# LOCAL_MODULE_TAGS := optional
-# LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-# LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
-# ifeq ($(BOARD_MKE2FS),)
-# LOCAL_SRC_FILES := $(LOCAL_MODULE)
-# else
-# LOCAL_SRC_FILES := ../../../$(BOARD_MKE2FS)
-# endif
-# include $(BUILD_PREBUILT)
-
 ifneq ($(TARGET_RECOVERY_FSTAB),)
   BOARD_RECOVERY_RFS_CHECK := $(shell grep rfs $(TARGET_RECOVERY_FSTAB))
 else
@@ -68,3 +40,12 @@ LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
 
 endif
+
+include $(CLEAR_VARS)
+LOCAL_STATIC_LIBRARIES := libz
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := libminizip
+LOCAL_CFLAGS := -Dmain=minizip_main -D__ANDROID__ -DIOAPI_NO_64
+LOCAL_C_INCLUDES := external/zlib
+LOCAL_SRC_FILES := ../../../external/zlib/contrib/minizip/minizip.c ../../../external/zlib/contrib/minizip/zip.c ../../../external/zlib/contrib/minizip/ioapi.c
+include $(BUILD_STATIC_LIBRARY)
