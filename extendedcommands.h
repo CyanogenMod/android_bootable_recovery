@@ -59,3 +59,8 @@ int confirm_selection(const char* title, const char* confirm);
 int run_and_remove_extendedcommand();
 
 int verify_root_and_recovery();
+
+#ifdef RECOVERY_EXTEND_NANDROID_MENU
+void extend_nandroid_menu(char** items, int item_count, int max_items);
+void handle_nandroid_menu(int item_count, int selected);
+#endif

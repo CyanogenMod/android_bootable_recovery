@@ -906,6 +906,8 @@ void show_nandroid_menu()
                             NULL,
                             NULL,
                             NULL,
+                            NULL,
+                            NULL,
                             NULL
     };
 
@@ -924,8 +926,11 @@ void show_nandroid_menu()
         list[7] = "advanced restore from external sdcard";
         list[8] = "delete from external sdcard";
     }
+#ifdef RECOVERY_EXTEND_NANDROID_MENU
+    extend_nandroid_menu(list, 9, 10);
+#endif
 
-    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
     switch (chosen_item)
     {
         case 0:
@@ -1004,6 +1009,11 @@ void show_nandroid_menu()
             if (other_sd != NULL) {
                 show_nandroid_delete_menu(other_sd);
             }
+            break;
+        default:
+#ifdef RECOVERY_EXTEND_NANDROID_MENU
+            handle_nandroid_menu(9, chosen_item);
+#endif
             break;
     }
 }
