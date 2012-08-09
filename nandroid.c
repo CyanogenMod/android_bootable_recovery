@@ -205,7 +205,7 @@ static void refresh_default_backup_handler() {
     }
     else {
         ensure_path_mounted("/sdcard");
-        FILE* f = fopen("/sdcard/clockworkmod/.default_backup_format", "r");
+        FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
         if (NULL == f)
             return;
         fread(fmt, 1, sizeof(fmt), f);

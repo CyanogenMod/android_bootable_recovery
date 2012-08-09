@@ -54,7 +54,9 @@ get_filtered_menu_selection(char** headers, char** items, int menu_only, int ini
     for (index = 0; index < items_count; index++) {
         if (items[index] == NULL)
             continue;
-        items[offset] = items[index];
+        char *item = items[index];
+        items[index] = NULL;
+        items[offset] = item;
         translate_table[offset] = index;
         offset++;
     }
@@ -72,6 +74,15 @@ get_filtered_menu_selection(char** headers, char** items, int menu_only, int ini
     return ret;
 }
 
+void write_string_to_file(const char* filename, const char* string) {
+    ensure_path_mounted(filename);
+    char tmp[PATH_MAX];
+    sprintf(tmp, "mkdir -p $(dirname %s)", filename);
+    __system(tmp);
+    FILE *file = fopen(filename, "w");
+    fprintf(file, "%s", string);
+    fclose(file);
+}
 
 void
 toggle_signature_check()
@@ -890,6 +901,29 @@ static void run_dedupe_gc(const char* other_sd) {
     }
 }
 
+static void choose_backup_format() {
+    static char* headers[] = {  "Backup Format",
+                                "",
+                                NULL
+    };
+
+    char* list[] = { "dup (default)",
+        "tar"
+    };
+
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    switch (chosen_item) {
+        case 0:
+            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
+            ui_print("Backup format set to dedupe.\n");
+            break;
+        case 1:
+            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tar");
+            ui_print("Backup format set to tar.\n");
+            break;
+    }
+}
+
 void show_nandroid_menu()
 {
     static char* headers[] = {  "Backup and Restore",
@@ -902,6 +936,7 @@ void show_nandroid_menu()
                             "delete",
                             "advanced restore",
                             "free unused backup data",
+                            "choose backup format",
                             NULL,
                             NULL,
                             NULL,
@@ -914,107 +949,114 @@ void show_nandroid_menu()
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc";
-        list[5] = "backup to internal sdcard";
-        list[6] = "restore from internal sdcard";
-        list[7] = "advanced restore from internal sdcard";
-        list[8] = "delete from internal sdcard";
+        list[6] = "backup to internal sdcard";
+        list[7] = "restore from internal sdcard";
+        list[8] = "advanced restore from internal sdcard";
+        list[9] = "delete from internal sdcard";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd";
-        list[5] = "backup to external sdcard";
-        list[6] = "restore from external sdcard";
-        list[7] = "advanced restore from external sdcard";
-        list[8] = "delete from external sdcard";
+        list[6] = "backup to external sdcard";
+        list[7] = "restore from external sdcard";
+        list[8] = "advanced restore from external sdcard";
+        list[9] = "delete from external sdcard";
     }
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
-    extend_nandroid_menu(list, 9, 10);
+    extend_nandroid_menu(list, 10, sizeof(list) / sizeof(char*));
 #endif
 
-    int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
-    switch (chosen_item)
-    {
-        case 0:
-            {
-                char backup_path[PATH_MAX];
-                time_t t = time(NULL);
-                struct tm *tmp = localtime(&t);
-                if (tmp == NULL)
+    for (;;) {
+        int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
+        if (chosen_item == GO_BACK)
+            break;
+        switch (chosen_item)
+        {
+            case 0:
                 {
-                    struct timeval tp;
-                    gettimeofday(&tp, NULL);
-                    sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                    char backup_path[PATH_MAX];
+                    time_t t = time(NULL);
+                    struct tm *tmp = localtime(&t);
+                    if (tmp == NULL)
+                    {
+                        struct timeval tp;
+                        gettimeofday(&tp, NULL);
+                        sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                    }
+                    else
+                    {
+                        strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                    }
+                    nandroid_backup(backup_path);
                 }
-                else
+                break;
+            case 1:
+                show_nandroid_restore_menu("/sdcard");
+                break;
+            case 2:
+                show_nandroid_delete_menu("/sdcard");
+                break;
+            case 3:
+                show_nandroid_advanced_restore_menu("/sdcard");
+                break;
+            case 4:
+                run_dedupe_gc(other_sd);
+                break;
+            case 5:
+                choose_backup_format();
+                break;
+            case 6:
                 {
-                    strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                    char backup_path[PATH_MAX];
+                    time_t t = time(NULL);
+                    struct tm *timeptr = localtime(&t);
+                    if (timeptr == NULL)
+                    {
+                        struct timeval tp;
+                        gettimeofday(&tp, NULL);
+                        if (other_sd != NULL) {
+                            sprintf(backup_path, "%s/clockworkmod/backup/%d", other_sd, tp.tv_sec);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (other_sd != NULL) {
+                            char tmp[PATH_MAX];
+                            strftime(tmp, sizeof(tmp), "clockworkmod/backup/%F.%H.%M.%S", timeptr);
+                            // this sprintf results in:
+                            // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
+                            sprintf(backup_path, "%s/%s", other_sd, tmp);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    nandroid_backup(backup_path);
                 }
-                nandroid_backup(backup_path);
-            }
-            break;
-        case 1:
-            show_nandroid_restore_menu("/sdcard");
-            break;
-        case 2:
-            show_nandroid_delete_menu("/sdcard");
-            break;
-        case 3:
-            show_nandroid_advanced_restore_menu("/sdcard");
-            break;
-        case 4:
-            run_dedupe_gc(other_sd);
-            break;
-        case 5:
-            {
-                char backup_path[PATH_MAX];
-                time_t t = time(NULL);
-                struct tm *timeptr = localtime(&t);
-                if (timeptr == NULL)
-                {
-                    struct timeval tp;
-                    gettimeofday(&tp, NULL);
-                    if (other_sd != NULL) {
-                        sprintf(backup_path, "%s/clockworkmod/backup/%d", other_sd, tp.tv_sec);
-                    }
-                    else {
-                        break;
-                    }
+                break;
+            case 7:
+                if (other_sd != NULL) {
+                    show_nandroid_restore_menu(other_sd);
                 }
-                else
-                {
-                    if (other_sd != NULL) {
-                        char tmp[PATH_MAX];
-                        strftime(tmp, sizeof(tmp), "clockworkmod/backup/%F.%H.%M.%S", timeptr);
-                        // this sprintf results in:
-                        // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
-                        sprintf(backup_path, "%s/%s", other_sd, tmp);
-                    }
-                    else {
-                        break;
-                    }
+                break;
+            case 8:
+                if (other_sd != NULL) {
+                    show_nandroid_advanced_restore_menu(other_sd);
                 }
-                nandroid_backup(backup_path);
-            }
-            break;
-        case 6:
-            if (other_sd != NULL) {
-                show_nandroid_restore_menu(other_sd);
-            }
-            break;
-        case 7:
-            if (other_sd != NULL) {
-                show_nandroid_advanced_restore_menu(other_sd);
-            }
-            break;
-        case 8:
-            if (other_sd != NULL) {
-                show_nandroid_delete_menu(other_sd);
-            }
-            break;
-        default:
+                break;
+            case 9:
+                if (other_sd != NULL) {
+                    show_nandroid_delete_menu(other_sd);
+                }
+                break;
+            default:
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
-            handle_nandroid_menu(9, chosen_item);
+                handle_nandroid_menu(10, chosen_item);
 #endif
-            break;
+                break;
+        }
     }
 }
 
