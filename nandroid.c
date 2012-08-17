@@ -257,6 +257,8 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
         mv = find_mounted_volume_by_mount_point(v->mount_point);
     if (mv == NULL || mv->filesystem == NULL)
         sprintf(tmp, "%s/%s.auto", backup_path, name);
+    else if (strcmp( name, ".android_secure") == 0)
+        sprintf(tmp, "%s/%s.%s.%s", backup_path, ".android_secure", basename(dirname(mount_point)), mv->filesystem);
     else
         sprintf(tmp, "%s/%s.%s", backup_path, name, mv->filesystem);
     nandroid_backup_handler backup_handler = get_backup_handler(mount_point);
@@ -305,11 +307,11 @@ int nandroid_backup(const char* backup_path)
     nandroid_backup_bitfield = 0;
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     refresh_default_backup_handler();
-    
+
     if (ensure_path_mounted(backup_path) != 0) {
         return print_and_error("Can't mount backup path.\n");
     }
-    
+
     Volume* volume = volume_for_path(backup_path);
     if (NULL == volume)
         return print_and_error("Unable to find volume for backup path.\n");
@@ -361,16 +363,28 @@ int nandroid_backup(const char* backup_path)
             return ret;
     }
 
-    if (0 != stat("/sdcard/.android_secure", &s))
+    if (0 == stat("/sdcard/.android_secure", &s))
     {
-        ui_print("No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n");
-    }
-    else
-    {
+        ui_print("/sdcard/.android_secure found. Backing up.\n");
         if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
             return ret;
     }
-
+    else if (0 == stat("/emmc/.android_secure", &s))
+    {
+        ui_print("/emmc/.android_secure found. Backing up.\n");
+        if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/emmc/.android_secure", 0)))
+            return ret;
+    }
+    else if (0 == stat("/external_sd/.android_secure", &s))
+    {
+        ui_print("/external_sd/.android_secure found. Backing up.\n");
+        if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/external_sd/.android_secure", 0)))
+            return ret;
+    }
+    else
+    {
+        ui_print("No .android_secure found. Skipping backup of applications on internal/external storage .\n");
+    }
     if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/cache", 0)))
         return ret;
 
@@ -393,7 +407,7 @@ int nandroid_backup(const char* backup_path)
         ui_print("Error while generating md5 sum!\n");
         return ret;
     }
-    
+
     // TODO: remove this hack in a few weeks.
     sprintf(tmp, "chmod -R 777 %s ; chmod -R u+r,u+w,g+r,g+w,o+r,o+w /sdcard/clockworkmod ; chmod u+x,g+x,o+x /sdcard/clockworkmod ; chmod u+x,g+x,o+x /sdcard/clockworkmod/backup ; chmod u+x,g+x,o+x /sdcard/clockworkmod/blobs", backup_path);
     __system(tmp);
@@ -492,15 +506,40 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
 
     nandroid_restore_handler restore_handler = NULL;
     const char *filesystems[] = { "yaffs2", "ext2", "ext3", "ext4", "vfat", "rfs", NULL };
+    const char *parts[] = { "emmc", "sdcard", "external_sd", NULL };
     const char* backup_filesystem = NULL;
     Volume *vol = volume_for_path(mount_point);
     const char *device = NULL;
     if (vol != NULL)
         device = vol->device;
-
     char tmp[PATH_MAX];
-    sprintf(tmp, "%s/%s.img", backup_path, name);
     struct stat file_info;
+    if (0 == strcmp(mount_point,"/.android_secure")) {
+        char *part;
+        int a = 0;
+        while ((part = parts[a]) != NULL) {
+            sprintf(tmp, "%s/.android_secure.%s.vfat.img", backup_path, part);
+            if (0 == (ret = statfs(tmp, &file_info))) {
+                backup_filesystem = "vfat";
+                restore_handler = unyaffs_wrapper;
+                break;
+            }
+            sprintf(tmp, "%s/.android_secure.%s.vfat.tar", backup_path, part);
+            if (0 == (ret = statfs(tmp, &file_info))) {
+                backup_filesystem = "vfat";
+                restore_handler = tar_extract_wrapper;
+                break;
+            }
+            sprintf(tmp, "%s/.android_secure.%s.vfat.dup", backup_path, part);
+            if (0 == (ret = statfs(tmp, &file_info))) {
+                backup_filesystem = "vfat";
+                restore_handler = dedupe_extract_wrapper;
+                break;
+            }
+            a++;
+        }
+    }
+    sprintf(tmp, "%s/%s.img", backup_path, name);
     if (0 != (ret = statfs(tmp, &file_info))) {
         // can't find the backup, it may be the new backup format?
         // iterate through the backup types
@@ -528,6 +567,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             }
             i++;
         }
+    }
 
         if (backup_filesystem == NULL || restore_handler == NULL) {
             ui_print("%s.img not found. Skipping restore of %s.\n", name, mount_point);
@@ -551,7 +591,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             backup_filesystem = NULL;
         if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
             backup_filesystem = NULL;
-    }
+
 
     ensure_directory(mount_point);
 
@@ -588,7 +628,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     if (umount_when_finished) {
         ensure_path_unmounted(mount_point);
     }
-    
+
     return 0;
 }
 
@@ -629,25 +669,25 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     if (ensure_path_mounted(backup_path) != 0)
         return print_and_error("Can't mount backup path\n");
-    
+
     char tmp[PATH_MAX];
 
     ui_print("Checking MD5 sums...\n");
     sprintf(tmp, "cd %s && md5sum -c nandroid.md5", backup_path);
     if (0 != __system(tmp))
         return print_and_error("MD5 mismatch!\n");
-    
+
     int ret;
 
     if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
         return ret;
-    
+
     struct stat s;
     Volume *vol = volume_for_path("/wimax");
     if (restore_wimax && vol != NULL && 0 == stat(vol->device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
-        
+
         serialno[0] = 0;
         property_get("ro.serialno", serialno, "");
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
@@ -676,13 +716,13 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/data")))
         return ret;
-        
+
     if (has_datadata()) {
         if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/datadata")))
             return ret;
     }
 
-    if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
+    if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/.android_secure", 0)))
         return ret;
 
     if (restore_cache && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/cache", 0)))
@@ -709,12 +749,12 @@ int nandroid_main(int argc, char** argv)
 {
     if (argc > 3 || argc < 2)
         return nandroid_usage();
-    
+
     if (strcmp("backup", argv[1]) == 0)
     {
         if (argc != 2)
             return nandroid_usage();
-        
+
         char backup_path[PATH_MAX];
         nandroid_generate_timestamp_path(backup_path);
         return nandroid_backup(backup_path);
@@ -726,6 +766,6 @@ int nandroid_main(int argc, char** argv)
             return nandroid_usage();
         return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
     }
-    
+
     return nandroid_usage();
 }
