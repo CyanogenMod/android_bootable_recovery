@@ -901,30 +901,43 @@ int ui_wait_key_with_repeat()
         timeout.tv_sec += UI_WAIT_KEY_TIMEOUT_SEC;
 
         int rc = 0;
+        pthread_mutex_lock(&key_queue_mutex);
         while (key_queue_len == 0 && rc != ETIMEDOUT) {
-            pthread_mutex_lock(&key_queue_mutex);
             rc = pthread_cond_timedwait(&key_queue_cond, &key_queue_mutex,
                                         &timeout);
-            pthread_mutex_unlock(&key_queue_mutex);
         }
-        if (rc == ETIMEDOUT && !usb_connected()) return -1;
+        pthread_mutex_unlock(&key_queue_mutex);
+        if (rc == ETIMEDOUT && !usb_connected()) {
+            return key;
+        }
 
+        pthread_mutex_lock(&key_queue_mutex);
         while (key_queue_len > 0) {
             unsigned long now_msec;
+            // wtf is this here for?
+            // don't fix threading problems with sleep.
             usleep(1);
 
             gettimeofday(&now, NULL);
             now_msec = (now.tv_sec * 1000) + (now.tv_usec / 1000);
 
             key = key_queue[0];
-
-            pthread_mutex_lock(&key_queue_mutex);
             memcpy(&key_queue[0], &key_queue[1], sizeof(int) * --key_queue_len);
-            pthread_mutex_unlock(&key_queue_mutex);
+
+            // sanity check the returned key.
+            if (key < 0) {
+                pthread_mutex_unlock(&key_queue_mutex);
+                return key;
+            }
 
             if (!key_pressed[key]) {
-                if (key_last_repeat[key] > 0) continue;
-                else return key;
+                if (key_last_repeat[key] > 0) {
+                    continue;
+                }
+                else {
+                    pthread_mutex_unlock(&key_queue_mutex);
+                    return key;
+                }
             }
 
             int k = 0;
@@ -945,9 +958,12 @@ int ui_wait_key_with_repeat()
                     continue;
                 }
             }
+            pthread_mutex_unlock(&key_queue_mutex);
             return key;
         }
+        pthread_mutex_unlock(&key_queue_mutex);
     } while (key_queue_len == 0);
+
     return key;
 }
 
