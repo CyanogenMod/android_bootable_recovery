@@ -911,18 +911,16 @@ int ui_wait_key_with_repeat()
             return key;
         }
 
-        pthread_mutex_lock(&key_queue_mutex);
-        while (key_queue_len > 0) {
+        while (1) {
             unsigned long now_msec;
-            // wtf is this here for?
-            // don't fix threading problems with sleep.
-            usleep(1);
-
             gettimeofday(&now, NULL);
             now_msec = (now.tv_sec * 1000) + (now.tv_usec / 1000);
 
+            pthread_mutex_lock(&key_queue_mutex);
+            if (key_queue_len == 0) break;
             key = key_queue[0];
             memcpy(&key_queue[0], &key_queue[1], sizeof(int) * --key_queue_len);
+            pthread_mutex_unlock(&key_queue_mutex);
 
             // sanity check the returned key.
             if (key < 0) {
@@ -947,8 +945,10 @@ int ui_wait_key_with_repeat()
                 }
             }
             if (k < boardNumRepeatableKeys) {
+                pthread_mutex_lock(&key_queue_mutex);
                 key_queue[key_queue_len] = key;
                 key_queue_len++;
+                pthread_mutex_unlock(&key_queue_mutex);
 
                 if ((now_msec > key_press_time[key] + UI_KEY_WAIT_REPEAT &&
                     now_msec > key_last_repeat[key] + UI_KEY_REPEAT_INTERVAL) ||
@@ -958,7 +958,6 @@ int ui_wait_key_with_repeat()
                     continue;
                 }
             }
-            pthread_mutex_unlock(&key_queue_mutex);
             return key;
         }
         pthread_mutex_unlock(&key_queue_mutex);
