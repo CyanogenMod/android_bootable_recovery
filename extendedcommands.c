@@ -442,8 +442,7 @@ static struct lun_node *lun_head = NULL;
 static struct lun_node *lun_tail = NULL;
 
 int control_usb_storage_set_lun(Volume* vol, bool enable, const char *lun_file) {
-    char c = 0;
-    const char *vol_device = enable ? vol->device : &c;
+    const char *vol_device = enable ? vol->device : "";
     int fd;
     struct lun_node *node;
 
@@ -463,7 +462,7 @@ int control_usb_storage_set_lun(Volume* vol, bool enable, const char *lun_file) 
     }
 
     // Write the volume path to the LUN file
-    if ((write(fd, vol_device, strlen(vol_device)) < 0) &&
+    if ((write(fd, vol_device, strlen(vol_device) + 1) < 0) &&
        (!enable || !vol->device2 || (write(fd, vol->device2, strlen(vol->device2)) < 0))) {
         LOGW("Unable to write to ums lunfile %s (%s)\n", lun_file, strerror(errno));
         close(fd);
