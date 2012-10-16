@@ -99,6 +99,8 @@ endif
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
+LOCAL_STATIC_LIBRARIES += libselinux
+
 LOCAL_C_INCLUDES += system/extras/ext4_utils
 
 include $(BUILD_EXECUTABLE)
