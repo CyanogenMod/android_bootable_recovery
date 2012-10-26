@@ -718,12 +718,8 @@ prompt_and_wait() {
                 }
                 break;
 
-            case ITEM_APPLY_SDCARD:
+            case ITEM_APPLY_ZIP:
                 show_install_update_menu();
-                break;
-
-            case ITEM_APPLY_SIDELOAD:
-                apply_from_adb();
                 break;
 
             case ITEM_NANDROID:
