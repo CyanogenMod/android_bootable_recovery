@@ -75,9 +75,8 @@ int device_wipe_data();
 #define ITEM_REBOOT          0
 #define ITEM_APPLY_EXT       1
 #define ITEM_APPLY_SDCARD    1  // historical synonym for ITEM_APPLY_EXT
-#define ITEM_APPLY_SIDELOAD  2
-#define ITEM_WIPE_DATA       3
-#define ITEM_WIPE_CACHE      4
+#define ITEM_WIPE_DATA       2
+#define ITEM_WIPE_CACHE      3
 // unused in cwr
 #define ITEM_APPLY_CACHE     4
 #define ITEM_NANDROID        5
