@@ -41,6 +41,7 @@
 #include "bmlutils/bmlutils.h"
 #include "cutils/android_reboot.h"
 
+#include "adb_install.h"
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -111,18 +112,20 @@ int install_zip(const char* packagefilepath)
 
 #define ITEM_CHOOSE_ZIP       0
 #define ITEM_APPLY_SDCARD     1
-#define ITEM_SIG_CHECK        2
-#define ITEM_CHOOSE_ZIP_INT   3
+#define ITEM_APPLY_SIDELOAD   2
+#define ITEM_SIG_CHECK        3
+#define ITEM_CHOOSE_ZIP_INT   4
 
 void show_install_update_menu()
 {
-    static char* headers[] = {  "Apply update from .zip file on SD card",
+    static char* headers[] = {  "Apply update from .zip file",
                                 "",
                                 NULL
     };
     
     char* install_menu_items[] = {  "choose zip from sdcard",
                                     "apply /sdcard/update.zip",
+                                    "install zip from sideload",
                                     "toggle signature verification",
                                     NULL,
                                     NULL };
@@ -153,6 +156,9 @@ void show_install_update_menu()
             }
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu("/sdcard/");
+                break;
+            case ITEM_APPLY_SIDELOAD:
+                apply_from_adb();
                 break;
             case ITEM_CHOOSE_ZIP_INT:
                 if (other_sd != NULL)
