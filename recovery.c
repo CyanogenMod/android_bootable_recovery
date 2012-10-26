@@ -41,7 +41,6 @@
 #include "roots.h"
 #include "recovery_ui.h"
 
-#include "adb_install.h"
 #include "minadbd/adb.h"
 
 #include "extendedcommands.h"
@@ -721,10 +720,6 @@ prompt_and_wait() {
 
             case ITEM_APPLY_SDCARD:
                 show_install_update_menu();
-                break;
-
-            case ITEM_APPLY_SIDELOAD:
-                apply_from_adb();
                 break;
 
             case ITEM_NANDROID:
