@@ -41,6 +41,7 @@
 #include "bmlutils/bmlutils.h"
 #include "cutils/android_reboot.h"
 
+#include "adb_install.h"
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -119,18 +120,20 @@ int install_zip(const char* packagefilepath)
 }
 
 #define ITEM_CHOOSE_ZIP       0
-#define ITEM_APPLY_UPDATE     1
-#define ITEM_SIG_CHECK        2
-#define ITEM_CHOOSE_ZIP_INT   3
+#define ITEM_APPLY_SIDELOAD   1
+#define ITEM_APPLY_UPDATE 2 // /sdcard/update.zip
+#define ITEM_SIG_CHECK        3
+#define ITEM_CHOOSE_ZIP_INT   4
 
 void show_install_update_menu()
 {
-    static char* headers[] = {  "Apply update from .zip file on SD card",
+    static char* headers[] = {  "Install update from zip file",
                                 "",
                                 NULL
     };
     
     char* install_menu_items[] = {  "choose zip from sdcard",
+                                    "install zip from sideload",
                                     "apply /sdcard/update.zip",
                                     "toggle signature verification",
                                     NULL,
@@ -139,11 +142,11 @@ void show_install_update_menu()
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc/";
-        install_menu_items[3] = "choose zip from internal sdcard";
+        install_menu_items[4] = "choose zip from internal sdcard";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd/";
-        install_menu_items[3] = "choose zip from external sdcard";
+        install_menu_items[4] = "choose zip from external sdcard";
     }
     
     for (;;)
@@ -163,6 +166,9 @@ void show_install_update_menu()
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu("/sdcard/");
                 write_recovery_version();
+                break;
+            case ITEM_APPLY_SIDELOAD:
+                apply_from_adb();
                 break;
             case ITEM_CHOOSE_ZIP_INT:
                 if (other_sd != NULL)
