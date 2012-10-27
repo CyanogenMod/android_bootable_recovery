@@ -48,7 +48,7 @@ endif
 endif
 
 ifeq ($(BOARD_USE_CUSTOM_RECOVERY_FONT),)
-  BOARD_USE_CUSTOM_RECOVERY_FONT := \"font_10x18.h\"
+  BOARD_USE_CUSTOM_RECOVERY_FONT := \"roboto_10x18.h\"
 endif
 
 BOARD_RECOVERY_CHAR_WIDTH := $(shell echo $(BOARD_USE_CUSTOM_RECOVERY_FONT) | cut -d _  -f 2 | cut -d . -f 1 | cut -d x -f 1)
