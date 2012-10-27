@@ -17,7 +17,6 @@ LOCAL_SRC_FILES := \
     firmware.c \
     edifyscripting.c \
     setprop.c \
-    default_recovery_ui.c \
     adb_install.c \
     verifier.c
 
@@ -76,6 +75,12 @@ LOCAL_STATIC_LIBRARIES += libext4_utils libz
 # TODO: Build the ramdisk image in a more principled way.
 
 LOCAL_MODULE_TAGS := eng
+
+ifeq ($(BOARD_CUSTOM_RECOVERY_UI),)
+  LOCAL_SRC_FILES += default_recovery_ui.c
+else
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_UI)
+endif
 
 ifeq ($(BOARD_CUSTOM_RECOVERY_KEYMAPPING),)
   LOCAL_SRC_FILES += default_recovery_keys.c
