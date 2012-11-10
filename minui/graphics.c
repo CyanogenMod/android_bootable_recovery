@@ -127,7 +127,7 @@ static int get_framebuffer(GGLSurface *fb)
         return -1;
     }
 
-    bits = mmap(0, fi.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    bits = mmap(0, fi.smem_len*4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (bits == MAP_FAILED) {
         perror("failed to mmap framebuffer");
         close(fd);
