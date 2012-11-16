@@ -757,6 +757,23 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
     if (strcmp(path, "/data") == 0) {
         sprintf(tmp, "cd /data ; for f in $(ls -a | grep -v ^media$); do rm -rf $f; done");
         __system(tmp);
+        // if the /data/media sdcard has already been migrated for android 4.2,
+        // prevent the migration from happening again by writing the .layout_version
+        struct stat st;
+        if (0 == lstat("/data/media/0", &st)) {
+            char* layout_version = "2";
+            FILE* f = fopen("/data/.layout_version", "wb");
+            if (NULL != f) {
+                fwrite(layout_version, 1, 2, f);
+                fclose(f);
+            }
+            else {
+                LOGI("error opening /data/.layout_version for write.\n");
+            }
+        }
+        else {
+            LOGI("/data/media/0 not found. migration may occur.\n");
+        }
     }
     else {
         sprintf(tmp, "rm -rf %s/*", path);
