@@ -775,9 +775,8 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         }
     }
     else {
-        sprintf(tmp, "rm -rf %s/*", path);
-        __system(tmp);
-        sprintf(tmp, "rm -rf %s/.*", path);
+        // FIXME That's an error if the `path` contains an apostrophe.
+        sprintf(tmp, "rm -rf '%s', path);
         __system(tmp);
     }
 
