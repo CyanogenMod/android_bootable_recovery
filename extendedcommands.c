@@ -707,6 +707,23 @@ int format_device(const char *device, const char *path, const char *fs_type) {
     return format_unknown_device(device, path, fs_type);
 }
 
+static ssize_t writefile(const char *path, const void *p, size_t n)
+{
+    int f = open(path, O_WRONLY|O_CREAT|O_TRUNC);
+    if (f < 0)
+        return -errno;
+    ssize_t wr = write(f, p, n);
+    if (wr < 0)
+    {
+        int e = errno;
+        close(f);
+        return -e;
+    }
+    if (close(f) < 0)
+        return -errno;
+    return wr;
+}
+
 int format_unknown_device(const char *device, const char* path, const char *fs_type)
 {
     LOGI("Formatting unknown device.\n");
@@ -760,14 +777,8 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         // prevent the migration from happening again by writing the .layout_version
         struct stat st;
         if (0 == lstat("/data/media/0", &st)) {
-            char* layout_version = "2";
-            FILE* f = fopen("/data/.layout_version", "wb");
-            if (NULL != f) {
-                fwrite(layout_version, 1, 2, f);
-                fclose(f);
-            }
-            else {
-                LOGI("error opening /data/.layout_version for write.\n");
+            if (writefile("/data/.layout_version", "2", 2) != 2) {
+                LOGI("error writing /data/.layout_version\n");
             }
         }
         else {
