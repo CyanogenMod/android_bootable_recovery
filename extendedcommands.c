@@ -74,14 +74,29 @@ get_filtered_menu_selection(char** headers, char** items, int menu_only, int ini
     return ret;
 }
 
+static ssize_t writefile(const char *path, const void *p, size_t n)
+{
+    int f = open(path, O_WRONLY|O_CREAT|O_TRUNC);
+    if (f < 0)
+        return -errno;
+    ssize_t wr = write(f, p, n);
+    if (wr < 0)
+    {
+        int e = errno;
+        close(f);
+        return -e;
+    }
+    if (close(f) < 0)
+        return -errno;
+    return wr;
+}
+
 void write_string_to_file(const char* filename, const char* string) {
     ensure_path_mounted(filename);
     char tmp[PATH_MAX];
     sprintf(tmp, "mkdir -p $(dirname %s)", filename);
     __system(tmp);
-    FILE *file = fopen(filename, "w");
-    fprintf(file, "%s", string);
-    fclose(file);
+    writefile(filename, string, strlen(string));
 }
 
 void
@@ -705,23 +720,6 @@ int format_device(const char *device, const char *path, const char *fs_type) {
     }
 
     return format_unknown_device(device, path, fs_type);
-}
-
-static ssize_t writefile(const char *path, const void *p, size_t n)
-{
-    int f = open(path, O_WRONLY|O_CREAT|O_TRUNC);
-    if (f < 0)
-        return -errno;
-    ssize_t wr = write(f, p, n);
-    if (wr < 0)
-    {
-        int e = errno;
-        close(f);
-        return -e;
-    }
-    if (close(f) < 0)
-        return -errno;
-    return wr;
 }
 
 int format_unknown_device(const char *device, const char* path, const char *fs_type)
