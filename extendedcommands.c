@@ -1386,9 +1386,11 @@ void show_advanced_menu()
             case 5:
                 ensure_path_mounted("/system");
                 ensure_path_mounted("/data");
-                ui_print("Fixing permissions...\n");
-                __system("fix_permissions");
-                ui_print("Done!\n");
+                if (confirm_selection("Confirm ?", "Yes - Fix permissions")) {
+                    ui_print("Fixing permissions...\n");
+                    __system("fix_permissions");
+                    ui_print("Done!\n");
+                }
                 break;
             case 6:
                 partition_sdcard("/sdcard");
