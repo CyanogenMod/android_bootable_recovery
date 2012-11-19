@@ -248,7 +248,8 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
 
 int nandroid_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
     int ret = 0;
-    char* name = basename(mount_point);
+    char name[PATH_MAX];
+    strcpy(name, basename(mount_point));
 
     struct stat file_info;
     int callback = stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info) != 0;
