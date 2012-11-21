@@ -954,7 +954,7 @@ void show_nandroid_advanced_restore_menu(const char* path)
                                 "",
                                 "Choose an image to restore",
                                 "first. The next menu will",
-                                "you more options.",
+                                "give you more options.",
                                 "",
                                 NULL
     };
