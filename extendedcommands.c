@@ -1294,13 +1294,13 @@ void show_advanced_menu()
     };
 
     if (!can_partition("/sdcard")) {
-        list[7] = NULL;
+        list[6] = NULL;
     }
     if (!can_partition("/external_sd")) {
-        list[8] = NULL;
+        list[7] = NULL;
     }
     if (!can_partition("/emmc")) {
-        list[9] = NULL;
+        list[8] = NULL;
     }
 
     for (;;)
