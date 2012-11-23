@@ -119,7 +119,7 @@ static int store_file(struct DEDUPE_STORE_CONTEXT *context, struct stat st, cons
     // this is to get around vfat having a 64k directory size limit (usually around 20k files)
     char out_blob[PATH_MAX];
     char tmp_out_blob[PATH_MAX];
-    char key[SHA256_DIGEST_LENGTH + SHA256_DIGEST_LENGTH / 3 + 3];
+    char key[SHA256_DIGEST_LENGTH * 2 + 2];
     // int i = 0;
     // int keyIndex = 0;
     // while (psum[i]) {
