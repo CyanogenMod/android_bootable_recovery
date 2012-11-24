@@ -1261,7 +1261,7 @@ int can_partition(const char* volume) {
 
     int vol_len = strlen(vol->device);
     // do not allow partitioning of a device that isn't mmcblkX or mmcblkXp1
-    if (vol->device[vol_len - 2] == 'p' && vol->device[vol_len - 2] != '1') {
+    if (vol->device[vol_len - 2] == 'p' && vol->device[vol_len - 1] != '1') {
         LOGI("Can't partition unsafe device: %s\n", vol->device);
         return 0;
     }
