@@ -1323,19 +1323,19 @@ void show_advanced_menu()
                             "key test",
                             "show log",
                             "partition sdcard",
-                            "partition external sdcard",
-                            "partition internal sdcard",
+                            NULL,
                             NULL
     };
 
-    if (!can_partition("/sdcard")) {
-        list[5] = NULL;
-    }
-    if (!can_partition("/external_sd")) {
-        list[6] = NULL;
-    }
-    if (!can_partition("/emmc")) {
-        list[7] = NULL;
+    char *other_sd = NULL;
+    if (volume_for_path("/emmc") != NULL) {
+        other_sd = "/emmc";
+        list[5] = "partition external sdcard";
+        list[6] = "partition internal sdcard";
+    } else if (volume_for_path("/external_sd") != NULL) {
+        other_sd = "/external_sd";
+        list[5] = "partition internal sdcard";
+        list[6] = "partition external sdcard";
     }
 
     for (;;)
@@ -1383,13 +1383,11 @@ void show_advanced_menu()
                 ui_printlogtail(12);
                 break;
             case 5:
-                partition_sdcard("/sdcard");
+                if (can_partition("/sdcard"))
+                    partition_sdcard("/sdcard");
                 break;
             case 6:
-                partition_sdcard("/external_sd");
-                break;
-            case 7:
-                partition_sdcard("/emmc");
+                partition_sdcard(other_sd);
                 break;
         }
     }
