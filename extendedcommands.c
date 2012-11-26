@@ -1323,20 +1323,22 @@ void show_advanced_menu()
                             "key test",
                             "show log",
                             "fix permissions",
-                            "partition sdcard",
-                            "partition external sdcard",
-                            "partition internal sdcard",
+                            NULL,
+                            NULL,
                             NULL
     };
 
-    if (!can_partition("/sdcard")) {
-        list[6] = NULL;
-    }
-    if (!can_partition("/external_sd")) {
-        list[7] = NULL;
-    }
-    if (!can_partition("/emmc")) {
-        list[8] = NULL;
+    char *other_sd = NULL;
+    if (volume_for_path("/emmc") != NULL) {
+        other_sd = "/emmc";
+        list[6] = "partition external sdcard";
+        list[7] = "partition internal sdcard";
+    } else if (volume_for_path("/external_sd") != NULL) {
+        other_sd = "/external_sd";
+        list[6] = "partition internal sdcard";
+        list[7] = "partition external sdcard";
+    } else {
+        list[6] = "partition sdcard";
     }
 
     for (;;)
@@ -1391,13 +1393,22 @@ void show_advanced_menu()
                 ui_print("Done!\n");
                 break;
             case 6:
-                partition_sdcard("/sdcard");
+                if (ensure_path_mounted("/sdcard") != 0) {
+                    ui_print("Can't mount /sdcard\n");
+                    break;
+                }
+                if (can_partition("/sdcard")) {
+                    partition_sdcard("/sdcard");
+                }
                 break;
             case 7:
-                partition_sdcard("/external_sd");
-                break;
-            case 8:
-                partition_sdcard("/emmc");
+                if (ensure_path_mounted(other_sd) != 0) {
+                    ui_print("Can't mount %s\n", other_sd);
+                    break;
+                }
+                if (can_partition(other_sd)) {
+                    partition_sdcard(other_sd);
+                }
                 break;
         }
     }
