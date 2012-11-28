@@ -212,10 +212,10 @@ static void refresh_default_backup_handler() {
         fclose(f);
     }
     fmt[3] = NULL;
-    if (0 == strcmp(fmt, "tar"))
-        default_backup_handler = tar_compress_wrapper;
-    else
+    if (0 == strcmp(fmt, "dup"))
         default_backup_handler = dedupe_compress_wrapper;
+    else
+        default_backup_handler = tar_compress_wrapper;
 }
 
 static nandroid_backup_handler get_backup_handler(const char *backup_path) {

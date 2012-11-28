@@ -1051,20 +1051,20 @@ static void choose_backup_format() {
                                 NULL
     };
 
-    char* list[] = { "dup (default)",
-        "tar",
+    char* list[] = { "tar (default)",
+        "dup",
         NULL
     };
 
     int chosen_item = get_menu_selection(headers, list, 0, 0);
     switch (chosen_item) {
         case 0:
-            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
-            ui_print("Backup format set to dedupe.\n");
-            break;
-        case 1:
             write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tar");
             ui_print("Backup format set to tar.\n");
+            break;
+        case 1:
+            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
+            ui_print("Backup format set to dedupe.\n");
             break;
     }
 }
