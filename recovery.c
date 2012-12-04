@@ -643,17 +643,17 @@ wipe_data(int confirm) {
             title_headers = prepend_title((const char**)headers);
         }
 
-        char* items[] = { " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " Yes -- delete all user data",   // [7]
-                          " No",
-                          " No",
-                          " No",
+        char* items[] = { "No",
+                          "No",
+                          "No",
+                          "No",
+                          "No",
+                          "No",
+                          "No",
+                          "Yes -- delete all user data",   // [7]
+                          "No",
+                          "No",
+                          "No",
                           NULL };
 
         int chosen_item = get_menu_selection(title_headers, items, 1, 0);
@@ -701,8 +701,8 @@ prompt_and_wait() {
         int status;
         switch (chosen_item) {
             case ITEM_REBOOT:
-                poweroff=0;
-                return;
+                show_reboot_menu();
+                break;
 
             case ITEM_WIPE_DATA:
                 wipe_data(ui_text_visible());
@@ -738,10 +738,6 @@ prompt_and_wait() {
             case ITEM_ADVANCED:
                 show_advanced_menu();
                 break;
-
-            case ITEM_POWEROFF:
-                poweroff = 1;
-                return;
         }
     }
 }
