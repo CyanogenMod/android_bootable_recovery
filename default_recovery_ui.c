@@ -22,7 +22,7 @@
 
 char* MENU_HEADERS[] = { NULL };
 
-char* MENU_ITEMS[] = { "reboot system now",
+char* MENU_ITEMS[] = { "reboot",
                        "install zip from sdcard",
                        "install zip from sideload",
                        "wipe data/factory reset",
