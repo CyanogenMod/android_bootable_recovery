@@ -1418,6 +1418,9 @@ void show_reboot_menu()
             case 1:
             {
                 ui_print("Rebooting recovery...\n");
+#ifdef TARGET_RECOVERY_PRE_COMMAND
+                __system(TARGET_RECOVERY_PRE_COMMAND);
+#endif
                 android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
                 break;
             }
