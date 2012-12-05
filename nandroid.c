@@ -193,7 +193,7 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
     return __pclose(fp);
 }
 
-static nandroid_backup_handler default_backup_handler = dedupe_compress_wrapper;
+static nandroid_backup_handler default_backup_handler = tar_compress_wrapper;
 static char forced_backup_format[5] = "";
 void nandroid_force_backup_format(const char* fmt) {
     strcpy(forced_backup_format, fmt);
