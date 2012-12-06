@@ -218,6 +218,15 @@ static void refresh_default_backup_handler() {
         default_backup_handler = tar_compress_wrapper;
 }
 
+unsigned nandroid_get_default_backup_format() {
+    refresh_default_backup_handler();
+    if (default_backup_handler == dedupe_compress_wrapper) {
+        return NANDROID_BACKUP_FORMAT_DUP;
+    } else {
+        return NANDROID_BACKUP_FORMAT_TAR;
+    }
+}
+
 static nandroid_backup_handler get_backup_handler(const char *backup_path) {
     Volume *v = volume_for_path(backup_path);
     if (v == NULL) {
