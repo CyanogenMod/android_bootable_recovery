@@ -1045,26 +1045,37 @@ static void run_dedupe_gc(const char* other_sd) {
     }
 }
 
-static void choose_backup_format() {
-    static char* headers[] = {  "Backup Format",
+static void choose_default_backup_format() {
+    static char* headers[] = {  "Default Backup Format",
                                 "",
                                 NULL
     };
 
-    char* list[] = { "tar (default)",
+    char **list;
+    char* list_tar_default[] = { "tar (default)",
         "dup",
         NULL
     };
+    char* list_dup_default[] = { "tar",
+        "dup (default)",
+        NULL
+    };
+
+    if (nandroid_get_default_backup_format() == NANDROID_BACKUP_FORMAT_DUP) {
+        list = list_dup_default;
+    } else {
+        list = list_tar_default;
+    }
 
     int chosen_item = get_menu_selection(headers, list, 0, 0);
     switch (chosen_item) {
         case 0:
             write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tar");
-            ui_print("Backup format set to tar.\n");
+            ui_print("Default backup format set to tar.\n");
             break;
         case 1:
             write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
-            ui_print("Backup format set to dedupe.\n");
+            ui_print("Default backup format set to dedupe.\n");
             break;
     }
 }
@@ -1081,7 +1092,7 @@ void show_nandroid_menu()
                             "delete",
                             "advanced restore",
                             "free unused backup data",
-                            "choose backup format",
+                            "choose default backup format",
                             NULL,
                             NULL,
                             NULL,
@@ -1147,7 +1158,7 @@ void show_nandroid_menu()
                 run_dedupe_gc(other_sd);
                 break;
             case 5:
-                choose_backup_format();
+                choose_default_backup_format();
                 break;
             case 6:
                 {
