@@ -11,7 +11,6 @@ LOCAL_SRC_FILES := \
     roots.c \
     ui.c \
     mounts.c \
-    extendedcommands.c \
     nandroid.c \
     ../../system/core/toolbox/reboot.c \
     firmware.c \
@@ -19,6 +18,12 @@ LOCAL_SRC_FILES := \
     setprop.c \
     default_recovery_ui.c \
     verifier.c
+
+ifeq ($(BOARD_CUSTOM_EXTENDEDCOMMANDS),)
+  LOCAL_SRC_FILES += extendedcommands.c
+else
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_EXTENDEDCOMMANDS)
+endif
 
 ADDITIONAL_RECOVERY_FILES := $(shell echo $$ADDITIONAL_RECOVERY_FILES)
 LOCAL_SRC_FILES += $(ADDITIONAL_RECOVERY_FILES)
