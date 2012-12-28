@@ -206,8 +206,9 @@ static void refresh_default_backup_handler() {
     else {
         ensure_path_mounted("/sdcard");
         FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
-        if (NULL == f)
-            return;
+        if (NULL == f) {
+            default_backup_handler = tar_compress_wrapper;
+        }
         fread(fmt, 1, sizeof(fmt), f);
         fclose(f);
     }
