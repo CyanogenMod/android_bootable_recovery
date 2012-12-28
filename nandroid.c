@@ -208,6 +208,7 @@ static void refresh_default_backup_handler() {
         FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
         if (NULL == f) {
             default_backup_handler = tar_compress_wrapper;
+            return;
         }
         fread(fmt, 1, sizeof(fmt), f);
         fclose(f);
