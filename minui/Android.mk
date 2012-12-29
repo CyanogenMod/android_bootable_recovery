@@ -1,7 +1,14 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES := events.c resources.c
+LOCAL_SRC_FILES := resources.c
+
+ifneq ($(BOARD_CUSTOM_RECOVERY_EVENTS),)
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_EVENTS)
+else
+  LOCAL_SRC_FILES += events.c
+endif
+
 ifneq ($(BOARD_CUSTOM_GRAPHICS),)
   LOCAL_SRC_FILES += $(BOARD_CUSTOM_GRAPHICS)
 else
