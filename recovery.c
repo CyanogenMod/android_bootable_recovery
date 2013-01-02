@@ -57,12 +57,16 @@ static const struct option OPTIONS[] = {
   { "wipe_cache", no_argument, NULL, 'c' },
   { "show_text", no_argument, NULL, 't' },
   { "sideload", no_argument, NULL, 'l' },
+  { "locale", required_argument, NULL, 'd' },
   { NULL, 0, NULL, 0 },
 };
+
+char* locale = NULL;
 
 static const char *COMMAND_FILE = "/cache/recovery/command";
 static const char *INTENT_FILE = "/cache/recovery/intent";
 static const char *LOG_FILE = "/cache/recovery/log";
+static const char *LOCALE_FILE = "/sdcard/clockworkmod/last_locale";
 static const char *LAST_LOG_FILE = "/cache/recovery/last_log";
 static const char *CACHE_ROOT = "/cache";
 static const char *SDCARD_ROOT = "/sdcard";
@@ -284,6 +288,21 @@ finish_recovery(const char *send_intent) {
         }
     }
 
+    // Save the locale to cache, so if recovery is next started up
+    // without a --locale argument (eg, directly from the bootloader)
+    // it will use the last-known locale.
+    locale = ui_get_locale();
+
+    if (locale != NULL) {
+        LOGI("Saving locale \"%s\"\n", locale);
+        FILE* fp = fopen_path(LOCALE_FILE, "w");
+        fwrite(locale, 1, strlen(locale), fp);
+        fflush(fp);
+        fsync(fileno(fp));
+        check_and_fclose(fp, LOCALE_FILE);
+    }
+
+
     // Copy logs to cache so the system can find out what happened.
     copy_log_file(LOG_FILE, true);
     copy_log_file(LAST_LOG_FILE, false);
@@ -437,7 +456,7 @@ get_menu_selection(char** headers, char** items, int menu_only,
     // throw away keys pressed previously, so user doesn't
     // accidentally trigger menu items.
     ui_clear_key_queue();
-    
+
     int item_count = ui_start_menu(headers, items, initial_selection);
     int selected = initial_selection;
     int chosen_item = -1;
@@ -682,7 +701,7 @@ prompt_and_wait() {
     for (;;) {
         finish_recovery(NULL);
         ui_reset_progress();
-        
+
         ui_root_menu = 1;
         // ui_menu_level is a legacy variable that i am keeping around to prevent build breakage.
         ui_menu_level = 0;
@@ -742,6 +761,25 @@ prompt_and_wait() {
                 poweroff = 1;
                 return;
         }
+    }
+}
+
+static void
+load_locale_from_cache() {
+    FILE* fp = fopen_path(LOCALE_FILE, "r");
+    char buffer[80];
+    if (fp != NULL) {
+        fgets(buffer, sizeof(buffer), fp);
+        int j = 0;
+        unsigned int i;
+        for (i = 0; i < sizeof(buffer) && buffer[i]; ++i) {
+            if (!isspace(buffer[i])) {
+                buffer[j++] = buffer[i];
+            }
+        }
+        buffer[j] = 0;
+        locale = strdup(buffer);
+        check_and_fclose(fp, LOCALE_FILE);
     }
 }
 
@@ -872,11 +910,17 @@ main(int argc, char **argv) {
         case 'c': wipe_cache = 1; break;
         case 't': ui_show_text(1); break;
         case 'l': sideload = 1; break;
+        case 'd': locale = optarg; break;
         case '?':
             LOGE("Invalid command argument\n");
             continue;
         }
     }
+
+    if (locale == NULL)
+        load_locale_from_cache();
+
+    ui_set_locale(locale);
 
     struct selinux_opt seopts[] = {
       { SELABEL_OPT_PATH, "/file_contexts" }
@@ -948,7 +992,7 @@ main(int argc, char **argv) {
         is_user_initiated_recovery = 1;
         ui_set_show_text(1);
         ui_set_background(BACKGROUND_ICON_CLOCKWORK);
-        
+
         if (extendedcommand_file_exists()) {
             LOGI("Running extendedcommand...\n");
             int ret;

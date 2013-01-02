@@ -41,7 +41,6 @@
 #include "bmlutils/bmlutils.h"
 #include "cutils/android_reboot.h"
 
-
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
 static const char *SDCARD_UPDATE_FILE = "/sdcard/update.zip";
@@ -1313,22 +1312,28 @@ void show_advanced_menu()
                             "wipe dalvik cache",
                             "report error",
                             "key test",
+                            "font test",
                             "show log",
                             "fix permissions",
+                            "set locale",
                             "partition sdcard",
                             "partition external sdcard",
                             "partition internal sdcard",
                             NULL
     };
 
-    if (!can_partition("/sdcard")) {
-        list[6] = NULL;
-    }
-    if (!can_partition("/external_sd")) {
+    if (BOARD_FONT_CHAR_MAX == 96) {
         list[7] = NULL;
     }
-    if (!can_partition("/emmc")) {
+
+    if (!can_partition("/sdcard")) {
         list[8] = NULL;
+    }
+    if (!can_partition("/external_sd")) {
+        list[9] = NULL;
+    }
+    if (!can_partition("/emmc")) {
+        list[10] = NULL;
     }
 
     for (;;)
@@ -1373,22 +1378,73 @@ void show_advanced_menu()
                 break;
             }
             case 4:
+            {
+                int i = 0;
+                ui_print("Printing all displayable characters:\n");
+
+                for (i = 31; i < (BOARD_FONT_CHAR_MAX + 32); i++) {
+                    ui_print("%c", i);
+
+                    if ((i - 31)%28 == 0) {
+                        ui_print("\n");
+                    }
+                }
+
+                if (BOARD_FONT_CHAR_MAX == 96)
+                    ui_print("\n");
+
+                ui_print("\nDone!\n");
+                break;
+            }
+            case 5:
                 ui_printlogtail(12);
                 break;
-            case 5:
+            case 6:
                 ensure_path_mounted("/system");
                 ensure_path_mounted("/data");
                 ui_print("Fixing permissions...\n");
                 __system("fix_permissions");
                 ui_print("Done!\n");
                 break;
-            case 6:
+            case 7:
+            {
+                static char* locale_header[] = {    "Set Locale",
+                                                    "",
+                                                    NULL
+                };
+
+                int total = 0;
+                char** files = gather_files(LOCALES_PATH, "", &total);
+
+                if (total == 0) {
+                    ui_print("No locales found.\n");
+                    break;
+
+                } else {
+                    char** list = (char**) malloc((total + 1) * sizeof(char*));
+                    list[total] = NULL;
+                    int dir_len = strlen(LOCALES_PATH);
+
+                    int i = 0;
+                    for (i = 0 ; i < total; i++) {
+                        list[i] = strdup(files[i] + dir_len);
+                    }
+
+                    int chosen_item = get_menu_selection(locale_header, list, 0, 0);
+                    if (chosen_item == GO_BACK)
+                        break;
+
+                    ui_set_locale(list[chosen_item]);
+                    break;
+                }
+            }
+            case 8:
                 partition_sdcard("/sdcard");
                 break;
-            case 7:
+            case 9:
                 partition_sdcard("/external_sd");
                 break;
-            case 8:
+            case 10:
                 partition_sdcard("/emmc");
                 break;
         }

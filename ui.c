@@ -33,6 +33,7 @@
 #include <cutils/properties.h>
 #include "minui/minui.h"
 #include "recovery_ui.h"
+#include "ui.h"
 
 extern int __system(const char *command);
 
@@ -41,21 +42,6 @@ static int gShowBackButton = 1;
 #else
 static int gShowBackButton = 0;
 #endif
-
-#define MAX_COLS 96
-#define MAX_ROWS 32
-
-#define MENU_MAX_COLS 64
-#define MENU_MAX_ROWS 250
-
-#define MIN_LOG_ROWS 3
-
-#define CHAR_WIDTH BOARD_RECOVERY_CHAR_WIDTH
-#define CHAR_HEIGHT BOARD_RECOVERY_CHAR_HEIGHT
-
-#define UI_WAIT_KEY_TIMEOUT_SEC    3600
-#define UI_KEY_REPEAT_INTERVAL 80
-#define UI_KEY_WAIT_REPEAT 400
 
 UIParameters ui_parameters = {
     6,       // indeterminate progress bar frames
@@ -677,8 +663,11 @@ void ui_print(const char *fmt, ...)
 {
     char buf[256];
     va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, 256, fmt, ap);
+    char *locale_fmt = "";
+
+    locale_fmt = ui_translate(fmt);
+    va_start(ap, locale_fmt);
+    vsnprintf(buf, 256, locale_fmt, ap);
     va_end(ap);
 
     if (ui_log_stdout)
@@ -748,19 +737,19 @@ int ui_start_menu(char** headers, char** items, int initial_selection) {
     if (text_rows > 0 && text_cols > 0) {
         for (i = 0; i < text_rows; ++i) {
             if (headers[i] == NULL) break;
-            strncpy(menu[i], headers[i], text_cols-1);
+            strncpy(menu[i], ui_translate(headers[i]), text_cols-1);
             menu[i][text_cols-1] = '\0';
         }
         menu_top = i;
         for (; i < MENU_MAX_ROWS; ++i) {
             if (items[i-menu_top] == NULL) break;
             strcpy(menu[i], MENU_ITEM_HEADER);
-            strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, items[i-menu_top], MENU_MAX_COLS - 1 - MENU_ITEM_HEADER_LENGTH);
+            strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, ui_translate(items[i-menu_top]), MENU_MAX_COLS - 1 - MENU_ITEM_HEADER_LENGTH);
             menu[i][MENU_MAX_COLS-1] = '\0';
         }
 
         if (gShowBackButton && !ui_root_menu) {
-            strcpy(menu[i], " - +++++Go Back+++++");
+            strcpy(menu[i], ui_translate(" - +++++Go Back+++++"));
             ++i;
         }
 
