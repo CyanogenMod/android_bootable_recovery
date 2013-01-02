@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef USE_EXTENDED_CHARSET
+#define CHAR_MAX 224
+#else
+#define CHAR_MAX 96
+#endif
+
 int main(int argc, char *argv)
 {
     unsigned n;
@@ -21,7 +27,7 @@ int main(int argc, char *argv)
     printf("  unsigned char rundata[];\n");
     printf("} font = {\n");
     printf("  .width = %d,\n  .height = %d,\n  .cwidth = %d,\n  .cheight = %d,\n", gimp_image.width, gimp_image.height,
-           gimp_image.width / 96, gimp_image.height);
+           gimp_image.width / CHAR_MAX, gimp_image.height);
     printf("  .rundata = {\n");
    
     run_val = (*x ? 0 : 255);

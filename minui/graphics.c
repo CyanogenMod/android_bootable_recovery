@@ -239,7 +239,7 @@ int gr_text(int x, int y, const char *s)
 
     while((off = *s++)) {
         off -= 32;
-        if (off < 96) {
+        if (off < BOARD_FONT_CHAR_MAX) {
             gl->texCoord2i(gl, (off * font->cwidth) - x, 0 - y);
             gl->recti(gl, x, y, x + font->cwidth, y + font->cheight);
         }
