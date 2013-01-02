@@ -36,6 +36,10 @@ void ui_clear_key_queue();
 void ui_print(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 void ui_printlogtail(int nb_lines);
 
+char *ui_translate(char *input);
+char *ui_get_locale();
+void ui_set_locale(char *locale);
+
 void ui_delete_line();
 void ui_set_show_text(int value);
 void ui_set_nice(int enabled);

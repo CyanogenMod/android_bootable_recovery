@@ -112,6 +112,10 @@ static int text_col = 0, text_row = 0, text_top = 0;
 static int show_text = 0;
 static int show_text_ever = 0;   // has show_text ever been 1?
 
+// Locale and translations
+static const char *LOCALES_PATH = "/res/locales/";
+static char *ui_locale = "";
+
 static char menu[MENU_MAX_ROWS][MENU_MAX_COLS];
 static int show_menu = 0;
 static int menu_top = 0, menu_items = 0, menu_sel = 0;
@@ -677,8 +681,11 @@ void ui_print(const char *fmt, ...)
 {
     char buf[256];
     va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, 256, fmt, ap);
+    char *locale_fmt = "";
+
+    locale_fmt = ui_translate(fmt);
+    va_start(ap, locale_fmt);
+    vsnprintf(buf, 256, locale_fmt, ap);
     va_end(ap);
 
     if (ui_log_stdout)
@@ -748,19 +755,20 @@ int ui_start_menu(char** headers, char** items, int initial_selection) {
     if (text_rows > 0 && text_cols > 0) {
         for (i = 0; i < text_rows; ++i) {
             if (headers[i] == NULL) break;
-            strncpy(menu[i], headers[i], text_cols-1);
+            strncpy(menu[i], ui_translate(headers[i]), text_cols-1);
             menu[i][text_cols-1] = '\0';
         }
         menu_top = i;
         for (; i < MENU_MAX_ROWS; ++i) {
             if (items[i-menu_top] == NULL) break;
             strcpy(menu[i], MENU_ITEM_HEADER);
-            strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, items[i-menu_top], MENU_MAX_COLS - 1 - MENU_ITEM_HEADER_LENGTH);
+            strncpy(menu[i] + MENU_ITEM_HEADER_LENGTH, ui_translate(items[i-menu_top]), MENU_MAX_COLS - 1 - MENU_ITEM_HEADER_LENGTH);
             menu[i][MENU_MAX_COLS-1] = '\0';
         }
 
         if (gShowBackButton && !ui_root_menu) {
-            strcpy(menu[i], " - +++++Go Back+++++");
+            char *back_button = ui_translate(" - +++++Go Back+++++");
+            strcpy(menu[i], back_button);
             ++i;
         }
 
@@ -836,6 +844,113 @@ void ui_show_text(int visible)
     if (show_text) show_text_ever = 1;
     update_screen_locked();
     pthread_mutex_unlock(&gUpdateMutex);
+}
+
+char *ui_translate(char *input)
+{
+    FILE *dict;
+    int i = 0;
+    int j = 0;
+    char *delim = "=";
+    unsigned char *tmp = "";
+    char input_fmt[256] = {};
+    static char output[256] = {};
+
+    if (input == NULL)
+        return "";
+
+    if (strcmp(input, "") == 0 || strlen(input) == 1 || BOARD_FONT_CHAR_MAX == 96)
+        return input;
+
+    for (i = 0; i < strlen(input); i++) {
+        if (input[i] == '\n') {
+            strcat(input_fmt, "\\n");
+            j++;
+        } else if (input[i] == '"') {
+            strcat(input_fmt, "\\\"");
+			j++;
+        } else {
+            input_fmt[j] = input[i];
+        }
+
+        if (++j >= sizeof(input_fmt)) break;
+    }
+    input_fmt[j] = '\0';
+
+    char path[PATH_MAX] = {};
+    strcat(path, LOCALES_PATH);
+    sprintf(path, "%s%s", path, ui_get_locale());
+    dict = fopen(path, "r");
+
+    char buffer[MAX_COLS*4+1] = {};
+    while (dict != NULL && fgets(buffer, sizeof(buffer), dict) != NULL)
+    {
+        if (strstr(buffer, input_fmt)) {
+            if (strchr(buffer, *delim) == NULL) {
+                // ignore comments in locale files
+                if (buffer[0] != '#')
+                    LOGE("Invalid file format\n");
+
+            } else {
+                tmp = strtok(buffer, delim);
+
+                // do not accept partial matches
+                if (strcmp(tmp, input_fmt) == 0) {
+                    tmp = strtok(NULL, delim);
+
+                    if (tmp[strlen(tmp)-1] == '\n')
+                        tmp[strlen(tmp)-1] = '\0';
+                    break;
+                } else {
+                    tmp = input_fmt;
+                }
+            }
+        }
+    }
+    if (dict != NULL)
+        fclose(dict);
+
+    j = 0;
+    strcpy(output, "");
+    for (i = 0; i < strlen(tmp); i++) {
+        if (tmp[i] == '\\') {
+            switch (tmp[++i]) {
+                case 'n': output[j] = '\n'; break;
+                case 'r': output[j] = '\r'; break;
+                case 't': output[j] = '\t'; break;
+                default: output[j] = tmp[i]; break;
+            }
+
+        } else if (tmp[i] > 127) {
+            // format the UTF-8 value into a psuedo UTF-16 value
+            output[j] = (0x40*((tmp[i])-0xC2)+(tmp[i+1]));
+            i++;
+
+        } else {
+            output[j] = tmp[i];
+        }
+
+        if (++j >= sizeof(output)) break;
+    }
+    output[j] = '\0';
+
+    if (strcmp(output, "") == 0)
+        return input;
+    return output;
+}
+
+char *ui_get_locale()
+{
+    return ui_locale;
+}
+
+void ui_set_locale(char *locale)
+{
+    if (locale == NULL)
+        locale = "english";
+
+    ui_locale = locale;
+    LOGI("locale is [%s]\n", ui_locale);
 }
 
 // Return true if USB is connected.
