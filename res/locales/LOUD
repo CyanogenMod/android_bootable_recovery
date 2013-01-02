@@ -1,0 +1,486 @@
+# ClockworkMod Recovery Localization Template (v6.0.2.7)
+# created by CEnnis91
+
+# languages
+Arabic=ARABIC
+Bulgarian=BULGARIAN
+Catalan=CATALAN
+Chinese=CHINESE
+Croatian=CROATIAN
+Czech=CZECH
+Danish=DANISH
+Dutch=DUTCH
+English=ENGLISH
+Farsi=FARSI
+Finnish=FINNISH
+French=FRENCH
+German=GERMAN
+Greek=GREEK
+Hebrew=HEBREW
+Hungarian=HUNGARIAN
+Indonesian=INDONESIAN
+Italian=ITALIAN
+Japanese=JAPANESE
+Korean=KOREAN
+Lithuanian=LITHUANIAN
+Latvian=LATVIAN
+Norwegian=NORWEGIAN
+Polish=POLISH
+Portuguese=PORTUGUESE
+Romansh=ROMANSH
+Romanian=ROMANIAN
+Russian=RUSSIAN
+Serbian=SERBIAN
+Slovak=SLOVAK
+Slovenian=SLOVENIAN
+Spanish=SPANISH
+Swedish=SWEDISH
+Thai=THAI
+Tagalog=TAGALOG
+Turkish=TURKISH
+Ukrainian=UKRAINIAN
+Vietnamese=VIETNAMESE
+
+# adb_install.c
+failed to open driver control: %s\n=FAILED TO OPEN DRIVER CONTROL: %s\n
+failed to set driver control: %s\n=FAILED TO SET DRIVER CONTROL: %s\n
+failed to close driver control: %s\n=FAILED TO CLOSE DRIVER CONTROL: %s\n
+Restarting adbd...\n=RESTARTING ADBD...\n
+\n\nSideload started ...\nNow send the package you want to apply\nto the device with \"adb sideload <filename>\"...\n\n=\n\nSIDELOAD STARTED ...\nNOW SEND THE PACKAGE YOU WANT TO APPLY\nTO THE DEVICE WITH \"ADB SIDELOAD <FILENAME>\"...\n\n
+status %d\n=STATUS %d\n
+No package received.\n=NO PACKAGE RECEIVED.\n
+Error reading package:\n  %s\n=ERROR READING PACKAGE:\n  %s\n
+Installation aborted.\n=INSTALLATION ABORTED.\n
+
+# applypatch/applypatch.c
+# applypatch/bsdiff.c
+# applypatch/bspatch.c
+# applypatch/freecache.c
+# applypatch/imgdiff.c
+# applypatch/imgpatch.c
+# applypatch/main.c
+# applypatch/utils.c
+# bmlutils/bmlutils.c
+
+# bootloader.c
+E:unknown misc partition fs_type \"%s\"\n=E:UNKNOWN MISC PARTITION FS_TYPE \"%s\"\n
+E:Can't find %s\n=E:CAN'T FIND %s\n
+E:Can't open %s\n(%s)\n=E:CAN'T OPEN %s\n(%s)\n
+E:Can't read %s\n(%s)\n=E:CAN'T READ %s\n(%s)\n
+E:Can't write %s\n(%s)\n=E:CAN'T WRITE %s\n(%s)\n
+E:Can't finish %s\n(%s)\n=E:CAN'T FINISH %s\n(%s)\n
+E:Failed reading %s\n(%s)\n=E:FAILED READING %s\n(%s)\n
+E:Failed closing %s\n(%s)\n=E:FAILED CLOSING %s\n(%s)\n
+E:Can't unmount /cache\n=E:CAN'T UNMOUNT /CACHE\n
+E:Can't find cache\n=E:CAN'T FIND CACHE\n
+E:Can't open cache\n(%s)\n=E:CAN'T OPEN CACHE\n(%s)\n
+E:Can't write header to cache\n(%s)\n=E:CAN'T WRITE HEADER TO CACHE\n(%s)\n
+E:Can't write update to cache\n(%s)\n=E:CAN'T WRITE UPDATE TO CACHE\n(%s)\n
+E:Can't write bitmap to cache\n(%s)\n=E:CAN'T WRITE BITMAP TO CACHE\n(%s)\n
+E:Can't finish writing cache\n(%s)\n=E:CAN'T FINISH WRITING CACHE\n(%s)\n
+E:Can't reopen cache\n(%s)\n=E:CAN'T REOPEN CACHE\n(%s)\n
+E:Can't rewrite header to cache\n(%s)\n=E:CAN'T REWRITE HEADER TO CACHE\n(%s)\n
+E:Misalignment rewriting cache\n(%s)\n=E:MISALIGNMENT REWRITING CACHE\n(%s)\n
+E:Can't finish header of cache\n(%s)\n=E:CAN'T FINISH HEADER OF CACHE\n(%s)\n
+
+# dedupe/dedupe.c
+# dedupe/driver.c
+# default_recovery_keys.c
+
+# default_recovery_ui.c
+reboot system now=REBOOT SYSTEM NOW
+install zip from sdcard=INSTALL ZIP FROM SDCARD
+install zip from sideload=INSTALL ZIP FROM SIDELOAD
+wipe data/factory reset=WIPE DATA/FACTORY RESET
+wipe cache partition=WIPE CACHE PARTITION
+backup and restore=BACKUP AND RESTORE
+mounts and storage=MOUNTS AND STORAGE
+advanced=ADVANCED
+
+# edify/expr.c
+# edify/main.c
+
+# edifyscripting.c
+Formatting /datadata...\n=FORMATTING /DATADATA...\n
+Waiting for SD Card to mount (%ds)\n=WAITING FOR SD CARD TO MOUNT (%dS)\n
+SD Card mounted...\n=SD CARD MOUNTED...\n 
+Timed out waiting for SD card... continuing anyways.=TIMED OUT WAITING FOR SD CARD... CONTINUING ANYWAYS.
+Verifying SD Card marker...\n=VERIFYING SD CARD MARKER...\n
+SD Card marker not found...\n=SD CARD MARKER NOT FOUND...\n
+Checking Internal SD Card marker...\n=CHECKING INTERNAL SD CARD MARKER...\n
+Internal SD Card marker not found... continuing anyways.\n=INTERNAL SD CARD MARKER NOT FOUND... CONTINUING ANYWAYS.\n
+Error processing ROM Manager script. Please verify that you are performing the backup, restore, or ROM installation from ROM Manager v4.4.0.0 or higher.\n=ERROR PROCESSING ROM MANAGER SCRIPT. PLEASE VERIFY THAT YOU ARE PERFORMING THE BACKUP, RESTORE, OR ROM INSTALLATION FROM ROM MANAGER V4.4.0.0 OR HIGHER.\n
+
+# extendedcommands.c
+Signature Check: %s\n=SIGNATURE CHECK: %s\n
+Enabled=ENABLED
+Disabled=DISABLED
+\n-- Installing: %s\n=\n-- INSTALLING: %s\n
+\nInstall from sdcard complete.\n=\nINSTALL FROM SDCARD COMPLETE.\n
+Apply update from .zip file on SD card=APPLY UPDATE FROM .ZIP FILE ON SD CARD
+choose zip from sdcard=CHOOSE ZIP FROM SDCARD
+apply /sdcard/update.zip=APPLY /SDCARD/UPDATE.ZIP
+toggle signature verification=TOGGLE SIGNATURE VERIFICATION
+choose zip from internal sdcard=CHOOSE ZIP FROM INTERNAL SDCARD
+choose zip from external sdcard=CHOOSE ZIP FROM EXTERNAL SDCARD
+Confirm install?=CONFIRM INSTALL?
+Yes - Install /sdcard/update.zip=YES - INSTALL /SDCARD/UPDATE.ZIP
+Couldn't open directory.\n=COULDN'T OPEN DIRECTORY.\n
+E:Failed to close directory.=E:FAILED TO CLOSE DIRECTORY.
+No files found.\n=NO FILES FOUND.\n
+E:Can't mount %s\n=E:CAN'T MOUNT %s\n
+Choose a zip to apply=CHOOSE A ZIP TO APPLY
+Confirm install?=CONFIRM INSTALL?
+Yes - Install %s=YES - INSTALL %s
+Choose an image to restore=CHOOSE AN IMAGE TO RESTORE
+Confirm restore?=CONFIRM RESTORE?
+Yes - Restore=YES - RESTORE
+Choose an image to delete=CHOOSE AN IMAGE TO DELETE
+Confirm delete?=CONFIRM DELETE?
+Yes - Delete=YES - DELETE
+USB Mass Storage device=USB MASS STORAGE DEVICE
+Leaving this menu unmount=LEAVING THIS MENU UNMOUNT
+your SD card from your PC.=YOUR SD CARD FROM YOUR PC.
+  THIS CAN NOT BE UNDONE.=  THIS CAN NOT BE UNDONE.
+No=NO
+E:unknown volume \"%s\"\n=E:UNKNOWN VOLUME \"%s\"\n
+E:can't format_volume \"%s\"=E:CAN'T FORMAT_VOLUME \"%s\"
+E:format_volume failed to unmount \"%s\"\n=E:FORMAT_VOLUME FAILED TO UNMOUNT \"%s\"\n
+E:format_volume: format_rfs_device failed on %s\n=E:FORMAT_VOLUME: FORMAT_RFS_DEVICE FAILED ON %s\n
+E:format_volume: no MTD partition \"%s\"\n=E:FORMAT_VOLUME: NO MTD PARTITION \"%s\"\n
+E:format_volume: make_extf4fs failed on %s\n=E:FORMAT_VOLUME: MAKE_EXTF4FS FAILED ON %s\n
+No app2sd partition found. Skipping format of /sd-ext.\n=NO APP2SD PARTITION FOUND. SKIPPING FORMAT OF /SD-EXT.\n
+E:Error while unmounting %s.\n=E:ERROR WHILE UNMOUNTING %s.\n
+Error mounting %s!\n=ERROR MOUNTING %s!\n
+Skipping format...\n=SKIPPING FORMAT...\n
+Mounts and Storage Menu=MOUNTS AND STORAGE MENU
+mount /sdcard=MOUNT /SDCARD
+mount /system=MOUNT /SYSTEM
+mount /cache=MOUNT /CACHE
+mount /data=MOUNT /DATA
+mount /datadata=MOUNT /DATADATA
+mount /emmc=MOUNT /EMMC
+mount /external_sd=MOUNT /EXTERNAL_SD
+mount /sd-ext=MOUNT /SD-EXT
+unmount /sdcard=UNMOUNT /SDCARD
+unmount /system=UNMOUNT /SYSTEM
+unmount /cache=UNMOUNT /CACHE
+unmount /data=UNMOUNT /DATA
+unmount /datadata=UNMOUNT /DATADATA
+unmount /emmc=UNMOUNT /EMMC
+unmount /external_sd=UNMOUNT /EXTERNAL_SD
+unmount /sd-ext=UNMOUNT /SD-EXT
+format /sdcard=FORMAT /SDCARD
+format /system=FORMAT /SYSTEM
+format /cache=FORMAT /CACHE
+format /data=FORMAT /DATA
+format /datadata=FORMAT /DATADATA
+format /emmc=FORMAT /EMMC
+format /external_sd=FORMAT /EXTERNAL_SD
+format /sd-ext=FORMAT /SD-EXT
+Confirm format?=CONFIRM FORMAT?
+Yes - Format=YES - FORMAT
+mount USB storage=MOUNT USB STORAGE
+format /data and /data/media (/sdcard)=FORMAT /DATA AND /DATA/MEDIA (/SDCARD)
+Formatting /data...\n=FORMATTING /DATA...\n
+Error formatting /data!\n=ERROR FORMATTING /DATA!\n
+Done.\n=DONE.\n
+Error unmounting %s!\n=ERROR UNMOUNTING %s!\n
+Formatting %s...\n=FORMATTING %s...\n
+Error formatting %s!\n=ERROR FORMATTING %s!\n
+E:Can't mount sdcard\n=E:CAN'T MOUNT SDCARD\n
+first. The next menu will=FIRST. THE NEXT MENU WILL
+you more options.=YOU MORE OPTIONS.
+Advanced Restore=ADVANCED RESTORE
+Restore boot=RESTORE BOOT
+Restore system=RESTORE SYSTEM
+Restore data=RESTORE DATA
+Restore cache=RESTORE CACHE
+Restore sd-ext=RESTORE SD-EXT
+Restore wimax=RESTORE WIMAX
+Confirm restore?=CONFIRM RESTORE?
+Yes - Restore boot=YES - RESTORE BOOT
+Yes - Restore system=YES - RESTORE SYSTEM
+Yes - Restore data=YES - RESTORE DATA
+Yes - Restore cache=YES - RESTORE CACHE
+Yes - Restore sd-ext=YES - RESTORE SD-EXT
+Yes - Restore wimax=YES - RESTORE WIMAX
+Backup Format=BACKUP FORMAT
+tar (default)=TAR (DEFAULT)
+dup=DUP
+dup (default)=DUP (DEFAULT)
+tar=TAR
+Default backup format set to tar.\n=DEFAULT BACKUP FORMAT SET TO TAR.\n
+Default backup format set to dedupe.\n=DEFAULT BACKUP FORMAT SET TO DEDUPE.\n
+Backup and Restore=BACKUP AND RESTORE
+backup=BACKUP
+restore=RESTORE
+delete=DELETE
+advanced restore=ADVANCED RESTORE
+free unused backup data=FREE UNUSED BACKUP DATA
+choose default backup format=CHOOSE DEFAULT BACKUP FORMAT
+backup to internal sdcard=BACKUP TO INTERNAL SDCARD
+restore from internal sdcard=RESTORE FROM INTERNAL SDCARD
+advanced restore from internal sdcard=ADVANCED RESTORE FROM INTERNAL SDCARD
+delete from internal sdcard=DELETE FROM INTERNAL SDCARD
+backup to external sdcard=BACKUP TO EXTERNAL SDCARD
+restore from external sdcard=RESTORE FROM EXTERNAL SDCARD
+advanced restore from external sdcard=ADVANCED RESTORE FROM EXTERNAL SDCARD
+delete from external sdcard=DELETE FROM EXTERNAL SDCARD
+Can't partition device: %s\n=CAN'T PARTITION DEVICE: %s\n
+Ext Size=EXT SIZE
+Swap Size=SWAP SIZE
+Partitioning SD Card... please wait...\n=PARTITIONING SD CARD... PLEASE WAIT...\n
+Done!\n=DONE!\n
+An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n=AN ERROR OCCURED WHILE PARTITIONING YOUR SD CARD. PLEASE SEE /TMP/RECOVERY.LOG FOR MORE DETAILS.\n
+Advanced Menu=ADVANCED MENU
+reboot recovery=REBOOT RECOVERY
+wipe dalvik cache=WIPE DALVIK CACHE
+report error=REPORT ERROR
+key test=KEY TEST
+font test=FONT TEST
+show log=SHOW LOG
+fix permissions=FIX PERMISSIONS
+set locale=SET LOCALE
+partition sdcard=PARTITION SDCARD
+partition external sdcard=PARTITION EXTERNAL SDCARD
+partition internal sdcard=PARTITION INTERNAL SDCARD
+Confirm wipe?=CONFIRM WIPE?
+Yes - Wipe Dalvik Cache=YES - WIPE DALVIK CACHE
+Outputting key codes.\n=OUTPUTTING KEY CODES.\n
+Go back to end debugging.\n=GO BACK TO END DEBUGGING.\n
+Key: %d\n=KEY: %d\n
+Printing all displayable characters:\n=PRINTING ALL DISPLAYABLE CHARACTERS:\n
+\nDone!\n=\nDONE!\n
+Fixing permissions...\n=FIXING PERMISSIONS...\n
+Set Locale=SET LOCALE
+No locales found.\n=NO LOCALES FOUND.\n
+Checking %s...\n=CHECKING %s...\n
+E:Unable process volume! Skipping...\n=E:UNABLE PROCESS VOLUME! SKIPPING...\n
+%s may be rfs. Checking...\n=%s MAY BE RFS. CHECKING...\n
+Checking for ext4 partitions...\n=CHECKING FOR EXT4 PARTITIONS...\n
+Filesystems need to be converted to ext4.\n=FILESYSTEMS NEED TO BE CONVERTED TO EXT4.\n
+A backup and restore will now take place.\n=A BACKUP AND RESTORE WILL NOW TAKE PLACE.\n
+If anything goes wrong, your backup will be\n=IF ANYTHING GOES WRONG, YOUR BACKUP WILL BE\n
+named %s. Try restoring it\n=NAMED %s. TRY RESTORING IT\n
+in case of error.\n=IN CASE OF ERROR.\n
+/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.\n=/TMP/RECOVERY.LOG WAS COPIED TO /SDCARD/CLOCKWORKMOD/RECOVERY.LOG. PLEASE OPEN ROM MANAGER TO REPORT THE ISSUE.\n
+E:failed to scan mounted volumes\n=E:FAILED TO SCAN MOUNTED VOLUMES\n
+ROM may flash stock recovery on boot. Fix?=ROM MAY FLASH STOCK RECOVERY ON BOOT. FIX?
+Yes - Disable recovery flash=YES - DISABLE RECOVERY FLASH
+Root access possibly lost. Fix?=ROOT ACCESS POSSIBLY LOST. FIX?
+Yes - Fix root (/system/bin/su)=YES - FIX ROOT (/SYSTEM/BIN/SU)
+Yes - Fix root (/system/xbin/su)=YES - FIX ROOT (/SYSTEM/XBIN/SU)
+
+# firmware.c
+E:Multiple firmware images\n=E:MULTIPLE FIRMWARE IMAGES\n
+Writing %s image...\n=WRITING %s IMAGE...\n
+E:Can't write %s image\n(%s)\n=E:CAN'T WRITE %s IMAGE\n(%s)\n
+E:Can't reboot\n=E:CAN'T REBOOT\n
+
+# flashutils/dump_image.c
+# flashutils/erase_image.c
+# flashutils/flash_image.c
+# flashutils/flashutils.c
+
+# install.c
+E:Failed to find \"%s\" in package=E:FAILED TO FIND \"%s\" IN PACKAGE
+E:Error stat'ing %s: %s\n=E:ERROR STAT'ING %s: %s\n
+E:Failed to read \"%s\" from package=E:FAILED TO READ \"%s\" FROM PACKAGE
+E:Failed to open %s: %s\n=E:FAILED TO OPEN %s: %s\n
+E:Failed to read firmware data: %s\n=E:FAILED TO READ FIRMWARE DATA: %s\n
+E:Can't store %s image\n=E:CAN'T STORE %s IMAGE\n
+Amend scripting (update-script) is no longer supported.\n=AMEND SCRIPTING (UPDATE-SCRIPT) IS NO LONGER SUPPORTED.\n
+Amend scripting was deprecated by Google in Android 1.5.\n=AMEND SCRIPTING WAS DEPRECATED BY GOOGLE IN ANDROID 1.5.\n
+It was necessary to remove it when upgrading to the ClockworkMod 3.0 Gingerbread based recovery.\n=IT WAS NECESSARY TO REMOVE IT WHEN UPGRADING TO THE CLOCKWORKMOD 3.0 GINGERBREAD BASED RECOVERY.\n
+Please switch to Edify scripting (updater-script and update-binary) to create working update zip packages.\n=PLEASE SWITCH TO EDIFY SCRIPTING (UPDATER-SCRIPT AND UPDATE-BINARY) TO CREATE WORKING UPDATE ZIP PACKAGES.\n
+E:Can't make %s\n=E:CAN'T MAKE %s\n
+E:Can't copy %s\n=E:CAN'T COPY %s\n
+E:ignoring attempt to do multiple firmware updates=E:IGNORING ATTEMPT TO DO MULTIPLE FIRMWARE UPDATES
+E:unknown command [%s]\n=E:UNKNOWN COMMAND [%s]\n
+E:Error in %s\n(Status %d)\n=E:ERROR IN %s\n(STATUS %d)\n
+E:opening %s: %s\n=E:OPENING %s: %s\n
+E:key length (%d) does not match expected size\n=E:KEY LENGTH (%d) DOES NOT MATCH EXPECTED SIZE\n
+E:unexpected character between keys\n=E:UNEXPECTED CHARACTER BETWEEN KEYS\n
+Finding update package...\n=FINDING UPDATE PACKAGE...\n
+Opening update package...\n=OPENING UPDATE PACKAGE...\n
+E:Failed to load keys\n=E:FAILED TO LOAD KEYS\n
+Verifying update package...\n=VERIFYING UPDATE PACKAGE...\n
+E:signature verification failed\n=E:SIGNATURE VERIFICATION FAILED\n
+Install Untrusted Package?=INSTALL UNTRUSTED PACKAGE?
+Yes - Install untrusted zip=YES - INSTALL UNTRUSTED ZIP
+E:Can't open %s\n(%s)\n=E:CAN'T OPEN %s\n(%s)\n
+Installing update...\n=INSTALLING UPDATE...\n
+E:failed to open last_install: %s\n=E:FAILED TO OPEN LAST_INSTALL: %s\n
+
+# libcrecovery/popen.c
+# libcrecovery/system.c
+
+# minadbd/adb.c
+E:listen on USB\n=E:LISTEN ON USB\n
+E:failed to setgid to shell\n=E:FAILED TO SETGID TO SHELL\n
+E:failed to setuid to shell\n=E:FAILED TO SETUID TO SHELL\n
+E:userid is %d\n=E:USERID IS %d\n
+E:Event loop starting\n=E:EVENT LOOP STARTING\n
+
+# minadbd/fdevent.c
+# minadbd/services.c
+# minadbd/sockets.c
+# minadbd/transport.c
+# minadbd/transport_usb.c
+# minadbd/usb_linux_client.c
+# minadbd/utils.c
+# minelf/Retouch.c
+# minui/events.c
+# minui/graphics.c
+# minui/mkfont.c
+# minui/resources.c
+# minzip/DirUtil.c
+# minzip/Hash.c
+# minzip/Inlines.c
+
+# minzip/SysUtil.c
+E:could not determine length of file\n=E:COULD NOT DETERMINE LENGTH OF FILE\n
+E:file is empty\n=E:FILE IS EMPTY\n
+E:only read %d of %d bytes\n=E:ONLY READ %d OF %d BYTES\n
+
+# minzip/Zip.c
+E:Can't read %zu bytes from zip file: %ld\n=E:CAN'T READ %zU BYTES FROM ZIP FILE: %lD\n
+E:Installed zlib is not compatible with linked version (%s)\n=E:INSTALLED ZLIB IS NOT COMPATIBLE WITH LINKED VERSION (%s)\n
+E:Call to inflateInit2 failed (zerr=%d)\n=E:CALL TO INFLATEINIT2 FAILED (ZERR=%d)\n
+E:Unsupported compression type %d for entry '%s'\n=E:UNSUPPORTED COMPRESSION TYPE %d FOR ENTRY '%s'\n
+E:Can't calculate CRC for entry\n=E:CAN'T CALCULATE CRC FOR ENTRY\n
+E:Can't extract entry to buffer.\n=E:CAN'T EXTRACT ENTRY TO BUFFER.\n
+E:Error writing %ld bytes from zip file from %p: %s\n=E:ERROR WRITING %lD BYTES FROM ZIP FILE FROM %p: %s\n
+E:write overrun?  (%ld bytes instead of %d)\n=E:WRITE OVERRUN?  (%lD BYTES INSTEAD OF %d)\n
+E:Can't extract entry to file.\n=E:CAN'T EXTRACT ENTRY TO FILE.\n
+E:Can't extract entry to memory buffer.\n=E:CAN'T EXTRACT ENTRY TO MEMORY BUFFER.\n
+E:mzExtractRecursive(): zipDir must be a relative path.\n=E:MZEXTRACTRECURSIVE(): ZIPDIR MUST BE A RELATIVE PATH.\n
+E:mzExtractRecursive(): targetDir must be an absolute path.\n=E:MZEXTRACTRECURSIVE(): TARGETDIR MUST BE AN ABSOLUTE PATH.\n
+E:Can't allocate %d bytes for zip path\n=E:CAN'T ALLOCATE %d BYTES FOR ZIP PATH\n
+E:Can't assemble target path for \"%.*s\"\n=E:CAN'T ASSEMBLE TARGET PATH FOR \"%.*S\"\n
+E:Can't create containing directory for \"%s\": %s\n=E:CAN'T CREATE CONTAINING DIRECTORY FOR \"%s\": %s\n
+E:Symlink entry \"%s\" has no target\n=E:SYMLINK ENTRY \"%s\" HAS NO TARGET\n
+E:Can't read symlink target for \"%s\"\n=E:CAN'T READ SYMLINK TARGET FOR \"%s\"\n
+E:Can't symlink \"%s\" to \"%s\": %s\n=E:CAN'T SYMLINK \"%s\" TO \"%s\": %s\n
+E:Can't create target file \"%s\": %s\n=E:CAN'T CREATE TARGET FILE \"%s\": %s\n
+E:Error extracting \"%s\"\n=E:ERROR EXTRACTING \"%s\"\n
+E:Error touching \"%s\"\n=E:ERROR TOUCHING \"%s\"\n
+
+# mmcutils/mmcutils.c
+# mounts.c
+# mtdutils/bml_over_mtd.c
+# mtdutils/mtdutils.c
+
+# nandroid.c
+Unable to execute mkyaffs2image.\n=UNABLE TO EXECUTE MKYAFFS2IMAGE.\n
+Unable to execute tar.\n=UNABLE TO EXECUTE TAR.\n
+Freeing space...\n=FREEING SPACE...\n
+Done freeing space.\n=DONE FREEING SPACE.\n
+Unable to execute dedupe.\n=UNABLE TO EXECUTE DEDUPE.\n
+Unable to find volume.\n=UNABLE TO FIND VOLUME.\n
+Unable to find mounted volume: %s\n=UNABLE TO FIND MOUNTED VOLUME: %s\n
+Backing up %s...\n=BACKING UP %s...\n
+Can't mount %s!\n=CAN'T MOUNT %s!\n
+Error finding an appropriate backup handler.\n=ERROR FINDING AN APPROPRIATE BACKUP HANDLER.\n
+Error while making a backup image of %s!\n=ERROR WHILE MAKING A BACKUP IMAGE OF %s!\n
+Backup of %s completed.\n=BACKUP OF %s COMPLETED.\n
+Backing up %s image...\n=BACKING UP %s IMAGE...\n
+Error while backing up %s image!=ERROR WHILE BACKING UP %s IMAGE!
+Backup of %s image completed.\n=BACKUP OF %s IMAGE COMPLETED.\n
+Can't mount backup path.\n=CAN'T MOUNT BACKUP PATH.\n
+Unable to find volume for backup path.\n=UNABLE TO FIND VOLUME FOR BACKUP PATH.\n
+Unable to stat backup path.\n=UNABLE TO STAT BACKUP PATH.\n
+SD Card space free: %lluMB\n=SD CARD SPACE FREE: %lLUMB\n
+There may not be enough free space to complete backup... continuing...\n=THERE MAY NOT BE ENOUGH FREE SPACE TO COMPLETE BACKUP... CONTINUING...\n
+Backing up WiMAX...\n=BACKING UP WIMAX...\n
+Error while dumping WiMAX image!\n=ERROR WHILE DUMPING WIMAX IMAGE!\n
+No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n=NO /SDCARD/.ANDROID_SECURE FOUND. SKIPPING BACKUP OF APPLICATIONS ON EXTERNAL STORAGE.\n
+No sd-ext found. Skipping backup of sd-ext.\n=NO SD-EXT FOUND. SKIPPING BACKUP OF SD-EXT.\n
+Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n=COULD NOT MOUNT SD-EXT. SD-EXT BACKUP MAY NOT BE SUPPORTED ON THIS DEVICE. SKIPPING BACKUP OF SD-EXT.\n
+Generating md5 sum...\n=GENERATING MD5 SUM...\n
+Error while generating md5 sum!\n=ERROR WHILE GENERATING MD5 SUM!\n
+\nBackup complete!\n=\nBACKUP COMPLETE!\n
+Unable to execute unyaffs.\n=UNABLE TO EXECUTE UNYAFFS.\n
+%s.img not found. Skipping restore of %s.\n=%s.IMG NOT FOUND. SKIPPING RESTORE OF %s.\n
+Restoring %s...\n=RESTORING %s...\n
+Error while formatting %s!\n=ERROR WHILE FORMATTING %s!\n
+Error finding an appropriate restore handler.\n=ERROR FINDING AN APPROPRIATE RESTORE HANDLER.\n
+Error while restoring %s!\n=ERROR WHILE RESTORING %s!\n
+Erasing %s before restore...\n=ERASING %s BEFORE RESTORE...\n
+Restoring %s image...\n=RESTORING %s IMAGE...\n
+Error while flashing %s image!=ERROR WHILE FLASHING %s IMAGE!
+Can't mount backup path\n=CAN'T MOUNT BACKUP PATH\n
+Checking MD5 sums...\n=CHECKING MD5 SUMS...\n
+MD5 mismatch!\n=MD5 MISMATCH!\n
+WARNING: WiMAX partition exists, but nandroid\n=WARNING: WIMAX PARTITION EXISTS, BUT NANDROID\n
+         backup does not contain WiMAX image.\n=         BACKUP DOES NOT CONTAIN WIMAX IMAGE.\n
+         You should create a new backup to\n=         YOU SHOULD CREATE A NEW BACKUP TO\n
+         protect your WiMAX keys.\n=         PROTECT YOUR WIMAX KEYS.\n
+Erasing WiMAX before restore...\n=ERASING WIMAX BEFORE RESTORE...\n
+Error while formatting wimax!\n=ERROR WHILE FORMATTING WIMAX!\n
+Restoring WiMAX image...\n=RESTORING WIMAX IMAGE...\n
+\nRestore complete!\n=\nRESTORE COMPLETE!\n
+
+# recovery.c
+E:Can't open %s\n=E:CAN'T OPEN %s\n
+E:Error in %s\n(%s)\n=E:ERROR IN %s\n(%s)\n
+E:Bad boot message\n\"%.20s\"\n=E:BAD BOOT MESSAGE\n\"%.20S\"\n
+E:Can't mkdir %s (%s)\n=E:CAN'T MKDIR %s (%s)\n
+E:failed to stat %s (%s)\n=E:FAILED TO STAT %s (%s)\n
+E:%s isn't a directory\n=E:%s ISN'T A DIRECTORY\n
+E:%s has perms %o\n=E:%s HAS PERMS %o\n
+E:%s owned by %lu; not root\n=E:%s OWNED BY %lU; NOT ROOT\n
+E:Failed to allocate buffer\n=E:FAILED TO ALLOCATE BUFFER\n
+E:Failed to open %s (%s)\n=E:FAILED TO OPEN %s (%s)\n
+E:Short write of %s (%s)\n=E:SHORT WRITE OF %s (%s)\n
+E:Failed to close %s (%s)\n=E:FAILED TO CLOSE %s (%s)\n
+E:Failed to chmod %s (%s)\n=E:FAILED TO CHMOD %s (%s)\n
+Choose a package to install:=CHOOSE A PACKAGE TO INSTALL:
+E:error opening %s: %s\n=E:ERROR OPENING %s: %s\n
+Confirm wipe of all user data?=CONFIRM WIPE OF ALL USER DATA?
+ Yes -- delete all user data= YES -- DELETE ALL USER DATA
+\n-- Wiping data...\n=\n-- WIPING DATA...\n
+Data wipe complete.\n=DATA WIPE COMPLETE.\n
+Yes - Wipe Cache=YES - WIPE CACHE
+\n-- Wiping cache...\n=\n-- WIPING CACHE...\n
+Cache wipe complete.\n=CACHE WIPE COMPLETE.\n
+E:Invalid command argument\n=E:INVALID COMMAND ARGUMENT\n
+Data wipe failed.\n=DATA WIPE FAILED.\n
+Cache wipe failed.\n=CACHE WIPE FAILED.\n
+Rebooting...\n=REBOOTING...\n
+Shutting down...\n=SHUTTING DOWN...\n
+
+# roots.c
+E:failed to open /etc/recovery.fstab (%s)\n=E:FAILED TO OPEN /ETC/RECOVERY.FSTAB (%s)\n
+E:skipping malformed recovery.fstab line: %s\n=E:SKIPPING MALFORMED RECOVERY.FSTAB LINE: %s\n
+E:unknown volume for path [%s]\n=E:UNKNOWN VOLUME FOR PATH [%s]\n
+E:failed to find \"%s\" partition to mount at \"%s\"\n=E:FAILED TO FIND \"%s\" PARTITION TO MOUNT AT \"%s\"\n
+E:unknown fs_type \"%s\" for %s\n=E:UNKNOWN FS_TYPE \"%s\" FOR %s\n
+
+# setprop.c
+# tools/ota/add-property-tag.c
+# tools/ota/check-lost+found.c
+
+# ui.c
+E:Missing bitmap %s\n(Code %d)\n=E:MISSING BITMAP %s\n(CODE %d)\n
+E:Can't allocate %d bytes for image\n=E:CAN'T ALLOCATE %d BYTES FOR IMAGE\n
+ - +++++Go Back+++++= - +++++GO BACK+++++
+E:Invalid file format\n=E:INVALID FILE FORMAT\n
+ 
+# updater/install.c
+# updater/updater.c
+
+# verifier.c
+E:failed to seek in %s (%s)\n=E:FAILED TO SEEK IN %s (%s)\n
+E:failed to read footer from %s (%s)\n=E:FAILED TO READ FOOTER FROM %s (%s)\n
+E:signature is too short\n=E:SIGNATURE IS TOO SHORT\n
+E:malloc for EOCD record failed\n=E:MALLOC FOR EOCD RECORD FAILED\n
+E:failed to read eocd from %s (%s)\n=E:FAILED TO READ EOCD FROM %s (%s)\n
+E:signature length doesn't match EOCD marker\n=E:SIGNATURE LENGTH DOESN'T MATCH EOCD MARKER\n
+E:EOCD marker occurs after start of EOCD\n=E:EOCD MARKER OCCURS AFTER START OF EOCD\n
+E:failed to alloc memory for sha1 buffer\n=E:FAILED TO ALLOC MEMORY FOR SHA1 BUFFER\n
+E:failed to read data from %s (%s)\n=E:FAILED TO READ DATA FROM %s (%s)\n
+E:failed to verify whole-file signature\n=E:FAILED TO VERIFY WHOLE-FILE SIGNATURE\n
+
+# verifier_test.c

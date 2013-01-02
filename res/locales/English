@@ -1,0 +1,486 @@
+# ClockworkMod Recovery Localization Template (v6.0.2.7)
+# created by CEnnis91
+
+# languages
+Arabic=
+Bulgarian=
+Catalan=
+Chinese=
+Croatian=
+Czech=
+Danish=
+Dutch=
+English=
+Farsi=
+Finnish=
+French=
+German=
+Greek=
+Hebrew=
+Hungarian=
+Indonesian=
+Italian=
+Japanese=
+Korean=
+Lithuanian=
+Latvian=
+Norwegian=
+Polish=
+Portuguese=
+Romansh=
+Romanian=
+Russian=
+Serbian=
+Slovak=
+Slovenian=
+Spanish=
+Swedish=
+Thai=
+Tagalog=
+Turkish=
+Ukrainian=
+Vietnamese=
+
+# adb_install.c
+failed to open driver control: %s\n=
+failed to set driver control: %s\n=
+failed to close driver control: %s\n=
+Restarting adbd...\n=
+\n\nSideload started ...\nNow send the package you want to apply\nto the device with \"adb sideload <filename>\"...\n\n=
+status %d\n=
+No package received.\n=
+Error reading package:\n  %s\n=
+Installation aborted.\n=
+
+# applypatch/applypatch.c
+# applypatch/bsdiff.c
+# applypatch/bspatch.c
+# applypatch/freecache.c
+# applypatch/imgdiff.c
+# applypatch/imgpatch.c
+# applypatch/main.c
+# applypatch/utils.c
+# bmlutils/bmlutils.c
+
+# bootloader.c
+E:unknown misc partition fs_type \"%s\"\n=
+E:Can't find %s\n=
+E:Can't open %s\n(%s)\n=
+E:Can't read %s\n(%s)\n=
+E:Can't write %s\n(%s)\n=
+E:Can't finish %s\n(%s)\n=
+E:Failed reading %s\n(%s)\n=
+E:Failed closing %s\n(%s)\n=
+E:Can't unmount /cache\n=
+E:Can't find cache\n=
+E:Can't open cache\n(%s)\n=
+E:Can't write header to cache\n(%s)\n=
+E:Can't write update to cache\n(%s)\n=
+E:Can't write bitmap to cache\n(%s)\n=
+E:Can't finish writing cache\n(%s)\n=
+E:Can't reopen cache\n(%s)\n=
+E:Can't rewrite header to cache\n(%s)\n=
+E:Misalignment rewriting cache\n(%s)\n=
+E:Can't finish header of cache\n(%s)\n=
+
+# dedupe/dedupe.c
+# dedupe/driver.c
+# default_recovery_keys.c
+
+# default_recovery_ui.c
+reboot system now=
+install zip from sdcard=
+install zip from sideload=
+wipe data/factory reset=
+wipe cache partition=
+backup and restore=
+mounts and storage=
+advanced=
+
+# edify/expr.c
+# edify/main.c
+
+# edifyscripting.c
+Formatting /datadata...\n=
+Waiting for SD Card to mount (%ds)\n=
+SD Card mounted...\n= 
+Timed out waiting for SD card... continuing anyways.=
+Verifying SD Card marker...\n=
+SD Card marker not found...\n=
+Checking Internal SD Card marker...\n=
+Internal SD Card marker not found... continuing anyways.\n=
+Error processing ROM Manager script. Please verify that you are performing the backup, restore, or ROM installation from ROM Manager v4.4.0.0 or higher.\n=
+
+# extendedcommands.c
+Signature Check: %s\n=
+Enabled=
+Disabled=
+\n-- Installing: %s\n=
+\nInstall from sdcard complete.\n=
+Apply update from .zip file on SD card=
+choose zip from sdcard=
+apply /sdcard/update.zip=
+toggle signature verification=
+choose zip from internal sdcard=
+choose zip from external sdcard=
+Confirm install?=
+Yes - Install /sdcard/update.zip=
+Couldn't open directory.\n=
+E:Failed to close directory.=
+No files found.\n=
+E:Can't mount %s\n=
+Choose a zip to apply=
+Confirm install?=
+Yes - Install %s=
+Choose an image to restore=
+Confirm restore?=
+Yes - Restore=
+Choose an image to delete=
+Confirm delete?=
+Yes - Delete=
+USB Mass Storage device=
+Leaving this menu unmount=
+your SD card from your PC.=
+  THIS CAN NOT BE UNDONE.=
+No=
+E:unknown volume \"%s\"\n=
+E:can't format_volume \"%s\"=
+E:format_volume failed to unmount \"%s\"\n=
+E:format_volume: format_rfs_device failed on %s\n=
+E:format_volume: no MTD partition \"%s\"\n=
+E:format_volume: make_extf4fs failed on %s\n=
+No app2sd partition found. Skipping format of /sd-ext.\n=
+E:Error while unmounting %s.\n=
+Error mounting %s!\n=
+Skipping format...\n=
+Mounts and Storage Menu=
+mount /sdcard=
+mount /system=
+mount /cache=
+mount /data=
+mount /datadata=
+mount /emmc=
+mount /external_sd=
+mount /sd-ext=
+unmount /sdcard=
+unmount /system=
+unmount /cache=
+unmount /data=
+unmount /datadata=
+unmount /emmc=
+unmount /external_sd=
+unmount /sd-ext=
+format /sdcard=
+format /system=
+format /cache=
+format /data=
+format /datadata=
+format /emmc=
+format /external_sd=
+format /sd-ext=
+Confirm format?=
+Yes - Format=
+mount USB storage=
+format /data and /data/media (/sdcard)=
+Formatting /data...\n=
+Error formatting /data!\n=
+Done.\n=
+Error unmounting %s!\n=
+Formatting %s...\n=
+Error formatting %s!\n=
+E:Can't mount sdcard\n=
+first. The next menu will=
+you more options.=
+Advanced Restore=
+Restore boot=
+Restore system=
+Restore data=
+Restore cache=
+Restore sd-ext=
+Restore wimax=
+Confirm restore?=
+Yes - Restore boot=
+Yes - Restore system=
+Yes - Restore data=
+Yes - Restore cache=
+Yes - Restore sd-ext=
+Yes - Restore wimax=
+Backup Format=
+tar (default)=
+dup=
+dup (default)=
+tar=
+Default backup format set to tar.\n=
+Default backup format set to dedupe.\n=
+Backup and Restore=
+backup=
+restore=
+delete=
+advanced restore=
+free unused backup data=
+choose default backup format
+backup to internal sdcard=
+restore from internal sdcard=
+advanced restore from internal sdcard=
+delete from internal sdcard=
+backup to external sdcard=
+restore from external sdcard=
+advanced restore from external sdcard=
+delete from external sdcard=
+Can't partition device: %s\n=
+Ext Size=
+Swap Size=
+Partitioning SD Card... please wait...\n=
+Done!\n=
+An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n=
+Advanced Menu=
+reboot recovery=
+wipe dalvik cache=
+report error=
+key test=
+font test=
+show log=
+fix permissions=
+set locale=
+partition sdcard=
+partition external sdcard=
+partition internal sdcard=
+Confirm wipe?=
+Yes - Wipe Dalvik Cache=
+Outputting key codes.\n=
+Go back to end debugging.\n=
+Key: %d\n=
+Printing all displayable characters:\n=
+\nDone!\n=
+Fixing permissions...\n=
+Set Locale=
+No locales found.\n=
+Checking %s...\n=
+E:Unable process volume! Skipping...\n=
+%s may be rfs. Checking...\n=
+Checking for ext4 partitions...\n=
+Filesystems need to be converted to ext4.\n=
+A backup and restore will now take place.\n=
+If anything goes wrong, your backup will be\n=
+named %s. Try restoring it\n=
+in case of error.\n=
+/tmp/recovery.log was copied to /sdcard/clockworkmod/recovery.log. Please open ROM Manager to report the issue.\n=
+E:failed to scan mounted volumes\n=
+ROM may flash stock recovery on boot. Fix?=
+Yes - Disable recovery flash=
+Root access possibly lost. Fix?=
+Yes - Fix root (/system/bin/su)=
+Yes - Fix root (/system/xbin/su)=
+
+# firmware.c
+E:Multiple firmware images\n=
+Writing %s image...\n=
+E:Can't write %s image\n(%s)\n=
+E:Can't reboot\n=
+
+# flashutils/dump_image.c
+# flashutils/erase_image.c
+# flashutils/flash_image.c
+# flashutils/flashutils.c
+
+# install.c
+E:Failed to find \"%s\" in package=
+E:Error stat'ing %s: %s\n=
+E:Failed to read \"%s\" from package=
+E:Failed to open %s: %s\n=
+E:Failed to read firmware data: %s\n=
+E:Can't store %s image\n=
+Amend scripting (update-script) is no longer supported.\n=
+Amend scripting was deprecated by Google in Android 1.5.\n=
+It was necessary to remove it when upgrading to the ClockworkMod 3.0 Gingerbread based recovery.\n=
+Please switch to Edify scripting (updater-script and update-binary) to create working update zip packages.\n=
+E:Can't make %s\n=
+E:Can't copy %s\n=
+E:ignoring attempt to do multiple firmware updates=
+E:unknown command [%s]\n=
+E:Error in %s\n(Status %d)\n=
+E:opening %s: %s\n=
+E:key length (%d) does not match expected size\n=
+E:unexpected character between keys\n=
+Finding update package...\n=
+Opening update package...\n=
+E:Failed to load keys\n=
+Verifying update package...\n=
+E:signature verification failed\n=
+Install Untrusted Package?=
+Yes - Install untrusted zip=
+E:Can't open %s\n(%s)\n=
+Installing update...\n=
+E:failed to open last_install: %s\n=
+
+# libcrecovery/popen.c
+# libcrecovery/system.c
+
+# minadbd/adb.c
+E:listen on USB\n=
+E:failed to setgid to shell\n=
+E:failed to setuid to shell\n=
+E:userid is %d\n=
+E:Event loop starting\n=
+
+# minadbd/fdevent.c
+# minadbd/services.c
+# minadbd/sockets.c
+# minadbd/transport.c
+# minadbd/transport_usb.c
+# minadbd/usb_linux_client.c
+# minadbd/utils.c
+# minelf/Retouch.c
+# minui/events.c
+# minui/graphics.c
+# minui/mkfont.c
+# minui/resources.c
+# minzip/DirUtil.c
+# minzip/Hash.c
+# minzip/Inlines.c
+
+# minzip/SysUtil.c
+E:could not determine length of file\n=
+E:file is empty\n=
+E:only read %d of %d bytes\n=
+
+# minzip/Zip.c
+E:Can't read %zu bytes from zip file: %ld\n=
+E:Installed zlib is not compatible with linked version (%s)\n=
+E:Call to inflateInit2 failed (zerr=%d)\n=
+E:Unsupported compression type %d for entry '%s'\n=
+E:Can't calculate CRC for entry\n=
+E:Can't extract entry to buffer.\n=
+E:Error writing %ld bytes from zip file from %p: %s\n=
+E:write overrun?  (%ld bytes instead of %d)\n=
+E:Can't extract entry to file.\n=
+E:Can't extract entry to memory buffer.\n=
+E:mzExtractRecursive(): zipDir must be a relative path.\n=
+E:mzExtractRecursive(): targetDir must be an absolute path.\n=
+E:Can't allocate %d bytes for zip path\n=
+E:Can't assemble target path for \"%.*s\"\n=
+E:Can't create containing directory for \"%s\": %s\n=
+E:Symlink entry \"%s\" has no target\n=
+E:Can't read symlink target for \"%s\"\n=
+E:Can't symlink \"%s\" to \"%s\": %s\n=
+E:Can't create target file \"%s\": %s\n=
+E:Error extracting \"%s\"\n=
+E:Error touching \"%s\"\n=
+
+# mmcutils/mmcutils.c
+# mounts.c
+# mtdutils/bml_over_mtd.c
+# mtdutils/mtdutils.c
+
+# nandroid.c
+Unable to execute mkyaffs2image.\n=
+Unable to execute tar.\n=
+Freeing space...\n=
+Done freeing space.\n=
+Unable to execute dedupe.\n=
+Unable to find volume.\n=
+Unable to find mounted volume: %s\n=
+Backing up %s...\n=
+Can't mount %s!\n=
+Error finding an appropriate backup handler.\n=
+Error while making a backup image of %s!\n=
+Backup of %s completed.\n=
+Backing up %s image...\n=
+Error while backing up %s image!=
+Backup of %s image completed.\n=
+Can't mount backup path.\n=
+Unable to find volume for backup path.\n=
+Unable to stat backup path.\n=
+SD Card space free: %lluMB\n=
+There may not be enough free space to complete backup... continuing...\n=
+Backing up WiMAX...\n=
+Error while dumping WiMAX image!\n=
+No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n=
+No sd-ext found. Skipping backup of sd-ext.\n=
+Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n=
+Generating md5 sum...\n=
+Error while generating md5 sum!\n=
+\nBackup complete!\n=
+Unable to execute unyaffs.\n=
+%s.img not found. Skipping restore of %s.\n=
+Restoring %s...\n=
+Error while formatting %s!\n=
+Error finding an appropriate restore handler.\n=
+Error while restoring %s!\n=
+Erasing %s before restore...\n=
+Restoring %s image...\n=
+Error while flashing %s image!=
+Can't mount backup path\n=
+Checking MD5 sums...\n=
+MD5 mismatch!\n=
+WARNING: WiMAX partition exists, but nandroid\n=
+         backup does not contain WiMAX image.\n=
+         You should create a new backup to\n=
+         protect your WiMAX keys.\n=
+Erasing WiMAX before restore...\n=
+Error while formatting wimax!\n=
+Restoring WiMAX image...\n=
+\nRestore complete!\n=
+
+# recovery.c
+E:Can't open %s\n=
+E:Error in %s\n(%s)\n=
+E:Bad boot message\n\"%.20s\"\n=
+E:Can't mkdir %s (%s)\n=
+E:failed to stat %s (%s)\n=
+E:%s isn't a directory\n=
+E:%s has perms %o\n=
+E:%s owned by %lu; not root\n=
+E:Failed to allocate buffer\n=
+E:Failed to open %s (%s)\n=
+E:Short write of %s (%s)\n=
+E:Failed to close %s (%s)\n=
+E:Failed to chmod %s (%s)\n=
+Choose a package to install:=
+E:error opening %s: %s\n=
+Confirm wipe of all user data?=
+ Yes -- delete all user data=
+\n-- Wiping data...\n=
+Data wipe complete.\n=
+Yes - Wipe Cache=
+\n-- Wiping cache...\n=
+Cache wipe complete.\n=
+E:Invalid command argument\n=
+Data wipe failed.\n=
+Cache wipe failed.\n=
+Rebooting...\n=
+Shutting down...\n=
+
+# roots.c
+E:failed to open /etc/recovery.fstab (%s)\n=
+E:skipping malformed recovery.fstab line: %s\n=
+E:unknown volume for path [%s]\n=
+E:failed to find \"%s\" partition to mount at \"%s\"\n=
+E:unknown fs_type \"%s\" for %s\n=
+
+# setprop.c
+# tools/ota/add-property-tag.c
+# tools/ota/check-lost+found.c
+
+# ui.c
+E:Missing bitmap %s\n(Code %d)\n=
+E:Can't allocate %d bytes for image\n=
+ - +++++Go Back+++++=
+E:Invalid file format\n=
+ 
+# updater/install.c
+# updater/updater.c
+
+# verifier.c
+E:failed to seek in %s (%s)\n=
+E:failed to read footer from %s (%s)\n=
+E:signature is too short\n=
+E:malloc for EOCD record failed\n=
+E:failed to read eocd from %s (%s)\n=
+E:signature length doesn't match EOCD marker\n=
+E:EOCD marker occurs after start of EOCD\n=
+E:failed to alloc memory for sha1 buffer\n=
+E:failed to read data from %s (%s)\n=
+E:failed to verify whole-file signature\n=
+
+# verifier_test.c

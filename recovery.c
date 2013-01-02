@@ -56,12 +56,16 @@ static const struct option OPTIONS[] = {
   { "wipe_data", no_argument, NULL, 'w' },
   { "wipe_cache", no_argument, NULL, 'c' },
   { "show_text", no_argument, NULL, 't' },
+  { "locale", required_argument, NULL, 'l' },
   { NULL, 0, NULL, 0 },
 };
+
+char* locale = NULL;
 
 static const char *COMMAND_FILE = "/cache/recovery/command";
 static const char *INTENT_FILE = "/cache/recovery/intent";
 static const char *LOG_FILE = "/cache/recovery/log";
+static const char *LOCALE_FILE = "/cache/recovery/last_locale";
 static const char *LAST_LOG_FILE = "/cache/recovery/last_log";
 static const char *CACHE_ROOT = "/cache";
 static const char *SDCARD_ROOT = "/sdcard";
@@ -282,6 +286,21 @@ finish_recovery(const char *send_intent) {
             check_and_fclose(fp, INTENT_FILE);
         }
     }
+
+    // Save the locale to cache, so if recovery is next started up
+    // without a --locale argument (eg, directly from the bootloader)
+    // it will use the last-known locale.
+    locale = ui_get_locale();
+
+    if (locale != NULL) {
+        LOGI("Saving locale \"%s\"\n", locale);
+        FILE* fp = fopen_path(LOCALE_FILE, "w");
+        fwrite(locale, 1, strlen(locale), fp);
+        fflush(fp);
+        fsync(fileno(fp));
+        check_and_fclose(fp, LOCALE_FILE);
+    }
+
 
     // Copy logs to cache so the system can find out what happened.
     copy_log_file(LOG_FILE, true);
@@ -747,6 +766,25 @@ prompt_and_wait() {
 }
 
 static void
+load_locale_from_cache() {
+    FILE* fp = fopen_path(LOCALE_FILE, "r");
+    char buffer[80];
+    if (fp != NULL) {
+        fgets(buffer, sizeof(buffer), fp);
+        int j = 0;
+        unsigned int i;
+        for (i = 0; i < sizeof(buffer) && buffer[i]; ++i) {
+            if (!isspace(buffer[i])) {
+                buffer[j++] = buffer[i];
+            }
+        }
+        buffer[j] = 0;
+        locale = strdup(buffer);
+        check_and_fclose(fp, LOCALE_FILE);
+    }
+}
+
+static void
 print_property(const char *key, const char *name, void *cookie) {
     printf("%s=%s\n", key, name);
 }
@@ -838,11 +876,17 @@ main(int argc, char **argv) {
         break;
         case 'c': wipe_cache = 1; break;
         case 't': ui_show_text(1); break;
+        case 'l': locale = optarg; break;
         case '?':
             LOGE("Invalid command argument\n");
             continue;
         }
     }
+
+    if (locale == NULL)
+        load_locale_from_cache();
+
+    ui_set_locale(locale);
 
     LOGI("device_recovery_start()\n");
     device_recovery_start();
