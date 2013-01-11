@@ -46,6 +46,48 @@ int signature_check_enabled = 1;
 int script_assert_enabled = 1;
 static const char *SDCARD_UPDATE_FILE = "/sdcard/update.zip";
 
+static const struct {
+    char *volpath;
+    char *dirpath;
+    char *install;
+    char *backup;
+    char *restore;
+    char *restext;
+    char *delete;
+    char *gc;
+} voldesc[] = {
+    {
+        .volpath = "/sdcard",
+        .dirpath = "/sdcard/",
+        .install = "choose zip from sdcard",
+        .backup  = "backup",
+        .restore = "restore",
+        .restext = "advanced restore",
+        .delete  = "delete",
+        .gc      = "free unused backup data",
+    },{
+        .volpath = "/emmc",
+        .dirpath = "/emmc/",
+        .install = "choose zip from internal storage [/emmc]",
+        .backup  = "backup to internal internal storage [/emmc]",
+        .restore = "restore from internal internal storage [/emmc]",
+        .restext = "advanced restore from internal internal storage [/emmc]",
+        .delete  = "delete from internal internal storage [/emmc]",
+        .gc      = "free unused backup data on internal storage [/emmc]",
+    },{
+        .volpath = "/external_sd",
+        .dirpath = "/external_sd/",
+        .install = "choose zip from external sdcard [/external_sd]",
+        .backup  = "backup to external sdcard [/external_sd]",
+        .restore = "restore from external sdcard [/external_sd]",
+        .restext = "advanced restore from external sdcard [/external_sd]",
+        .delete  = "delete from external sdcard [/external_sd]",
+        .gc      = "free unused backup data on external sdcard [/external_sd]",
+    }
+};
+
+#define max_vols (sizeof(voldesc)/sizeof(voldesc[0]))
+
 int
 get_filtered_menu_selection(char** headers, char** items, int menu_only, int initial_selection, int items_count) {
     int index;
@@ -109,10 +151,9 @@ int install_zip(const char* packagefilepath)
     return 0;
 }
 
-#define ITEM_CHOOSE_ZIP       0
-#define ITEM_APPLY_SDCARD     1
-#define ITEM_SIG_CHECK        2
-#define ITEM_CHOOSE_ZIP_INT   3
+#define SUBITEM_APPLY_SDCARD     0
+#define SUBITEM_SIG_CHECK        1
+#define SUBITEM_VOLS_START       2
 
 void show_install_update_menu()
 {
@@ -121,42 +162,36 @@ void show_install_update_menu()
                                 NULL
     };
     
-    char* install_menu_items[] = {  "choose zip from sdcard",
-                                    "apply /sdcard/update.zip",
-                                    "toggle signature verification",
-                                    NULL,
-                                    NULL };
+    char* install_menu_items[SUBITEM_VOLS_START + max_vols + 1] = {
+        [ SUBITEM_APPLY_SDCARD ] = "apply /sdcard/update.zip",
+        [ SUBITEM_SIG_CHECK    ] = "toggle signature verification",
+        [ SUBITEM_VOLS_START ... SUBITEM_VOLS_START + max_vols ] = NULL,
+    };
+    int vnr[max_vols], v, m = SUBITEM_VOLS_START;
 
-    char *other_sd = NULL;
-    if (volume_for_path("/emmc") != NULL) {
-        other_sd = "/emmc/";
-        install_menu_items[3] = "choose zip from internal sdcard";
+    for (v = 0; v < max_vols; v++) {
+        if (!volume_for_path(voldesc[v].volpath))
+            continue;
+        install_menu_items[m] = voldesc[v].install;
+        vnr[m - SUBITEM_VOLS_START] = v;
+        m++;
     }
-    else if (volume_for_path("/external_sd") != NULL) {
-        other_sd = "/external_sd/";
-        install_menu_items[3] = "choose zip from external sdcard";
-    }
-    
+
     for (;;)
     {
         int chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
         switch (chosen_item)
         {
-            case ITEM_SIG_CHECK:
+            case SUBITEM_SIG_CHECK:
                 toggle_signature_check();
                 break;
-            case ITEM_APPLY_SDCARD:
-            {
+            case SUBITEM_APPLY_SDCARD:
                 if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
                     install_zip(SDCARD_UPDATE_FILE);
                 break;
-            }
-            case ITEM_CHOOSE_ZIP:
-                show_choose_zip_menu("/sdcard/");
-                break;
-            case ITEM_CHOOSE_ZIP_INT:
-                if (other_sd != NULL)
-                    show_choose_zip_menu(other_sd);
+            case SUBITEM_VOLS_START ... SUBITEM_VOLS_START + max_vols:
+                v = vnr[chosen_item - SUBITEM_VOLS_START];
+                show_choose_zip_menu(voldesc[v].dirpath);
                 break;
             default:
                 return;
@@ -430,7 +465,6 @@ void show_nandroid_delete_menu(const char* path)
     }
 }
 
-#define MAX_NUM_USB_VOLUMES 3
 #define LUN_FILE_EXPANDS    2
 
 struct lun_node {
@@ -533,7 +567,7 @@ int control_usb_storage_for_lun(Volume* vol, bool enable) {
 int control_usb_storage(Volume **volumes, bool enable) {
     int res = -1;
     int i;
-    for(i = 0; i < MAX_NUM_USB_VOLUMES; i++) {
+    for(i = 0; i < max_vols; i++) {
         Volume *volume = volumes[i];
         if (volume) {
             int vol_res = control_usb_storage_for_lun(volume, enable);
@@ -557,11 +591,13 @@ int control_usb_storage(Volume **volumes, bool enable) {
 void show_mount_usb_storage_menu()
 {
     // Build a list of Volume objects; some or all may not be valid
-    Volume* volumes[MAX_NUM_USB_VOLUMES] = {
-        volume_for_path("/sdcard"),
-        volume_for_path("/emmc"),
-        volume_for_path("/external_sd")
-    };
+    Volume* volumes[max_vols];
+    int i;
+
+    memset(volumes, 0, sizeof(volumes));
+    for (i = 0; i < max_vols; i++) {
+        volumes[i] = volume_for_path(voldesc[i].volpath);
+    }
 
     // Enable USB storage
     if (control_usb_storage(volumes, 1))
@@ -1080,45 +1116,59 @@ static void choose_default_backup_format() {
     }
 }
 
+#define SUBITEM_BACKUP_FORMAT    0
+#undef SUBITEM_VOLS_START
+#define SUBITEM_VOLS_START       1
+
+#define ACTION_BACKUP            1
+#define ACTION_RESTORE           2
+#define ACTION_RESTORE_EXT       3
+#define ACTION_DELETE            4
+#define ACTION_GC                5
+
 void show_nandroid_menu()
 {
     static char* headers[] = {  "Backup and Restore",
                                 "",
                                 NULL
     };
-
-    char* list[] = { "backup",
-                            "restore",
-                            "delete",
-                            "advanced restore",
-                            "free unused backup data",
-                            "choose default backup format",
-                            NULL,
-                            NULL,
-                            NULL,
-                            NULL,
-                            NULL,
-                            NULL,
-                            NULL
+    char* list[SUBITEM_VOLS_START + 5 * max_vols + 1] = {
+        [ SUBITEM_BACKUP_FORMAT ] = "choose default backup format",
+        [ SUBITEM_VOLS_START ... SUBITEM_VOLS_START + 5 * max_vols ] = NULL,
     };
+    int vnr[5 * max_vols], act[5 * max_vols], v, a, m = SUBITEM_VOLS_START;
 
-    char *other_sd = NULL;
-    if (volume_for_path("/emmc") != NULL) {
-        other_sd = "/emmc";
-        list[6] = "backup to internal sdcard";
-        list[7] = "restore from internal sdcard";
-        list[8] = "advanced restore from internal sdcard";
-        list[9] = "delete from internal sdcard";
-    }
-    else if (volume_for_path("/external_sd") != NULL) {
-        other_sd = "/external_sd";
-        list[6] = "backup to external sdcard";
-        list[7] = "restore from external sdcard";
-        list[8] = "advanced restore from external sdcard";
-        list[9] = "delete from external sdcard";
+    for (v = 0; v < max_vols; v++) {
+        if (!volume_for_path(voldesc[v].volpath))
+            continue;
+
+        list[m] = voldesc[v].backup;
+        vnr[m - SUBITEM_VOLS_START] = v;
+        act[m - SUBITEM_VOLS_START] = ACTION_BACKUP;
+        m++;
+
+        list[m] = voldesc[v].restore;
+        vnr[m - SUBITEM_VOLS_START] = v;
+        act[m - SUBITEM_VOLS_START] = ACTION_RESTORE;
+        m++;
+
+        list[m] = voldesc[v].restext;
+        vnr[m - SUBITEM_VOLS_START] = v;
+        act[m - SUBITEM_VOLS_START] = ACTION_RESTORE_EXT;
+        m++;
+
+        list[m] = voldesc[v].delete;
+        vnr[m - SUBITEM_VOLS_START] = v;
+        act[m - SUBITEM_VOLS_START] = ACTION_DELETE;
+        m++;
+
+        list[m] = voldesc[v].gc;
+        vnr[m - SUBITEM_VOLS_START] = v;
+        act[m - SUBITEM_VOLS_START] = ACTION_GC;
+        m++;
     }
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
-    extend_nandroid_menu(list, 10, sizeof(list) / sizeof(char*));
+    extend_nandroid_menu(list, m, sizeof(list) / sizeof(char*));
 #endif
 
     for (;;) {
@@ -1127,40 +1177,13 @@ void show_nandroid_menu()
             break;
         switch (chosen_item)
         {
-            case 0:
-                {
-                    char backup_path[PATH_MAX];
-                    time_t t = time(NULL);
-                    struct tm *tmp = localtime(&t);
-                    if (tmp == NULL)
-                    {
-                        struct timeval tp;
-                        gettimeofday(&tp, NULL);
-                        sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
-                    }
-                    else
-                    {
-                        strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
-                    }
-                    nandroid_backup(backup_path);
-                }
-                break;
-            case 1:
-                show_nandroid_restore_menu("/sdcard");
-                break;
-            case 2:
-                show_nandroid_delete_menu("/sdcard");
-                break;
-            case 3:
-                show_nandroid_advanced_restore_menu("/sdcard");
-                break;
-            case 4:
-                run_dedupe_gc(other_sd);
-                break;
-            case 5:
+            case SUBITEM_BACKUP_FORMAT:
                 choose_default_backup_format();
                 break;
-            case 6:
+            case SUBITEM_VOLS_START ... SUBITEM_VOLS_START + 5 * max_vols:
+                v = vnr[chosen_item - SUBITEM_VOLS_START];
+                switch (act[chosen_item - SUBITEM_VOLS_START]) {
+                case ACTION_BACKUP:
                 {
                     char backup_path[PATH_MAX];
                     time_t t = time(NULL);
@@ -1169,47 +1192,37 @@ void show_nandroid_menu()
                     {
                         struct timeval tp;
                         gettimeofday(&tp, NULL);
-                        if (other_sd != NULL) {
-                            sprintf(backup_path, "%s/clockworkmod/backup/%d", other_sd, tp.tv_sec);
-                        }
-                        else {
-                            break;
-                        }
+                        sprintf(backup_path, "%s/clockworkmod/backup/%d",
+                                voldesc[v].volpath, tp.tv_sec);
                     }
                     else
                     {
-                        if (other_sd != NULL) {
-                            char tmp[PATH_MAX];
-                            strftime(tmp, sizeof(tmp), "clockworkmod/backup/%F.%H.%M.%S", timeptr);
-                            // this sprintf results in:
-                            // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
-                            sprintf(backup_path, "%s/%s", other_sd, tmp);
-                        }
-                        else {
-                            break;
-                        }
+                        char tmp[PATH_MAX];
+                        strftime(tmp, sizeof(tmp), "clockworkmod/backup/%F.%H.%M.%S", timeptr);
+                        // this sprintf results in:
+                        // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
+                        sprintf(backup_path, "%s/%s", voldesc[v].volpath, tmp);
                     }
                     nandroid_backup(backup_path);
+                    break;
                 }
-                break;
-            case 7:
-                if (other_sd != NULL) {
-                    show_nandroid_restore_menu(other_sd);
-                }
-                break;
-            case 8:
-                if (other_sd != NULL) {
-                    show_nandroid_advanced_restore_menu(other_sd);
-                }
-                break;
-            case 9:
-                if (other_sd != NULL) {
-                    show_nandroid_delete_menu(other_sd);
+                case ACTION_RESTORE:
+                    show_nandroid_restore_menu(voldesc[v].volpath);
+                    break;
+                case ACTION_RESTORE_EXT:
+                    show_nandroid_advanced_restore_menu(voldesc[v].volpath);
+                    break;
+                case ACTION_DELETE:
+                    show_nandroid_delete_menu(voldesc[v].volpath);
+                    break;
+                case ACTION_GC:
+                    run_dedupe_gc(voldesc[v].volpath);
+                    break;
                 }
                 break;
             default:
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
-                handle_nandroid_menu(10, chosen_item);
+                handle_nandroid_menu(m, chosen_item);
 #endif
                 break;
         }
