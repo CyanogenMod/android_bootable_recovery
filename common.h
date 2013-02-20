@@ -20,6 +20,12 @@
 #include <stdio.h>
 #include <fs_mgr.h>
 
+//#define MENU_TEXT_COLOR 255, 160, 49, 255
+#define MENU_TEXT_COLOR 0, 191, 255, 255
+#define MENU_TEXT_COLOR_RED 255, 0, 0, 255
+#define NORMAL_TEXT_COLOR 200, 200, 200, 255
+#define HEADER_TEXT_COLOR NORMAL_TEXT_COLOR
+
 // Initialize the graphics system.
 void ui_init();
 
@@ -46,6 +52,7 @@ void ui_set_nice(int enabled);
 int ui_was_niced();
 int ui_get_text_cols();
 void ui_increment_frame();
+void ui_setMenuTextColor(int r, int g, int b, int a);
 
 #ifdef ENABLE_LOKI
 extern int loki_support_enabled;
