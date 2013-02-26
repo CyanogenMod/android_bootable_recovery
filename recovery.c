@@ -751,6 +751,40 @@ print_property(const char *key, const char *name, void *cookie) {
     printf("%s=%s\n", key, name);
 }
 
+static void
+install_adb_keys() {
+    struct stat f;
+    static char *key_src = "/data/misc/adb/adb_keys";
+    static char *key_dest = "/adb_keys";
+
+    // Mount /data and copy adb_keys to root if it exists
+    ensure_path_mounted("/data");
+    if (stat(key_src, &f) == 0) {
+        FILE *file_dest = fopen(key_dest, "w");
+        if (file_dest == NULL) {
+            LOGE("Can't open %s\n", key_dest);
+        } else {
+            FILE *file_src = fopen(key_src, "r");
+            if (file_src == NULL) {
+                LOGE("Can't open %s\n", key_src);
+            } else {
+                char buf[4096];
+                while (fgets(buf, sizeof(buf), file_src)) fputs(buf, file_dest);
+                check_and_fclose(file_dest, key_dest);
+
+                // set ro.adb.secure and restart adbd daemon
+                property_set("ro.adb.secure", "1");
+                __system("kill -9 $(pgrep adb)");
+                // FIXME: handle restarting adbd properly
+                //property_set("ctl.stop", "adbd");
+                //property_set("ctl.start", "adbd");
+            }
+            check_and_fclose(file_src, key_src);
+        }
+    }
+    ensure_path_unmounted("/data");
+}
+
 int
 main(int argc, char **argv) {
 
@@ -911,6 +945,8 @@ main(int argc, char **argv) {
             LOGI("Skipping execution of extendedcommand, file not found...\n");
         }
     }
+
+    install_adb_keys();
 
     if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) {
         ui_set_show_text(1);
