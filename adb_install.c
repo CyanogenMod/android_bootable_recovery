@@ -32,7 +32,7 @@
 #include "adb_install.h"
 #include "minadbd/adb.h"
 
-static void
+void
 set_usb_driver(int enabled) {
     int fd = open("/sys/class/android_usb/android0/enable", O_WRONLY);
     if (fd < 0) {

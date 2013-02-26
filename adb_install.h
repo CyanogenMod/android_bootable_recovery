@@ -17,4 +17,5 @@
 
 
 int apply_from_adb();
+void set_usb_driver(int enabled);
 
