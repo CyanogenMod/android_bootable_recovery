@@ -30,8 +30,6 @@
 #include "../common.h"
 
 #include <private/android_filesystem_config.h>
-#include <linux/capability.h>
-#include <linux/prctl.h>
 
 #if ADB_TRACE
 ADB_MUTEX_DEFINE( D_lock );
