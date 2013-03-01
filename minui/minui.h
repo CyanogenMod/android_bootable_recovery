@@ -32,7 +32,7 @@ void gr_flip(void);
 void gr_fb_blank(bool blank);
 
 void gr_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
-void gr_fill(int x, int y, int w, int h);
+void gr_fill(int x1, int y1, int x2, int y2);
 int gr_text(int x, int y, const char *s);
 int gr_measure(const char *s);
 void gr_font_size(int *x, int *y);
