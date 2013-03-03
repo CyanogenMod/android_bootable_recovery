@@ -74,14 +74,29 @@ get_filtered_menu_selection(char** headers, char** items, int menu_only, int ini
     return ret;
 }
 
+static ssize_t writefile(const char *path, const void *p, size_t n)
+{
+    int f = open(path, O_WRONLY|O_CREAT|O_TRUNC);
+    if (f < 0)
+        return -errno;
+    ssize_t wr = write(f, p, n);
+    if (wr < 0)
+    {
+        int e = errno;
+        close(f);
+        return -e;
+    }
+    if (close(f) < 0)
+        return -errno;
+    return wr;
+}
+
 void write_string_to_file(const char* filename, const char* string) {
     ensure_path_mounted(filename);
     char tmp[PATH_MAX];
     sprintf(tmp, "mkdir -p $(dirname %s)", filename);
     __system(tmp);
-    FILE *file = fopen(filename, "w");
-    fprintf(file, "%s", string);
-    fclose(file);
+    writefile(filename, string, strlen(string));
 }
 
 void
@@ -762,20 +777,13 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
 
     static char tmp[PATH_MAX];
     if (strcmp(path, "/data") == 0) {
-        sprintf(tmp, "cd /data ; for f in $(ls -a | grep -v ^media$); do rm -rf $f; done");
-        __system(tmp);
+        __system("cd /data ; for f in $(ls -a | grep -v '^media$'); do rm -rf \"$f\"; done");
         // if the /data/media sdcard has already been migrated for android 4.2,
         // prevent the migration from happening again by writing the .layout_version
         struct stat st;
         if (0 == lstat("/data/media/0", &st)) {
-            char* layout_version = "2";
-            FILE* f = fopen("/data/.layout_version", "wb");
-            if (NULL != f) {
-                fwrite(layout_version, 1, 2, f);
-                fclose(f);
-            }
-            else {
-                LOGI("error opening /data/.layout_version for write.\n");
+            if (writefile("/data/.layout_version", "2", 2) != 2) {
+                LOGI("error writing /data/.layout_version\n");
             }
         }
         else {
@@ -783,9 +791,8 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         }
     }
     else {
-        sprintf(tmp, "rm -rf %s/*", path);
-        __system(tmp);
-        sprintf(tmp, "rm -rf %s/.*", path);
+        // FIXME That's an error if the `path` contains an apostrophe.
+        sprintf(tmp, "rm -rf '%s', path);
         __system(tmp);
     }
 
