@@ -357,24 +357,47 @@ void show_nandroid_restore_menu(const char* path)
 }
 
 #ifndef BOARD_UMS_LUNFILE
-#define BOARD_UMS_LUNFILE	"/sys/devices/platform/usb_mass_storage/lun0/file"
+#define BOARD_UMS_LUNFILE	"/sys/devices/platform/usb_mass_storage/lun%d/file"
 #endif
 
 void show_mount_usb_storage_menu()
 {
     int fd;
-    Volume *vol = volume_for_path("/sdcard");
-    if ((fd = open(BOARD_UMS_LUNFILE, O_WRONLY)) < 0) {
-        LOGE("Unable to open ums lunfile (%s)", strerror(errno));
-        return -1;
-    }
+    Volume *vol;
+    char qualified_lun[255];
+    int lun_num = 0;
+    int i, ok = 0;
+    static const char *UMS[] = {
+        "/sdcard",
+        "/emmc",
+        NULL
+    };
 
-    if ((write(fd, vol->device, strlen(vol->device)) < 0) &&
-        (!vol->device2 || (write(fd, vol->device, strlen(vol->device2)) < 0))) {
-        LOGE("Unable to write to ums lunfile (%s)", strerror(errno));
-        close(fd);
-        return -1;
+    for (i = 0; i < 2; i++) {
+        if (volume_for_path(UMS[i]) == NULL) {
+            continue;
+        }
+        vol = volume_for_path(UMS[i]);
+        bzero(qualified_lun, 255);
+        snprintf(qualified_lun, 254, BOARD_UMS_LUNFILE, lun_num);
+
+        if ((fd = open(qualified_lun, O_WRONLY)) < 0) {
+            LOGE("Unable to open ums lunfile %s (%s)", qualified_lun, strerror(errno));
+            continue;
+        }
+
+        if ((write(fd, vol->device, strlen(vol->device)) < 0) &&
+            (!vol->device2 || (write(fd, vol->device, strlen(vol->device2)) < 0))) {
+            LOGE("Unable to write to ums lunfile for LUN %d (%s)", lun_num, strerror(errno));
+            close(fd);
+        } else {
+            ok = 1;
+            lun_num++;
+        }
     }
+    if (ok == 0)
+        return -1;
+
     static char* headers[] = {  "USB Mass Storage device",
                                 "Leaving this menu unmount",
                                 "your SD card from your PC.",
@@ -391,17 +414,26 @@ void show_mount_usb_storage_menu()
             break;
     }
 
-    if ((fd = open(BOARD_UMS_LUNFILE, O_WRONLY)) < 0) {
-        LOGE("Unable to open ums lunfile (%s)", strerror(errno));
-        return -1;
-    }
+    for (i = 0; i < 2; i++) {
+        bzero(qualified_lun, 255);
+        snprintf(qualified_lun, 254, BOARD_UMS_LUNFILE, i);
 
-    char ch = 0;
-    if (write(fd, &ch, 1) < 0) {
-        LOGE("Unable to write to ums lunfile (%s)", strerror(errno));
-        close(fd);
-        return -1;
+        if ((fd = open(qualified_lun, O_WRONLY)) < 0) {
+            LOGE("Unable to open ums lunfile for LUN %d (%s)", i, strerror(errno));
+            ok = -1;
+            continue;
+        }
+
+        char ch = 0;
+        if (write(fd, &ch, 1) < 0) {
+            LOGE("Unable to write to ums lunfile for LUN %d (%s)", i, strerror(errno));
+            close(fd);
+            ok = -1;
+            continue;
+        }
+        ok = 0;
     }
+    return ok;
 }
 
 int confirm_selection(const char* title, const char* confirm)
