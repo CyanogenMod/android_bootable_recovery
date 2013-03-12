@@ -84,6 +84,11 @@ void write_string_to_file(const char* filename, const char* string) {
     fclose(file);
 }
 
+void write_recovery_version() {
+    write_string_to_file("/sdcard/0/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION));
+    write_string_to_file("/sdcard/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION));
+}
+
 void
 toggle_signature_check()
 {
@@ -153,6 +158,7 @@ void show_install_update_menu()
             }
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu("/sdcard/");
+                write_recovery_version();
                 break;
             case ITEM_CHOOSE_ZIP_INT:
                 if (other_sd != NULL)
@@ -1146,16 +1152,20 @@ void show_nandroid_menu()
                         strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
                     }
                     nandroid_backup(backup_path);
+                    write_recovery_version();
                 }
                 break;
             case 1:
                 show_nandroid_restore_menu("/sdcard");
+                write_recovery_version();
                 break;
             case 2:
                 show_nandroid_delete_menu("/sdcard");
+                write_recovery_version();
                 break;
             case 3:
                 show_nandroid_advanced_restore_menu("/sdcard");
+                write_recovery_version();
                 break;
             case 4:
                 run_dedupe_gc(other_sd);
