@@ -64,8 +64,8 @@ static int parse_options(char* options, Volume* volume) {
         if (strncmp(option, "length=", 7) == 0) {
             volume->length = strtoll(option+7, NULL, 10);
         } else if (strncmp(option, "fstype2=", 8) == 0) {
-            volume->fs_type2 = volume->fs_type;
-            volume->fs_type = strdup(option + 8);
+            //volume->fs_type2 = volume->fs_type;
+            volume->fs_type2 = strdup(option + 8);
         } else if (strncmp(option, "fs_options=", 11) == 0) {
             volume->fs_options = strdup(option + 11);
         } else if (strncmp(option, "fs_options2=", 12) == 0) {
