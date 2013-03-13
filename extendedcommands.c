@@ -225,7 +225,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
                 char fullFileName[PATH_MAX];
                 strcpy(fullFileName, directory);
                 strcat(fullFileName, de->d_name);
-                stat(fullFileName, &info);
+                lstat(fullFileName, &info);
                 // make sure it is a directory
                 if (!(S_ISDIR(info.st_mode)))
                     continue;
