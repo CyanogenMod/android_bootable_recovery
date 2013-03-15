@@ -80,13 +80,20 @@ void write_string_to_file(const char* filename, const char* string) {
     sprintf(tmp, "mkdir -p $(dirname %s)", filename);
     __system(tmp);
     FILE *file = fopen(filename, "w");
-    fprintf(file, "%s", string);
-    fclose(file);
+    if( file != NULL) {
+        fprintf(file, "%s", string);
+        fclose(file);
+    }
 }
 
 void write_recovery_version() {
-    write_string_to_file("/sdcard/0/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION));
+    char* recovery_version_product;
+    if ( is_data_media() ) {
+        write_string_to_file("/sdcard/0/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION));
+        write_string_to_file("/sdcard/0/clockworkmod/.target_device",EXPAND(TARGET_DEVICE));
+    }
     write_string_to_file("/sdcard/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION));
+    write_string_to_file("/sdcard/clockworkmod/.target_device",EXPAND(TARGET_DEVICE));
 }
 
 void
