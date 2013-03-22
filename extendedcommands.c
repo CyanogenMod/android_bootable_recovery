@@ -1434,6 +1434,7 @@ void create_fstab()
     write_fstab_root("/system", file);
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
+    write_fstab_root("/external_sd", file);
     fclose(file);
     LOGI("Completed outputting fstab.\n");
 }
