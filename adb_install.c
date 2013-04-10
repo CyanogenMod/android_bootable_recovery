@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -29,6 +30,7 @@
 #include "cutils/properties.h"
 #include "install.h"
 #include "common.h"
+#include "recovery_ui.h"
 #include "adb_install.h"
 #include "minadbd/adb.h"
 
@@ -74,6 +76,44 @@ maybe_restart_adbd() {
     }
 }
 
+struct sideload_waiter_data {
+    pthread_cond_t* waiter;
+    pid_t child;
+};
+
+void *adb_sideload_thread(void* v) {
+    struct sideload_waiter_data* data = (struct sideload_waiter_data*)v;
+    
+    int status;
+    waitpid(data->child, &status, 0);
+    
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+        ui_print("status %d\n", WEXITSTATUS(status));
+    }
+    
+    pthread_cond_signal(data->waiter);
+    return NULL;
+}
+
+void *adb_sideload_cancel_thread(void *v) {
+    struct sideload_waiter_data* data = (struct sideload_waiter_data*)v;
+    static char* headers[] = {  "ADB Sideload",
+                                "",
+                                NULL
+    };
+
+    static char* list[] = { "Cancel sideload", NULL };
+    
+    for (;;)
+    {
+        int chosen_item = get_menu_selection(headers, list, 0, 0);
+        if (chosen_item == GO_BACK || chosen_item == 0)
+            break;
+    }
+    pthread_cond_signal(data->waiter);
+    return NULL;
+}
+
 int
 apply_from_adb() {
 
@@ -83,21 +123,30 @@ apply_from_adb() {
     ui_print("\n\nSideload started ...\nNow send the package you want to apply\n"
               "to the device with \"adb sideload <filename>\"...\n\n");
 
-    pid_t child;
-    if ((child = fork()) == 0) {
+    struct sideload_waiter_data data;
+    if ((data.child = fork()) == 0) {
         execl("/sbin/recovery", "recovery", "adbd", NULL);
         _exit(-1);
     }
-    int status;
-    // TODO(dougz): there should be a way to cancel waiting for a
-    // package (by pushing some button combo on the device).  For now
-    // you just have to 'adb sideload' a file that's not a valid
-    // package, like "/dev/null".
-    waitpid(child, &status, 0);
+    
+    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t waiter = PTHREAD_COND_INITIALIZER;
+    data.waiter = &waiter;
+    
+    pthread_mutex_lock(&mutex);
 
-    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-        ui_print("status %d\n", WEXITSTATUS(status));
-    }
+    pthread_t sideload_thread;
+    pthread_create(&sideload_thread, NULL, &adb_sideload_thread, &data);
+    
+    pthread_t key_thread;
+    pthread_create(&key_thread, NULL, &adb_sideload_cancel_thread, &data);
+
+    pthread_cond_wait(&waiter, &mutex);
+    
+    // cancel the input thread
+    ui_cancel_wait_key();
+    // kill the child
+    kill(data.child, SIGTERM);
 
     set_usb_driver(0);
     maybe_restart_adbd();
