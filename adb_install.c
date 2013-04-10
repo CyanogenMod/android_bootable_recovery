@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -29,6 +30,7 @@
 #include "cutils/properties.h"
 #include "install.h"
 #include "common.h"
+#include "recovery_ui.h"
 #include "adb_install.h"
 #include "minadbd/adb.h"
 
@@ -74,6 +76,27 @@ maybe_restart_adbd() {
     }
 }
 
+struct sideload_waiter_data {
+    pid_t child;
+};
+
+void *adb_sideload_thread(void* v) {
+    struct sideload_waiter_data* data = (struct sideload_waiter_data*)v;
+
+    int status;
+    waitpid(data->child, &status, 0);
+    LOGI("sideload process finished\n");
+    
+    ui_cancel_wait_key();
+
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+        ui_print("status %d\n", WEXITSTATUS(status));
+    }
+
+    LOGI("sideload thread finished\n");
+    return NULL;
+}
+
 int
 apply_from_adb() {
 
@@ -83,24 +106,31 @@ apply_from_adb() {
     ui_print("\n\nSideload started ...\nNow send the package you want to apply\n"
               "to the device with \"adb sideload <filename>\"...\n\n");
 
-    pid_t child;
-    if ((child = fork()) == 0) {
+    struct sideload_waiter_data data;
+    if ((data.child = fork()) == 0) {
         execl("/sbin/recovery", "recovery", "adbd", NULL);
         _exit(-1);
     }
-    int status;
-    // TODO(dougz): there should be a way to cancel waiting for a
-    // package (by pushing some button combo on the device).  For now
-    // you just have to 'adb sideload' a file that's not a valid
-    // package, like "/dev/null".
-    waitpid(child, &status, 0);
+    
+    pthread_t sideload_thread;
+    pthread_create(&sideload_thread, NULL, &adb_sideload_thread, &data);
+    
+    static char* headers[] = {  "ADB Sideload",
+                                "",
+                                NULL
+    };
 
-    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-        ui_print("status %d\n", WEXITSTATUS(status));
-    }
+    static char* list[] = { "Cancel sideload", NULL };
+    
+    get_menu_selection(headers, list, 0, 0);
 
     set_usb_driver(0);
     maybe_restart_adbd();
+
+    // kill the child
+    kill(data.child, SIGTERM);
+    pthread_join(&sideload_thread, NULL);
+    ui_clear_key_queue();
 
     struct stat st;
     if (stat(ADB_SIDELOAD_FILENAME, &st) != 0) {
