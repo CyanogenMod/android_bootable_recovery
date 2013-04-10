@@ -301,7 +301,7 @@ really_install_package(const char *path)
 
     if (signature_check_enabled) {
         int numKeys;
-        RSAPublicKey* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
+        Certificate* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
         if (loadedKeys == NULL) {
             LOGE("Failed to load keys\n");
             return INSTALL_CORRUPT;
