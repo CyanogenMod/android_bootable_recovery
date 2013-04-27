@@ -100,6 +100,20 @@ void *adb_sideload_thread(void* v) {
 int
 apply_from_adb() {
 
+    char value[PROPERTY_VALUE_MAX+1];
+    int len;
+    len = property_get("ro.adb.secure", value, NULL);
+    int secure_adb = len > 0 && value[0] == '1';
+    if (secure_adb) {
+        len = property_get("service.adb.online", value, "0");
+        if (len > 0 && value[0] == '0') {
+            ui_print("Refusing to start sideload:\n"
+                     "  Adb is set to secure mode,\n"
+                     "  but no trusted host is online.\n");
+            return INSTALL_ERROR;
+        }
+    }
+
     stop_adbd();
     set_usb_driver(1);
 
