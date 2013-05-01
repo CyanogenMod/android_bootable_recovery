@@ -145,6 +145,13 @@ static int tar_compress_wrapper(const char* backup_path, const char* backup_file
     return __pclose(fp);
 }
 
+static int tar_dump_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cd $(dirname %s); tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) 2> /dev/null | cat", backup_path, strcmp(backup_path, "/data") == 0 && is_data_media() ? "--exclude 'media'" : "", backup_path);
+
+    return __system(tmp);
+}
+
 void nandroid_dedupe_gc(const char* blob_dir) {
     char backup_dir[PATH_MAX];
     strcpy(backup_dir, blob_dir);
@@ -256,8 +263,8 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
     return default_backup_handler;
 }
 
-
 int nandroid_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
+
     int ret = 0;
     char name[PATH_MAX];
     strcpy(name, basename(mount_point));
@@ -277,11 +284,15 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     MountedVolume *mv = NULL;
     if (v != NULL)
         mv = find_mounted_volume_by_mount_point(v->mount_point);
-    if (mv == NULL || mv->filesystem == NULL)
+
+    if (strcmp(backup_path, "-") == 0)
+        sprintf(tmp, "/proc/self/fd/1");
+    else if (mv == NULL || mv->filesystem == NULL)
         sprintf(tmp, "%s/%s.auto", backup_path, name);
     else
         sprintf(tmp, "%s/%s.%s", backup_path, name, mv->filesystem);
     nandroid_backup_handler backup_handler = get_backup_handler(mount_point);
+
     if (backup_handler == NULL) {
         ui_print("Error finding an appropriate backup handler.\n");
         return -2;
@@ -311,12 +322,17 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
             strcmp(vol->fs_type, "bml") == 0 ||
             strcmp(vol->fs_type, "emmc") == 0) {
         const char* name = basename(root);
-        sprintf(tmp, "%s/%s.img", backup_path, name);
+        if (strcmp(backup_path, "-") == 0)
+            strcpy(tmp, "/proc/self/fd/1");
+        else
+            sprintf(tmp, "%s/%s.img", backup_path, name);
         ui_print("Backing up %s image...\n", name);
+
         if (0 != (ret = backup_raw_partition(vol->fs_type, vol->device, tmp))) {
             ui_print("Error while backing up %s image!", name);
             return ret;
         }
+
         ui_print("Backup of %s image completed.\n", name);
         return 0;
     }
@@ -329,11 +345,11 @@ int nandroid_backup(const char* backup_path)
     nandroid_backup_bitfield = 0;
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     refresh_default_backup_handler();
-    
+
     if (ensure_path_mounted(backup_path) != 0) {
         return print_and_error("Can't mount backup path.\n");
     }
-    
+
     Volume* volume = volume_for_path(backup_path);
     if (NULL == volume)
         return print_and_error("Unable to find volume for backup path.\n");
@@ -428,6 +444,35 @@ int nandroid_backup(const char* backup_path)
     return 0;
 }
 
+int nandroid_dump(const char* partition) {
+    // silence our ui_print statements and other logging
+    ui_set_log_stdout(0);
+
+    nandroid_backup_bitfield = 0;
+    refresh_default_backup_handler();
+
+    // override our default to be the basic tar dumper
+    default_backup_handler = tar_dump_wrapper;
+
+    if (strcmp(partition, "boot") == 0) {
+        return __system("dump_image boot /proc/self/fd/1 | cat");
+    }
+
+    if (strcmp(partition, "recovery") == 0) {
+        return __system("dump_image recovery /proc/self/fd/1 | cat");
+    }
+
+    if (strcmp(partition, "data") == 0) {
+        return nandroid_backup_partition("-", "/data");
+    }
+
+    if (strcmp(partition, "system") == 0) {
+        return nandroid_backup_partition("-", "/system");
+    }
+
+    return 1;
+}
+
 typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, int callback);
 
 static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
@@ -492,6 +537,13 @@ static int dedupe_extract_wrapper(const char* backup_file_image, const char* bac
     return __pclose(fp);
 }
 
+static int tar_undump_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+    char tmp[PATH_MAX];
+    sprintf(tmp, "cd $(dirname %s) ; tar xv ", backup_path);
+
+    return __system(tmp);
+}
+
 static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     Volume *v = volume_for_path(backup_path);
     if (v == NULL) {
@@ -539,7 +591,13 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     char tmp[PATH_MAX];
     sprintf(tmp, "%s/%s.img", backup_path, name);
     struct stat file_info;
-    if (0 != (ret = statfs(tmp, &file_info))) {
+    if (strcmp(backup_path, "-") == 0) {
+        if (vol)
+            backup_filesystem = vol->fs_type;
+        restore_handler = tar_extract_wrapper;
+        strcpy(tmp, "/proc/self/fd/0");
+    }
+    else if (0 != (ret = statfs(tmp, &file_info))) {
         // can't find the backup, it may be the new backup format?
         // iterate through the backup types
         printf("couldn't find default\n");
@@ -574,22 +632,22 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         else {
             printf("Found new backup image: %s\n", tmp);
         }
-
-        // If the fs_type of this volume is "auto" or mount_point is /data
-        // and is_data_media, let's revert
-        // to using a rm -rf, rather than trying to do a
-        // ext3/ext4/whatever format.
-        // This is because some phones (like DroidX) will freak out if you
-        // reformat the /system or /data partitions, and not boot due to
-        // a locked bootloader.
-        // Other devices, like the Galaxy Nexus, XOOM, and Galaxy Tab 10.1
-        // have a /sdcard symlinked to /data/media.
-        // Or of volume does not exist (.android_secure), just rm -rf.
-        if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
-            backup_filesystem = NULL;
-        if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
-            backup_filesystem = NULL;
     }
+
+    // If the fs_type of this volume is "auto" or mount_point is /data
+    // and is_data_media, let's revert
+    // to using a rm -rf, rather than trying to do a
+    // ext3/ext4/whatever format.
+    // This is because some phones (like DroidX) will freak out if you
+    // reformat the /system or /data partitions, and not boot due to
+    // a locked bootloader.
+    // Other devices, like the Galaxy Nexus, XOOM, and Galaxy Tab 10.1
+    // have a /sdcard symlinked to /data/media.
+    // Or of volume does not exist (.android_secure), just rm -rf.
+    if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
+        backup_filesystem = NULL;
+    if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
+        backup_filesystem = NULL;
 
     ensure_directory(mount_point);
 
@@ -614,10 +672,17 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
 
     if (restore_handler == NULL)
         restore_handler = get_restore_handler(mount_point);
+
+    // override restore handler for undump
+    if (strcmp(backup_path, "-") == 0) {
+        restore_handler = tar_undump_wrapper;
+    }
+
     if (restore_handler == NULL) {
         ui_print("Error finding an appropriate restore handler.\n");
         return -2;
     }
+
     if (0 != (ret = restore_handler(tmp, mount_point, callback))) {
         ui_print("Error while restoring %s!\n", mount_point);
         return ret;
@@ -626,7 +691,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     if (umount_when_finished) {
         ensure_path_unmounted(mount_point);
     }
-    
+
     return 0;
 }
 
@@ -648,7 +713,12 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
             ui_print("Error while erasing %s image!", name);
             return ret;
         }
-        sprintf(tmp, "%s%s.img", backup_path, root);
+
+        if (strcmp(backup_path, "-") == 0)
+            strcpy(tmp, backup_path);
+        else
+            sprintf(tmp, "%s%s.img", backup_path, root);
+
         ui_print("Restoring %s image...\n", name);
         if (0 != (ret = restore_raw_partition(vol->fs_type, vol->device, tmp))) {
             ui_print("Error while flashing %s image!", name);
@@ -667,25 +737,25 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     if (ensure_path_mounted(backup_path) != 0)
         return print_and_error("Can't mount backup path\n");
-    
+
     char tmp[PATH_MAX];
 
     ui_print("Checking MD5 sums...\n");
     sprintf(tmp, "cd %s && md5sum -c nandroid.md5", backup_path);
     if (0 != __system(tmp))
         return print_and_error("MD5 mismatch!\n");
-    
+
     int ret;
 
     if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
         return ret;
-    
+
     struct stat s;
     Volume *vol = volume_for_path("/wimax");
     if (restore_wimax && vol != NULL && 0 == stat(vol->device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
-        
+
         serialno[0] = 0;
         property_get("ro.serialno", serialno, "");
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
@@ -714,7 +784,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/data")))
         return ret;
-        
+
     if (has_datadata()) {
         if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/datadata")))
             return ret;
@@ -736,23 +806,104 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     return 0;
 }
 
+int nandroid_undump(const char* partition) {
+    nandroid_files_total = 0;
+
+    int ret;
+
+    if (strcmp(partition, "boot") == 0) {
+        return __system("flash_image boot /proc/self/fd/0");
+    }
+
+    if (strcmp(partition, "recovery") == 0) {
+        if(0 != (ret = nandroid_restore_partition("-", "/recovery")))
+            return ret;
+    }
+
+    if (strcmp(partition, "system") == 0) {
+        if(0 != (ret = nandroid_restore_partition("-", "/system")))
+            return ret;
+    }
+
+    if (strcmp(partition, "data") == 0) {
+        if(0 != (ret = nandroid_restore_partition("-", "/data")))
+            return ret;
+    }
+
+    sync();
+    return 0;
+}
+
 int nandroid_usage()
 {
     printf("Usage: nandroid backup\n");
     printf("Usage: nandroid restore <directory>\n");
+    printf("Usage: nandroid dump <partition>\n");
+    printf("Usage: nandroid undump <partition>\n");
     return 1;
+}
+
+static int bu_usage() {
+    printf("Usage: bu <fd> backup partition\n");
+    printf("Usage: Prior to restore:\n");
+    printf("Usage: echo -n <partition> > /tmp/ro.bu.restore\n");
+    printf("Usage: bu <fd> restore\n");
+    return 1;
+}
+
+int bu_main(int argc, char** argv) {
+    load_volume_table();
+
+    if (strcmp(argv[2], "backup") == 0) {
+        if (argc != 4) {
+            return bu_usage();
+        }
+
+        int fd = atoi(argv[1]);
+        char* partition = argv[3];
+
+        if (fd != STDOUT_FILENO) {
+            dup2(fd, STDOUT_FILENO);
+            close(fd);
+        }
+
+        // fprintf(stderr, "%d %d %s\n", fd, STDOUT_FILENO, argv[3]);
+        return nandroid_dump(partition);
+    }
+    else if (strcmp(argv[2], "restore") == 0) {
+        if (argc != 3) {
+            return bu_usage();
+        }
+
+        int fd = atoi(argv[1]);
+        if (fd != STDIN_FILENO) {
+            dup2(fd, STDIN_FILENO);
+            close(fd);
+        }
+        char partition[100];
+        FILE* f = fopen("/tmp/ro.bu.restore", "r");
+        fread(partition, 1, sizeof(partition), f);
+        fclose(f);
+
+        // fprintf(stderr, "%d %d %s\n", fd, STDIN_FILENO, argv[3]);
+        return nandroid_undump(partition);
+    }
+
+    return bu_usage();
 }
 
 int nandroid_main(int argc, char** argv)
 {
+    load_volume_table();
+
     if (argc > 3 || argc < 2)
         return nandroid_usage();
-    
+
     if (strcmp("backup", argv[1]) == 0)
     {
         if (argc != 2)
             return nandroid_usage();
-        
+
         char backup_path[PATH_MAX];
         nandroid_generate_timestamp_path(backup_path);
         return nandroid_backup(backup_path);
@@ -765,5 +916,19 @@ int nandroid_main(int argc, char** argv)
         return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
     }
     
+    if (strcmp("dump", argv[1]) == 0)
+    {
+        if (argc != 3)
+            return nandroid_usage();
+        return nandroid_dump(argv[2]);
+    }
+
+    if (strcmp("undump", argv[1]) == 0)
+    {
+        if (argc != 3)
+            return nandroid_usage();
+        return nandroid_undump(argv[2]);
+    }
+
     return nandroid_usage();
 }
