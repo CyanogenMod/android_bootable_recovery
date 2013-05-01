@@ -1003,6 +1003,15 @@ void ui_clear_key_queue() {
     pthread_mutex_unlock(&key_queue_mutex);
 }
 
+void ui_set_log_stdout(int enabled) {
+    ui_log_stdout = enabled;
+}
+
+int ui_should_log_stdout()
+{
+    return ui_log_stdout;
+}
+
 void ui_set_show_text(int value) {
     show_text = value;
 }
