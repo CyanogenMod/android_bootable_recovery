@@ -819,6 +819,8 @@ main(int argc, char **argv) {
             return unyaffs_main(argc, argv);
         if (strstr(argv[0], "nandroid"))
             return nandroid_main(argc, argv);
+        if (strstr(argv[0], "bu") == argv[0] + strlen(argv[0]) - 2)
+            return bu_main(argc, argv);
         if (strstr(argv[0], "reboot"))
             return reboot_main(argc, argv);
 #ifdef BOARD_RECOVERY_HANDLES_MOUNT
