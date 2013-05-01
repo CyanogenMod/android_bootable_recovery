@@ -481,17 +481,29 @@ mmc_raw_dump_internal (const char* in_file, const char *out_file) {
     unsigned i;
     int ret = -1;
 
-    in  = fopen ( in_file,  "r" );
+    if (strcmp(in_file, "-") == 0) {
+        in = stdin;
+    } else {
+        in = fopen(in_file, "r");
+    }
     if (in == NULL)
         goto ERROR3;
 
-    out = fopen ( out_file,  "w" );
+    if (strcmp(out_file, "-") == 0) {
+        out = stdout;
+    } else {
+        out = fopen(out_file, "w");
+    }
     if (out == NULL)
         goto ERROR2;
 
-    fseek(in, 0L, SEEK_END);
+
+    // don't seek when reading from stdin
+    if (in != stdin)
+        fseek(in, 0L, SEEK_END);
     sz = ftell(in);
-    fseek(in, 0L, SEEK_SET);
+    if (in != stdin)
+        fseek(in, 0L, SEEK_SET);
 
     if (sz % 512)
     {
