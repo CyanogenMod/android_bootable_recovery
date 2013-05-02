@@ -143,6 +143,9 @@ class ScreenRecoveryUI : public RecoveryUI {
 
     bool update_waiting;
 
+    bool rainbow;
+    int wrap_count;
+
     void draw_background_locked(Icon icon);
     void draw_progress_locked();
     int  draw_header_icon();
@@ -156,6 +159,8 @@ class ScreenRecoveryUI : public RecoveryUI {
     void LoadBitmap(const char* filename, gr_surface* surface);
     void LoadBitmapArray(const char* filename, int* frames, gr_surface** surface);
     void LoadLocalizedBitmap(const char* filename, gr_surface* surface);
+
+    void ToggleRainbowMode();
 };
 
 #endif  // RECOVERY_UI_H

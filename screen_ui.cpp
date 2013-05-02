@@ -76,7 +76,9 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     animation_fps(20),
     installing_frames(-1),
     stage(-1),
-    max_stage(-1) {
+    max_stage(-1),
+    rainbow(false),
+    wrap_count(0) {
 
     headerIcon = NULL;
     for (int i = 0; i < NR_ICONS; i++)
@@ -372,6 +374,12 @@ void ScreenRecoveryUI::update_screen_locked()
 void* ScreenRecoveryUI::progress_thread(void *cookie) {
     self->progress_loop();
     return NULL;
+}
+
+void ScreenRecoveryUI::ToggleRainbowMode()
+{
+    rainbow = rainbow ? false : true;
+    set_rainbow_mode(rainbow);
 }
 
 void ScreenRecoveryUI::progress_loop() {
@@ -703,6 +711,7 @@ void ScreenRecoveryUI::StartMenu(const char* const * headers, const char* const 
 }
 
 int ScreenRecoveryUI::SelectMenu(int sel, bool abs) {
+    bool wrapped = false;
     pthread_mutex_lock(&updateMutex);
     if (abs) {
         sel += menu_show_start;
@@ -710,8 +719,14 @@ int ScreenRecoveryUI::SelectMenu(int sel, bool abs) {
     if (show_menu > 0) {
         int old_sel = menu_sel;
         menu_sel = sel;
-        if (menu_sel < 0) menu_sel = menu_items + menu_sel;
-        if (menu_sel >= menu_items) menu_sel = menu_sel - menu_items;
+        if (menu_sel < 0) {
+            wrapped = true;
+            menu_sel = menu_items + menu_sel;
+        }
+        if (menu_sel >= menu_items) {
+            wrapped = true;
+            menu_sel = menu_sel - menu_items;
+        }
         if (menu_sel < menu_show_start && menu_show_start > 0) {
             menu_show_start = menu_sel;
         }
@@ -719,6 +734,13 @@ int ScreenRecoveryUI::SelectMenu(int sel, bool abs) {
             menu_show_start = menu_sel - max_menu_rows + 1;
         }
         sel = menu_sel;
+        if (wrapped) {
+            wrap_count++;
+            if (wrap_count >= 5) {
+                wrap_count = 0;
+                ToggleRainbowMode();
+            }
+        }
         if (menu_sel != old_sel) update_screen_locked();
     }
     pthread_mutex_unlock(&updateMutex);
