@@ -161,6 +161,26 @@ void gr_text_blend(int x,int y, GRFont* font)
     text_blend(src_p,font->cwidth,dst_p,gr_draw->row_bytes,font->cwidth,font->cheight);
 }
 
+static unsigned int rainbow_color = 0;
+static int rainbow_enabled = 0;
+
+static void rainbow() {
+    static int colors[] = { 255, 0, 0,        // red
+                            255, 127, 0,      // orange
+                            255, 255, 0,      // yellow
+                            0, 255, 0,        // green
+                            60, 80, 255,      // blue
+                            143, 0, 255 };    // violet
+
+    gr_color(colors[rainbow_color], colors[rainbow_color+1], colors[rainbow_color+2], 255);
+    rainbow_color += 3;
+    if (rainbow_color >= sizeof(colors)/sizeof(colors[0])) rainbow_color = 0;
+}
+
+void set_rainbow_mode(int enabled) {
+    rainbow_enabled = enabled;
+}
+
 void gr_text(int x, int y, const char *s, int bold)
 {
     GRFont* font = gr_font;
@@ -174,6 +194,8 @@ void gr_text(int x, int y, const char *s, int bold)
 
     unsigned char ch;
     while ((ch = *s++)) {
+        if (rainbow_enabled) rainbow();
+
         if (outside(x, y) || outside(x+font->cwidth-1, y+font->cheight-1)) break;
 
         if (ch < ' ' || ch > '~') {
