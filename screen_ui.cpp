@@ -79,7 +79,9 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     stage(-1),
     max_stage(-1),
     updateMutex(PTHREAD_MUTEX_INITIALIZER),
-    rtl_locale(false) {
+    rtl_locale(false),
+    rainbow(false),
+    wrap_count(0) {
 }
 
 GRSurface* ScreenRecoveryUI::GetCurrentFrame() {
@@ -352,6 +354,12 @@ void ScreenRecoveryUI::update_progress_locked() {
 void* ScreenRecoveryUI::ProgressThreadStartRoutine(void* data) {
     reinterpret_cast<ScreenRecoveryUI*>(data)->ProgressThreadLoop();
     return nullptr;
+}
+
+void ScreenRecoveryUI::OMGRainbows()
+{
+    rainbow = rainbow ? false : true;
+    set_rainbow_mode(rainbow);
 }
 
 void ScreenRecoveryUI::ProgressThreadLoop() {
@@ -742,16 +750,40 @@ void ScreenRecoveryUI::StartMenu(const char* const * headers, const char* const 
 }
 
 int ScreenRecoveryUI::SelectMenu(int sel) {
+    int wrapped = 0;
     pthread_mutex_lock(&updateMutex);
     if (show_menu) {
         int old_sel = menu_sel;
         menu_sel = sel;
 
         // Wrap at top and bottom.
-        if (menu_sel < 0) menu_sel = menu_items - 1;
-        if (menu_sel >= menu_items) menu_sel = 0;
-
+        if (rainbow) {
+            if (menu_sel > old_sel) {
+                move_rainbow(1);
+            } else if (menu_sel < old_sel) {
+                move_rainbow(-1);
+            }
+        }
+        if (menu_sel < 0) {
+            wrapped = -1;
+            menu_sel = menu_items - 1;
+        }
+        if (menu_sel >= menu_items) {
+            wrapped = 1;
+            menu_sel = 0;
+        }
         sel = menu_sel;
+        if (wrapped != 0) {
+            if (wrap_count / wrapped > 0) {
+                wrap_count += wrapped;
+            } else {
+                wrap_count = wrapped;
+            }
+            if (wrap_count / wrapped >= 5) {
+                wrap_count = 0;
+                OMGRainbows();
+            }
+        }
         if (menu_sel != old_sel) update_screen_locked();
     }
     pthread_mutex_unlock(&updateMutex);
