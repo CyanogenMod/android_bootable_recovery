@@ -120,6 +120,9 @@ static int menu_top = 0, menu_items = 0, menu_sel = 0;
 static int menu_show_start = 0;             // this is line which menu display is starting at
 static int max_menu_rows;
 
+static int cur_rainbow_color = 0;
+static int gRainbowMode = 0;
+
 // Key event input queue
 static pthread_mutex_t key_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t key_queue_cond = PTHREAD_COND_INITIALIZER;
@@ -230,6 +233,7 @@ static void draw_progress_locked()
 
 static void draw_text_line(int row, const char* t) {
   if (t[0] != '\0') {
+    if (ui_get_rainbow_mode()) ui_rainbow_mode();
     gr_text(0, (row+1)*CHAR_HEIGHT-1, t);
   }
 }
@@ -1075,3 +1079,29 @@ void ui_increment_frame() {
     gInstallingFrame =
         (gInstallingFrame + 1) % ui_parameters.installing_frames;
 }
+
+int ui_get_rainbow_mode() {
+    return gRainbowMode;
+}
+
+void ui_rainbow_mode() {
+    static int colors[] = { 255, 0, 0,        // red
+                            255, 127, 0,      // orange
+                            255, 255, 0,      // yellow
+                            0, 255, 0,        // green
+                            60, 80, 255,      // blue
+                            143, 0, 255 };    // violet
+
+    gr_color(colors[cur_rainbow_color], colors[cur_rainbow_color+1], colors[cur_rainbow_color+2], 255);
+    cur_rainbow_color += 3;
+    if (cur_rainbow_color >= sizeof(colors)/sizeof(colors[0])) cur_rainbow_color = 0;
+}
+
+void ui_set_rainbow_mode(int rainbowMode) {
+    gRainbowMode = rainbowMode;
+
+    pthread_mutex_lock(&gUpdateMutex);
+    update_screen_locked();
+    pthread_mutex_unlock(&gUpdateMutex);
+}
+

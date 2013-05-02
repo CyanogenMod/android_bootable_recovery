@@ -68,6 +68,11 @@ void ui_set_showing_back_button(int showBackButton);
 
 void ui_set_log_stdout(int enabled);
 int ui_should_log_stdout();
+
+int ui_get_rainbow_mode();
+void ui_rainbow_mode();
+void ui_set_rainbow_mode(int rainbowMode);
+
 // Set the icon (normally the only thing visible besides the progress bar).
 enum {
   BACKGROUND_ICON_NONE,
