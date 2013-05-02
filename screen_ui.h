@@ -138,6 +138,10 @@ class ScreenRecoveryUI : public RecoveryUI {
 
     void draw_background_locked();
     void draw_foreground_locked();
+
+    bool rainbow;
+    int wrap_count;
+
     void draw_screen_locked();
     void update_screen_locked();
     void update_progress_locked();
@@ -165,6 +169,8 @@ class ScreenRecoveryUI : public RecoveryUI {
     void DrawHorizontalRule(int* y);
     void DrawTextLine(int x, int* y, const char* line, bool bold);
     void DrawTextLines(int x, int* y, const char* const* lines);
+
+    void OMGRainbows();
 };
 
 #endif  // RECOVERY_UI_H
