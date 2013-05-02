@@ -129,7 +129,7 @@ apply_from_adb() {
 
     // kill the child
     kill(data.child, SIGTERM);
-    pthread_join(&sideload_thread, NULL);
+    pthread_join(sideload_thread, NULL);
     ui_clear_key_queue();
 
     struct stat st;
