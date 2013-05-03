@@ -49,3 +49,10 @@ LOCAL_CFLAGS := -Dmain=minizip_main -D__ANDROID__ -DIOAPI_NO_64
 LOCAL_C_INCLUDES := external/zlib
 LOCAL_SRC_FILES := ../../../external/zlib/contrib/minizip/minizip.c ../../../external/zlib/contrib/minizip/zip.c ../../../external/zlib/contrib/minizip/ioapi.c
 include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := libmake_ext4fs
+LOCAL_CFLAGS := -Dmain=make_ext4fs_main
+LOCAL_SRC_FILES := ../../../system/extras/ext4_utils/make_ext4fs_main.c
+include $(BUILD_STATIC_LIBRARY)

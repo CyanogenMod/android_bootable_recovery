@@ -812,7 +812,9 @@ main(int argc, char **argv) {
         if (strstr(argv[0], "erase_image") != NULL)
             return erase_image_main(argc, argv);
         if (strstr(argv[0], "mkyaffs2image") != NULL)
-            return mkyaffs2image_main(argc, argv);
+             return mkyaffs2image_main(argc, argv);
+        if (strstr(argv[0], "make_ext4fs") != NULL)
+            return make_ext4fs_main(argc, argv);
         if (strstr(argv[0], "unyaffs") != NULL)
             return unyaffs_main(argc, argv);
         if (strstr(argv[0], "nandroid"))
