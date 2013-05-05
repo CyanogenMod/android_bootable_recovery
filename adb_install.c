@@ -152,5 +152,7 @@ apply_from_adb() {
         ui_print("Installation aborted.\n");
     }
 
+    remove(ADB_SIDELOAD_FILENAME);
+
     return install_status;
 }
