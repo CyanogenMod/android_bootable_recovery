@@ -1601,7 +1601,7 @@ int verify_root_and_recovery() {
         ui_show_text(1);
         ret = 1;
         if (confirm_selection("Root access is missing. Root device?", "Yes - Root device (/system/xbin/su)")) {
-            __system("cp /sbin/su /system/xbin/su");
+            __system("cp /sbin/su.recovery /system/xbin/su");
             __system("chmod 6755 /system/xbin/su");
             __system("ln -sf /system/xbin/su /system/bin/su");
         }
