@@ -715,7 +715,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
         }
 
         if (strcmp(backup_path, "-") == 0)
-            strcpy(tmp, backup_path);
+            strcpy(tmp, "/proc/self/fd/0");
         else
             sprintf(tmp, "%s%s.img", backup_path, root);
 
@@ -812,7 +812,8 @@ int nandroid_undump(const char* partition) {
     int ret;
 
     if (strcmp(partition, "boot") == 0) {
-        return __system("flash_image boot /proc/self/fd/0");
+        if(0 != (ret = nandroid_restore_partition("-", "/boot")))
+            return ret;
     }
 
     if (strcmp(partition, "recovery") == 0) {
@@ -915,7 +916,7 @@ int nandroid_main(int argc, char** argv)
             return nandroid_usage();
         return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
     }
-    
+
     if (strcmp("dump", argv[1]) == 0)
     {
         if (argc != 3)
