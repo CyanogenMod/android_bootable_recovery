@@ -470,6 +470,16 @@ int nandroid_dump(const char* partition) {
         return nandroid_backup_partition("-", "/system");
     }
 
+    if (strcmp(partition, "bogus") == 0) {
+        int i;
+        printf("Bogus backup header\n");
+        for (i = 0; i < 100000; ++i) {
+            printf("dummy backup data\n");
+        }
+        printf("Bogus backup footer\n");
+        return 0;
+    }
+
     return 1;
 }
 
