@@ -119,7 +119,7 @@ int install_zip(const char* packagefilepath)
 }
 
 #define ITEM_CHOOSE_ZIP       0
-#define ITEM_APPLY_SDCARD     1
+#define ITEM_APPLY_UPDATE     1
 #define ITEM_SIG_CHECK        2
 #define ITEM_CHOOSE_ZIP_INT   3
 
@@ -154,7 +154,7 @@ void show_install_update_menu()
             case ITEM_SIG_CHECK:
                 toggle_signature_check();
                 break;
-            case ITEM_APPLY_SDCARD:
+            case ITEM_APPLY_UPDATE:
             {
                 if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
                     install_zip(SDCARD_UPDATE_FILE);
