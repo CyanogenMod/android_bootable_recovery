@@ -378,7 +378,7 @@ int nandroid_backup(const char* backup_path)
         return ret;
 
     Volume *vol = volume_for_path("/wimax");
-    if (vol != NULL && 0 == stat(vol->device, &s))
+    if (vol != NULL && 0 == statfs(vol->device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
         ui_print("Backing up WiMAX...\n");
@@ -401,7 +401,7 @@ int nandroid_backup(const char* backup_path)
             return ret;
     }
 
-    if (is_data_media() || 0 != stat("/sdcard/.android_secure", &s)) {
+    if (is_data_media() || 0 != statfs("/sdcard/.android_secure", &s)) {
         ui_print("No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n");
     }
     else {
@@ -413,7 +413,7 @@ int nandroid_backup(const char* backup_path)
         return ret;
 
     vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->device, &s))
+    if (vol == NULL || 0 != statfs(vol->device, &s))
     {
         ui_print("No sd-ext found. Skipping backup of sd-ext.\n");
     }
@@ -597,7 +597,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         restore_handler = tar_extract_wrapper;
         strcpy(tmp, "/proc/self/fd/0");
     }
-    else if (0 != (ret = statfs(tmp, &file_info))) {
+    else if (0 != (ret = stat(tmp, &file_info))) {
         // can't find the backup, it may be the new backup format?
         // iterate through the backup types
         printf("couldn't find default\n");
@@ -605,19 +605,19 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         int i = 0;
         while ((filesystem = filesystems[i]) != NULL) {
             sprintf(tmp, "%s/%s.%s.img", backup_path, name, filesystem);
-            if (0 == (ret = statfs(tmp, &file_info))) {
+            if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = unyaffs_wrapper;
                 break;
             }
             sprintf(tmp, "%s/%s.%s.tar", backup_path, name, filesystem);
-            if (0 == (ret = statfs(tmp, &file_info))) {
+            if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = tar_extract_wrapper;
                 break;
             }
             sprintf(tmp, "%s/%s.%s.dup", backup_path, name, filesystem);
-            if (0 == (ret = statfs(tmp, &file_info))) {
+            if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = dedupe_extract_wrapper;
                 break;
@@ -643,7 +643,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     // a locked bootloader.
     // Other devices, like the Galaxy Nexus, XOOM, and Galaxy Tab 10.1
     // have a /sdcard symlinked to /data/media.
-    // Or of volume does not exist (.android_secure), just rm -rf.
+    // Or if volume does not exist (.android_secure), just rm -rf.
     if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
         backup_filesystem = NULL;
     if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
@@ -750,9 +750,9 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
         return ret;
 
-    struct stat s;
+    struct statfs s;
     Volume *vol = volume_for_path("/wimax");
-    if (restore_wimax && vol != NULL && 0 == stat(vol->device, &s))
+    if (restore_wimax && vol != NULL && 0 == statfs(vol->device, &s))
     {
         char serialno[PROPERTY_VALUE_MAX];
 
@@ -760,8 +760,8 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         property_get("ro.serialno", serialno, "");
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
 
-        struct stat st;
-        if (0 != stat(tmp, &st))
+        struct statfs st;
+        if (0 != statfs(tmp, &st))
         {
             ui_print("WARNING: WiMAX partition exists, but nandroid\n");
             ui_print("         backup does not contain WiMAX image.\n");
