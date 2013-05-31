@@ -1310,6 +1310,8 @@ int can_partition(const char* volume) {
     return 1;
 }
 
+extern int poweroff;
+
 void show_advanced_menu()
 {
     static char* headers[] = {  "Advanced Menu",
@@ -1326,6 +1328,7 @@ void show_advanced_menu()
                             "partition sdcard",
                             "partition external sdcard",
                             "partition internal sdcard",
+                            "power off",
                             NULL
     };
 
@@ -1399,6 +1402,9 @@ void show_advanced_menu()
             case 8:
                 partition_sdcard("/emmc");
                 break;
+            case 9:
+                poweroff = 1;
+                return;
         }
     }
 }
