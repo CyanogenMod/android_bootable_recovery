@@ -43,6 +43,9 @@
 
 #include "adb_install.h"
 
+// choose_file_menu returns NULL when no file is found or if we choose no file in selection
+// no_files_found = 1 when no valid file was found, no_files_found = 0 when we found a valid file
+static int no_files_found = 0;
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
 static const char *SDCARD_UPDATE_FILE = "/sdcard/update.zip";
@@ -119,11 +122,130 @@ int install_zip(const char* packagefilepath)
     return 0;
 }
 
+#define MULTI_ZIP_FOLDER "clockworkmod/multi_flash"
+static void show_multi_flash_menu() {
+    static char* headers_dir[] = { "Choose a set of zip files",
+                                   NULL
+    };
+    static char* headers[] = {  "Select files to install...",
+                                NULL
+    };
+
+    //browse sdcards until a valid multi_flash folder is found
+    char *other_sd = NULL;
+    if (volume_for_path("/emmc") != NULL)
+        other_sd = "/emmc";
+    else if (volume_for_path("/external_sd") != NULL)
+        other_sd = "/external_sd";
+    
+    char tmp[PATH_MAX];
+    char* zip_folder = NULL;
+
+    //look for MULTI_ZIP_FOLDER in /sdcard
+    struct stat st;
+    ensure_path_mounted("/sdcard");
+    sprintf(tmp, "/sdcard/%s/", MULTI_ZIP_FOLDER);
+    stat(tmp, &st);
+    if (S_ISDIR(st.st_mode)) {
+        zip_folder = choose_file_menu(tmp, NULL, headers_dir);
+        // zip_folder = NULL if no subfolders found or user chose Go Back
+        if (no_files_found) {
+            ui_print("At least one subfolder with zip files must be created under %s\n", tmp);
+            ui_print("Looking in other sd...\n");
+        }
+    } else
+        LOGI("%s not found. Searching other sd...\n", tmp);
+
+    // case MULTI_ZIP_FOLDER not found, or no subfolders or user selected Go Back:
+    // search for MULTI_ZIP_FOLDER in other_sd
+    struct stat s;
+    if (other_sd != NULL) {
+        ensure_path_mounted(other_sd);
+        sprintf(tmp, "%s/%s/", other_sd, MULTI_ZIP_FOLDER);
+        stat(tmp, &s);
+        if (zip_folder == NULL && S_ISDIR(s.st_mode)) {
+            zip_folder = choose_file_menu(tmp, NULL, headers_dir);
+            if (no_files_found)
+                ui_print("At least one subfolder with zip files must be created under %s\n", tmp);
+        }
+    }
+
+    // either MULTI_ZIP_FOLDER path not found (ui_print help)
+    // or it was found but no subfolder (ui_print help above in no_files_found)
+    // or user chose Go Back every time: return silently
+    if (zip_folder == NULL) {
+        if (!(S_ISDIR(st.st_mode)) && !(S_ISDIR(s.st_mode)))
+            ui_print("Create at least 1 folder with your zip files under %s\n", MULTI_ZIP_FOLDER);
+        return;
+    }
+
+    //gather zip files list
+    int dir_len = strlen(zip_folder);
+    int numFiles = 0;
+    char** files = gather_files(zip_folder, ".zip", &numFiles);
+    if (numFiles == 0) {
+        ui_print("No zip files found under %s\n", zip_folder);
+    } else {
+        // start showing multi-zip menu
+        char** list = (char**) malloc((numFiles + 3) * sizeof(char*));
+        list[0] = strdup("Select/Unselect All");
+        list[1] = strdup(">> Flash Selected Files <<");
+        list[numFiles+2] = NULL; // Go Back Menu
+
+        int i;
+        for(i=2; i < numFiles+2; i++) {
+            list[i] = strdup(files[i-2] + dir_len - 4);
+            strncpy(list[i], "(x) ", 4);
+        }
+
+        int select_all = 1;
+        int chosen_item;
+        for (;;)
+        {
+            chosen_item = get_menu_selection(headers, list, 0, 0);
+            if (chosen_item == GO_BACK)
+                break;
+            if (chosen_item == 1)
+                break;
+            if (chosen_item == 0) {
+                // select / unselect all
+                select_all ^= 1;
+                for(i=2; i < numFiles+2; i++) {
+                    if (select_all) strncpy(list[i], "(x)", 3);
+                    else strncpy(list[i], "( )", 3);
+                }
+            } else if (strncmp(list[chosen_item], "( )", 3) == 0) {
+                strncpy(list[chosen_item], "(x)", 3);
+            } else if (strncmp(list[chosen_item], "(x)", 3) == 0) {
+                strncpy(list[chosen_item], "( )", 3);
+            }
+        }
+
+        //flashing selected zip files
+        if (chosen_item == 1) {
+            static char confirm[PATH_MAX];
+            sprintf(confirm, "Yes - Install from %s", basename(zip_folder));
+            if (confirm_selection("Install selected files?", confirm))
+            {
+                for(i=2; i < numFiles+2; i++) {
+                    if (strncmp(list[i], "(x)", 3) == 0) {
+                        if (install_zip(files[i-2]) != 0)
+                            break;
+                    }
+                }
+            }
+        }
+        free_string_array(list);
+    }
+    free_string_array(files);
+}
+
 #define ITEM_CHOOSE_ZIP       0
 #define ITEM_APPLY_SIDELOAD   1
 #define ITEM_APPLY_UPDATE 2 // /sdcard/update.zip
 #define ITEM_SIG_CHECK        3
-#define ITEM_CHOOSE_ZIP_INT   4
+#define ITEM_MULTI_FLASH      4
+#define ITEM_CHOOSE_ZIP_INT   5
 
 void show_install_update_menu()
 {
@@ -136,17 +258,18 @@ void show_install_update_menu()
                                     "install zip from sideload",
                                     "apply /sdcard/update.zip",
                                     "toggle signature verification",
+									"multi-zip installer",
                                     NULL,
                                     NULL };
 
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc/";
-        install_menu_items[4] = "choose zip from internal sdcard";
+        install_menu_items[5] = "choose zip from internal sdcard";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd/";
-        install_menu_items[4] = "choose zip from external sdcard";
+        install_menu_items[5] = "choose zip from external sdcard";
     }
     
     for (;;)
@@ -173,6 +296,9 @@ void show_install_update_menu()
             case ITEM_CHOOSE_ZIP_INT:
                 if (other_sd != NULL)
                     show_choose_zip_menu(other_sd);
+                break;
+            case ITEM_MULTI_FLASH:
+                show_multi_flash_menu();
                 break;
             default:
                 return;
@@ -329,10 +455,12 @@ char* choose_file_menu(const char* directory, const char* fileExtensionOrDirecto
     int total = numDirs + numFiles;
     if (total == 0)
     {
+        no_files_found = 1; //we found no valid file to select
         ui_print("No files found.\n");
     }
     else
     {
+        no_files_found = 0; //we found a valid file to select
         char** list = (char**) malloc((total + 1) * sizeof(char*));
         list[total] = NULL;
 
