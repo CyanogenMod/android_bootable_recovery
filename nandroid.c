@@ -356,12 +356,13 @@ int nandroid_backup(const char* backup_path)
     if (is_data_media_volume_path(volume->mount_point))
         volume = volume_for_path("/data");
     int ret;
-    struct statfs s;
+    struct statfs sfs;
+    struct stat s;
     if (NULL != volume) {
-        if (0 != (ret = statfs(volume->mount_point, &s)))
+        if (0 != (ret = statfs(volume->mount_point, &sfs)))
             return print_and_error("Unable to stat backup path.\n");
-        uint64_t bavail = s.f_bavail;
-        uint64_t bsize = s.f_bsize;
+        uint64_t bavail = sfs.f_bavail;
+        uint64_t bsize = sfs.f_bsize;
         uint64_t sdcard_free = bavail * bsize;
         uint64_t sdcard_free_mb = sdcard_free / (uint64_t)(1024 * 1024);
         ui_print("SD Card space free: %lluMB\n", sdcard_free_mb);
@@ -605,19 +606,19 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         int i = 0;
         while ((filesystem = filesystems[i]) != NULL) {
             sprintf(tmp, "%s/%s.%s.img", backup_path, name, filesystem);
-            if (0 == (ret = statfs(tmp, &file_info))) {
+            if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = unyaffs_wrapper;
                 break;
             }
             sprintf(tmp, "%s/%s.%s.tar", backup_path, name, filesystem);
-            if (0 == (ret = statfs(tmp, &file_info))) {
+            if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = tar_extract_wrapper;
                 break;
             }
             sprintf(tmp, "%s/%s.%s.dup", backup_path, name, filesystem);
-            if (0 == (ret = statfs(tmp, &file_info))) {
+            if (0 == (ret = stat(tmp, &file_info))) {
                 backup_filesystem = filesystem;
                 restore_handler = dedupe_extract_wrapper;
                 break;
