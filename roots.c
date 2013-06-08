@@ -298,7 +298,12 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
     } else {
         // let's try mounting with the mount binary and hope for the best.
         char mount_cmd[PATH_MAX];
-        sprintf(mount_cmd, "mount %s", path);
+        // case called by ensure_path_mounted_at_mount_point("/emmc", "/sdcard") in edifyscripting.c
+        // for sdcard marker check on devices where /sdcard is external storage
+        if (strcmp(v->mount_point, mount_point) != 0)
+            sprintf(mount_cmd, "mount %s %s", v->device, mount_point);
+        else
+            sprintf(mount_cmd, "mount %s", v->mount_point);
         return __system(mount_cmd);
     }
 
