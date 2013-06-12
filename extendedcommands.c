@@ -1303,8 +1303,10 @@ int can_partition(const char* volume) {
     }
     
     if (strcmp(vol->fs_type, "vfat") != 0) {
-        LOGI("Can't partition non-vfat: %s\n", vol->fs_type);
-        return 0;
+        if (vol->fs_type2 == NULL || strcmp(vol->fs_type2, "vfat") != 0) {
+            LOGI("Can't partition non-vfat: %s\n", volume);
+            return 0;
+        }
     }
 
     return 1;
