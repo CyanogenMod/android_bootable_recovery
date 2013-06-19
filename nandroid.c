@@ -597,7 +597,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         restore_handler = tar_extract_wrapper;
         strcpy(tmp, "/proc/self/fd/0");
     }
-    else if (0 != (ret = statfs(tmp, &file_info))) {
+    else if (0 != (ret = stat(tmp, &file_info))) {
         // can't find the backup, it may be the new backup format?
         // iterate through the backup types
         printf("couldn't find default\n");
