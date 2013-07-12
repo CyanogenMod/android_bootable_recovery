@@ -637,46 +637,18 @@ update_directory(const char* path, const char* unmount_when_done) {
 
 static void
 wipe_data(int confirm) {
-    if (confirm) {
-        static char** title_headers = NULL;
-
-        if (title_headers == NULL) {
-            char* headers[] = { "Confirm wipe of all user data?",
-                                "  THIS CAN NOT BE UNDONE.",
-                                "",
-                                NULL };
-            title_headers = prepend_title((const char**)headers);
+    if (!confirm || (confirm && confirm_selection( "Confirm wipe of all user data?", "Yes - Wipe all user data"))) {
+        ui_print("\n-- Wiping data...\n");
+        device_wipe_data();
+        erase_volume("/data");
+        erase_volume("/cache");
+        if (has_datadata()) {
+            erase_volume("/datadata");
         }
-
-        char* items[] = { " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " Yes -- delete all user data",   // [7]
-                          " No",
-                          " No",
-                          " No",
-                          NULL };
-
-        int chosen_item = get_menu_selection(title_headers, items, 1, 0);
-        if (chosen_item != 7) {
-            return;
-        }
+        erase_volume("/sd-ext");
+        erase_volume("/sdcard/.android_secure");
+        ui_print("Data wipe complete.\n");
     }
-
-    ui_print("\n-- Wiping data...\n");
-    device_wipe_data();
-    erase_volume("/data");
-    erase_volume("/cache");
-    if (has_datadata()) {
-        erase_volume("/datadata");
-    }
-    erase_volume("/sd-ext");
-    erase_volume("/sdcard/.android_secure");
-    ui_print("Data wipe complete.\n");
 }
 
 int ui_menu_level = 1;
