@@ -178,4 +178,9 @@ include $(commands_recovery_local_path)/updater/Android.mk
 include $(commands_recovery_local_path)/applypatch/Android.mk
 include $(commands_recovery_local_path)/utilities/Android.mk
 include $(commands_recovery_local_path)/su/Android.mk
+ifneq ($(DEVICE_USE_EXFAT_FUSE),)
+include $(commands_recovery_local_path)/exfat/fuse/Android.mk \
+	$(commands_recovery_local_path)/fuse/lib/Android.mk \
+	$(commands_recovery_local_path)/exfat/libexfat/Android.mk
+endif
 commands_recovery_local_path :=
