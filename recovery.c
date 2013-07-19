@@ -53,6 +53,7 @@ struct selabel_handle *sehandle = NULL;
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 's' },
   { "update_package", required_argument, NULL, 'u' },
+  { "headless", no_argument, NULL, 'h' },
   { "wipe_data", no_argument, NULL, 'w' },
   { "wipe_cache", no_argument, NULL, 'c' },
   { "show_text", no_argument, NULL, 't' },
@@ -864,6 +865,7 @@ main(int argc, char **argv) {
     const char *update_package = NULL;
     int wipe_data = 0, wipe_cache = 0;
     int sideload = 0;
+    int headless = 0;
 
     LOGI("Checking arguments.\n");
     int arg;
@@ -877,6 +879,11 @@ main(int argc, char **argv) {
         wipe_data = wipe_cache = 1;
 #endif
         break;
+        case 'h':
+            ui_set_background(BACKGROUND_ICON_CID);
+            ui_show_text(0);
+            headless = 1;
+            break;
         case 'c': wipe_cache = 1; break;
         case 't': ui_show_text(1); break;
         case 'l': sideload = 1; break;
@@ -941,7 +948,8 @@ main(int argc, char **argv) {
         if (status != INSTALL_SUCCESS) ui_print("Cache wipe failed.\n");
     } else if (sideload) {
         signature_check_enabled = 0;
-        ui_set_show_text(1);
+        if (!headless)
+          ui_set_show_text(1);
         if (0 == apply_from_adb()) {
             status = INSTALL_SUCCESS;
             ui_set_show_text(0);
