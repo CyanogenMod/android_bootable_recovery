@@ -45,7 +45,14 @@
 
 #include "adb_install.h"
 
+#ifdef ENABLE_LOKI
+#include "compact_loki.h"
+#endif
+
 int signature_check_enabled = 1;
+#ifdef ENABLE_LOKI
+int loki_support_enabled = 1;
+#endif
 int script_assert_enabled = 1;
 static const char *SDCARD_UPDATE_FILE = "update.zip";
 
@@ -102,6 +109,15 @@ toggle_signature_check()
     ui_print("Signature Check: %s\n", signature_check_enabled ? "Enabled" : "Disabled");
 }
 
+#ifdef ENABLE_LOKI
+void
+toggle_loki_support()
+{
+    loki_support_enabled = !loki_support_enabled;
+    ui_print("Loki Support: %s\n", loki_support_enabled ? "Enabled" : "Disabled");
+}
+#endif
+
 int install_zip(const char* packagefilepath)
 {
     ui_print("\n-- Installing: %s\n", packagefilepath);
@@ -115,6 +131,15 @@ int install_zip(const char* packagefilepath)
         ui_print("Installation aborted.\n");
         return 1;
     }
+#ifdef ENABLE_LOKI
+    if(loki_support_enabled) {
+       ui_print("Checking if loki-fying is needed");
+       int result;
+       if(result = loki_check()) {
+           return result;
+       }
+    }
+#endif
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_print("\nInstall from sdcard complete.\n");
     return 0;
@@ -1238,11 +1263,18 @@ int can_partition(const char* volume) {
 }
 
 
+#ifdef ENABLE_LOKI
+    #define FIXED_ADVANCED_ENTRIES 8
+#else
+    #define FIXED_ADVANCED_ENTRIES 7
+#endif
+
 int show_advanced_menu()
 {
     char buf[80];
     int i = 0, j = 0, chosen_item = 0;
-    static char* list[MAX_NUM_MANAGED_VOLUMES + 9];
+    /* Default number of entries if no compile-time extras are added */
+    static char* list[MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 2];
 
     char* primary_path = get_primary_storage_path();
     char** extra_paths = get_extra_storage_paths();
@@ -1253,7 +1285,7 @@ int show_advanced_menu()
                                 NULL
     };
 
-    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + 9);
+    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 2);
 
     list[0] = "reboot recovery";
 
@@ -1270,10 +1302,13 @@ int show_advanced_menu()
     list[4] = "report error";
     list[5] = "key test";
     list[6] = "show log";
+#ifdef ENABLE_LOKI
+    list[7] = "toggle loki support";
+#endif
 
     if (can_partition(primary_path)) {
         sprintf(buf, "partition %s", primary_path);
-        list[7] = strdup(buf);
+        list[FIXED_ADVANCED_ENTRIES] = strdup(buf);
         j++;
     }
 
@@ -1281,7 +1316,7 @@ int show_advanced_menu()
         for (i = 0; i < num_extra_volumes; i++) {
             if (can_partition(extra_paths[i])) {
                 sprintf(buf, "partition %s", extra_paths[i]);
-                list[7 + j] = strdup(buf);
+                list[FIXED_ADVANCED_ENTRIES + j] = strdup(buf);
                 j++;
             }
         }
@@ -1351,20 +1386,25 @@ int show_advanced_menu()
             case 6:
                 ui_printlogtail(12);
                 break;
+#ifdef ENABLE_LOKI
             case 7:
+                toggle_loki_support();
+                break;
+#endif
+            case FIXED_ADVANCED_ENTRIES:
                 partition_sdcard(primary_path);
                 break;
             default:
-                if (chosen_item >= 8) {
+                if (chosen_item >= (FIXED_ADVANCED_ENTRIES+1)) {
                     partition_sdcard(list[chosen_item] + 10);
                 }
                 break;
         }
     }
-    free(list[7]);
+    free(list[FIXED_ADVANCED_ENTRIES]);
     if (extra_paths != NULL) {
         for (; j >= 0; --j)
-            free(list[8 + j]);
+            free(list[FIXED_ADVANCED_ENTRIES + 1 + j]);
     }
     return chosen_item;
 }
