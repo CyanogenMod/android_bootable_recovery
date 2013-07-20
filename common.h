@@ -47,6 +47,11 @@ int ui_was_niced();
 int ui_get_text_cols();
 void ui_increment_frame();
 
+#ifdef ENABLE_LOKI
+// Toggle for loki support
+extern int loki_support_enabled;
+#endif
+
 // Display some header text followed by a menu of items, which appears
 // at the top of the screen (in place of any scrolling ui_print()
 // output, if necessary).
