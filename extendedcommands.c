@@ -1322,7 +1322,6 @@ void show_advanced_menu()
                             "report error",
                             "key test",
                             "show log",
-                            "fix permissions",
                             "partition sdcard",
                             "partition external sdcard",
                             "partition internal sdcard",
@@ -1384,19 +1383,12 @@ void show_advanced_menu()
                 ui_printlogtail(12);
                 break;
             case 5:
-                ensure_path_mounted("/system");
-                ensure_path_mounted("/data");
-                ui_print("Fixing permissions...\n");
-                __system("fix_permissions");
-                ui_print("Done!\n");
-                break;
-            case 6:
                 partition_sdcard("/sdcard");
                 break;
-            case 7:
+            case 6:
                 partition_sdcard("/external_sd");
                 break;
-            case 8:
+            case 7:
                 partition_sdcard("/emmc");
                 break;
         }
