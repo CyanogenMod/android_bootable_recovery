@@ -12,9 +12,7 @@ then
     # check for rom su daemon before clobbering install-recovery.sh
     if [ ! -f "/system/etc/.has_su_daemon" ]
     then
-        echo -n -e 'ui_print Installing Superuser daemon...\n' > /proc/self/fd/$2
-        echo -n -e 'ui_print\n' > /proc/self/fd/$2
-        cp install-recovery.sh /system/etc/install-recovery.sh
+        cp /sbin/run-su-daemon.sh /system/etc/install-recovery.sh
         chmod 755 /system/etc/install-recovery.sh
         # note that an post install su daemon was installed
         # so recovery doesn't freak out and recommend you disable
