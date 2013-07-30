@@ -1588,15 +1588,22 @@ int verify_root_and_recovery() {
 
     int ret = 0;
     struct stat st;
-    if (0 == lstat("/system/etc/install-recovery.sh", &st)) {
-        if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
-            ui_show_text(1);
-            ret = 1;
-            if (confirm_selection("ROM may flash stock recovery on boot. Fix?", "Yes - Disable recovery flash")) {
-                __system("chmod -x /system/etc/install-recovery.sh");
+    // check to see if install-recovery.sh is going to clobber recovery
+    // install-recovery.sh is also used to run the su daemon on stock rom for 4.3+
+    // so verify that doesn't exist...
+    if (0 != lstat("/system/etc/.installed_su_daemon", &st)) {
+        // check install-recovery.sh exists and is executable
+        if (0 == lstat("/system/etc/install-recovery.sh", &st)) {
+            if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("ROM may flash stock recovery on boot. Fix?", "Yes - Disable recovery flash")) {
+                    __system("chmod -x /system/etc/install-recovery.sh");
+                }
             }
         }
     }
+
 
     int exists = 0;
     if (0 == lstat("/system/bin/su", &st)) {
@@ -1629,9 +1636,7 @@ int verify_root_and_recovery() {
         ui_show_text(1);
         ret = 1;
         if (confirm_selection("Root access is missing. Root device?", "Yes - Root device (/system/xbin/su)")) {
-            __system("cp /sbin/su.recovery /system/xbin/su");
-            __system("chmod 6755 /system/xbin/su");
-            __system("ln -sf /system/xbin/su /system/bin/su");
+            __system("/sbin/install-su.sh");
         }
     }
 
