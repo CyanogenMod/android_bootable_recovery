@@ -94,6 +94,7 @@ LOCAL_STATIC_LIBRARIES += libmake_ext4fs libext4_utils_static libz libsparse_sta
 LOCAL_STATIC_LIBRARIES += libminzip libunz libmincrypt
 
 LOCAL_STATIC_LIBRARIES += libminizip libminadbd libedify libbusybox libmkyaffs2image libunyaffs liberase_image libdump_image libflash_image
+LOCAL_LDFLAGS += -Wl,--no-fatal-warnings
 
 LOCAL_STATIC_LIBRARIES += libdedupe libcrypto_static libcrecovery libflashutils libmtdutils libmmcutils libbmlutils
 
