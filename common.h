@@ -18,6 +18,7 @@
 #define RECOVERY_COMMON_H
 
 #include <stdio.h>
+#include <fs_mgr.h>
 
 // Initialize the graphics system.
 void ui_init();
@@ -110,33 +111,7 @@ void ui_reset_progress();
 #define STRINGIFY(x) #x
 #define EXPAND(x) STRINGIFY(x)
 
-typedef struct {
-    const char* mount_point;  // eg. "/cache".  must live in the root directory.
-
-    const char* fs_type;      // "yaffs2" or "ext4" or "vfat"
-
-    const char* device;       // MTD partition name if fs_type == "yaffs"
-                              // block device if fs_type == "ext4" or "vfat"
-
-    const char* device2;      // alternative device to try if fs_type
-                              // == "ext4" or "vfat" and mounting
-                              // 'device' fails
-
-    long long length;         // (ext4 partition only) when
-                              // formatting, size to use for the
-                              // partition.  0 or negative number
-                              // means to format all but the last
-                              // (that much).
-
-    const char* fs_type2;
-
-    const char* fs_options;
-
-    const char* fs_options2;
-
-    const char* lun;          // (/sdcard, /emmc, /external_sd only) LUN file to
-                              // use when mounting via USB mass storage
-} Volume;
+typedef struct fstab_rec Volume;
 
 typedef struct {
     // number of frames in indeterminate progress bar animation
