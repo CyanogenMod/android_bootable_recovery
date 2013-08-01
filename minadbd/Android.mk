@@ -25,6 +25,8 @@ LOCAL_CFLAGS += -D_XOPEN_SOURCE -D_GNU_SOURCE
 
 LOCAL_MODULE := libminadbd
 
+LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include
+
 LOCAL_STATIC_LIBRARIES := libcutils libc
 include $(BUILD_STATIC_LIBRARY)
 
