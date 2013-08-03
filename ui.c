@@ -402,7 +402,20 @@ static int input_callback(int fd, short revents, void *data)
 
     if (ev.type == EV_SYN) {
         return 0;
-    } else if (ev.type == EV_REL) {
+	} else if (ev.type == EV_ABS) {
+		if (ev.code == ABS_HAT0Y) {
+			if (ev.value == 0) {
+				// Ignore re-center
+				return 0;
+			}
+			fake_key = 1;
+			ev.type = EV_KEY;
+			if (ev.value > 0)		ev.code = KEY_DOWN;
+			else 					ev.code = KEY_UP;
+			ev.value = 1;
+			rel_sum = 0;
+		}
+	} else if (ev.type == EV_REL) {
         if (ev.code == REL_Y) {
             // accumulate the up or down motion reported by
             // the trackball.  When it exceeds a threshold
