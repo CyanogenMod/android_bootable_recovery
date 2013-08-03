@@ -873,6 +873,9 @@ void show_partition_menu()
 
     for (i = 0; i < num_volumes; ++i) {
         Volume* v = &device_volumes[i];
+
+        if (fs_mgr_is_voldmanaged(v)) continue;
+
         if(strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0 && strcmp("emmc", v->fs_type) != 0 && strcmp("bml", v->fs_type) != 0) {
             if (strcmp("datamedia", v->fs_type) != 0) {
                 sprintf(&mount_menu[mountable_volumes].mount, "mount %s", v->mount_point);
