@@ -117,7 +117,6 @@ void setup_data_media() {
             break;
         }
     }
-    unlink(mount_point);
     rmdir(mount_point);
     mkdir("/data/media", 0755);
     symlink("/data/media", mount_point);
