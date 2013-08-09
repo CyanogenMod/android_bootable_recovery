@@ -971,6 +971,12 @@ void show_partition_menu()
 
             sprintf(confirm_string, "%s - %s", v->mount_point, confirm_format);
 
+            // support user choice fstype when formatting external storage
+            // ensure fstype==auto because some devices with internal vfat storage cannot be formatted to other types
+            if (strcmp(v->fs_type, "auto") == 0) {
+                format_sdcard(v->mount_point);
+                continue;
+            }
             if (!confirm_selection(confirm_string, confirm))
                 continue;
             ui_print("Formatting %s...\n", v->mount_point);
@@ -1244,6 +1250,88 @@ void show_nandroid_menu()
     }
 }
 
+int file_found(const char* filename) {
+    struct stat s;
+    if (strncmp(filename, "/sbin/", 6) != 0 && strncmp(filename, "/res/", 5) != 0 &&
+            strncmp(filename, "/tmp/", 5) != 0) {
+        // do not try to mount ramdisk, else it will error "unknown volume for path..."
+        ensure_path_mounted(filename);
+    }
+    if (0 == stat(filename, &s))
+        return 1;
+
+    return 0;
+}
+
+void format_sdcard(const char* volume) {
+    // datamedia check is probably useless, but added for extra care
+    if (!can_partition(volume) || is_data_media_volume_path(volume))
+        return;
+
+    char* headers[] = {"Format device:", volume, "", NULL };
+
+    static char* list[] = { "default",
+                            "vfat",
+                            "exfat",
+                            "ntfs",
+                            "ext2",
+                            "ext3",
+                            "ext4",
+                            NULL
+    };
+
+    int ret = 1;
+    char cmd[PATH_MAX];
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    if (chosen_item == GO_BACK)
+        return;
+    if (!confirm_selection( "Confirm formatting?", "Yes - Format device"))
+        return;
+
+    Volume *v = volume_for_path(volume);
+    if (ensure_path_unmounted(v->mount_point) != 0)
+        return;
+
+    switch (chosen_item)
+    {
+        case 0:
+            ret = format_volume(v->mount_point);
+            break;
+        case 1:
+            if (file_found("/sbin/mkdosfs")) {
+                sprintf(cmd, "/sbin/mkdosfs %s", v->blk_device);
+                ret = __system(cmd);
+            }
+            break;
+        case 2:
+            if (file_found("/sbin/mkexfatfs")) {
+                sprintf(cmd, "/sbin/mkexfatfs %s", v->blk_device);
+                ret = __system(cmd);
+            }
+            break;
+        case 3:
+            if (file_found("/sbin/mk_ntfs")) {
+                sprintf(cmd, "/sbin/mk_ntfs -f %s", v->blk_device);
+                ret = __system(cmd);
+            }
+            break;
+        case 4:
+            ret = format_unknown_device(v->blk_device, v->mount_point, "ext2");
+            break;
+        case 5:
+            ret = format_unknown_device(v->blk_device, v->mount_point, "ext3");
+            break;
+        case 6:
+            ret = make_ext4fs(v->blk_device, v->length, volume, sehandle);
+            break;
+    }
+
+    if (ret)
+        ui_print("Could not format %s (%s)\n", volume, list[chosen_item]);
+    else
+        ui_print("Done formatting %s (%s)\n", volume, list[chosen_item]);
+}
+
 static void partition_sdcard(const char* volume) {
     if (!can_partition(volume)) {
         ui_print("Can't partition device: %s\n", volume);
@@ -1314,8 +1402,8 @@ int can_partition(const char* volume) {
         LOGI("Can't partition unsafe device: %s\n", vol->blk_device);
         return 0;
     }
-    
-    if (strcmp(vol->fs_type, "vfat") != 0) {
+
+    if (strcmp(vol->fs_type, "auto") != 0) {
         LOGI("Can't partition non-vfat: %s\n", vol->fs_type);
         return 0;
     }
