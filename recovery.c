@@ -841,6 +841,8 @@ main(int argc, char **argv) {
             return setprop_main(argc, argv);
         if (strstr(argv[0], "getprop"))
             return getprop_main(argc, argv);
+        if (strstr(argv[0], "fsck_msdos"))
+            return fsck_msdos_main(argc, argv);
         return busybox_driver(argc, argv);
     }
     __system("/sbin/postrecoveryboot.sh");

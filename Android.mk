@@ -72,7 +72,7 @@ $(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
 LOCAL_STATIC_LIBRARIES :=
 
 LOCAL_CFLAGS += -DUSE_EXT4
-LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include
+LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
 LOCAL_STATIC_LIBRARIES += libext4_utils_static libz libsparse_static
 
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
@@ -105,9 +105,11 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 LOCAL_STATIC_LIBRARIES += libselinux
 
+LOCAL_STATIC_LIBRARIES += libfsck_msdos
+
 include $(BUILD_EXECUTABLE)
 
-RECOVERY_LINKS := bu make_ext4fs edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume setprop getprop dedupe minizip
+RECOVERY_LINKS := bu make_ext4fs edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume setprop getprop dedupe minizip fsck_msdos
 
 # nc is provided by external/netcat
 RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
