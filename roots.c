@@ -255,11 +255,19 @@ int format_volume(const char* volume) {
     Volume* v = volume_for_path(volume);
     if (v == NULL) {
         // silent failure for sd-ext
-        if (strcmp(volume, "/sd-ext") == 0)
-            return -1;
-        LOGE("unknown volume \"%s\"\n", volume);
+        if (strcmp(volume, "/sd-ext") != 0)
+            LOGE("unknown volume \"%s\"\n", volume);
         return -1;
     }
+    // silent failure to format non existing sd-ext when defined in recovery.fstab
+    if (strcmp(volume, "/sd-ext") == 0) {
+        struct stat s;
+        if (0 != stat(v->blk_device, &s)) {
+            LOGI("Skipping format of sd-ext\n");
+            return -1;
+        }
+    }
+
     if (is_data_media_volume_path(volume)) {
         return format_unknown_device(NULL, volume, NULL);
     }
