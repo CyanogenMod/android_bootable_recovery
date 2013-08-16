@@ -774,7 +774,9 @@ setup_adbd() {
             check_and_fclose(file_src, key_src);
         }
     }
+    ignore_data_media_workaround(1);
     ensure_path_unmounted("/data");
+    ignore_data_media_workaround(0);
 
     // Trigger (re)start of adb daemon
     property_set("service.adb.root", "1");
@@ -942,7 +944,9 @@ main(int argc, char **argv) {
         if (status != INSTALL_SUCCESS) ui_print("Installation aborted.\n");
     } else if (wipe_data) {
         if (device_wipe_data()) status = INSTALL_ERROR;
+        ignore_data_media_workaround(1);
         if (erase_volume("/data")) status = INSTALL_ERROR;
+        ignore_data_media_workaround(0);
         if (has_datadata() && erase_volume("/datadata")) status = INSTALL_ERROR;
         if (wipe_cache && erase_volume("/cache")) status = INSTALL_ERROR;
         if (status != INSTALL_SUCCESS) ui_print("Data wipe failed.\n");
