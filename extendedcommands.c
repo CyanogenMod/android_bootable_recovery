@@ -939,13 +939,13 @@ void show_partition_menu()
             else {
                 if (!confirm_selection("format /data and /data/media (/sdcard)", confirm))
                     continue;
-                handle_data_media_format(1);
+                ignore_data_media_workaround(1);
                 ui_print("Formatting /data...\n");
                 if (0 != format_volume("/data"))
                     ui_print("Error formatting /data!\n");
                 else
                     ui_print("Done.\n");
-                handle_data_media_format(0);  
+                ignore_data_media_workaround(0);
             }
         }
         else if (is_data_media() && chosen_item == (mountable_volumes+formatable_volumes+1)) {
