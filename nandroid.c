@@ -211,7 +211,7 @@ static void refresh_default_backup_handler() {
         strcpy(fmt, forced_backup_format);
     }
     else {
-        ensure_path_mounted("/sdcard");
+        ensure_path_mounted(get_primary_storage_path());
         FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
         if (NULL == f) {
             default_backup_handler = tar_compress_wrapper;
@@ -267,6 +267,7 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
 
     int ret = 0;
     char name[PATH_MAX];
+    char tmp[PATH_MAX];
     strcpy(name, basename(mount_point));
 
     struct stat file_info;
@@ -278,7 +279,6 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
         return ret;
     }
     compute_directory_stats(mount_point);
-    char tmp[PATH_MAX];
     scan_mounted_volumes();
     Volume *v = volume_for_path(mount_point);
     MountedVolume *mv = NULL;
@@ -404,11 +404,11 @@ int nandroid_backup(const char* backup_path)
             return ret;
     }
 
-    if (is_data_media() || 0 != stat("/sdcard/.android_secure", &s)) {
-        ui_print("No /sdcard/.android_secure found. Skipping backup of applications on external storage.\n");
+    if (is_data_media() || 0 != stat(get_android_secure_path(), &s)) {
+        ui_print("No .android_secure found. Skipping backup of applications on external storage.\n");
     }
     else {
-        if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
+        if (0 != (ret = nandroid_backup_partition_extended(backup_path, get_android_secure_path(), 0)))
             return ret;
     }
 
@@ -793,7 +793,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
             return ret;
     }
 
-    if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/sdcard/.android_secure", 0)))
+    if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, get_android_secure_path(), 0)))
         return ret;
 
     if (restore_cache && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/cache", 0)))
