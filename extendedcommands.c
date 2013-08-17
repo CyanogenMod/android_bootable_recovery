@@ -446,144 +446,29 @@ void show_nandroid_delete_menu(const char* path)
     }
 }
 
-#define MAX_NUM_USB_VOLUMES 3
-#define LUN_FILE_EXPANDS    2
+static int control_usb_storage(bool on)
+{
+    int i = 0;
+    int num = 0;
 
-struct lun_node {
-    const char *lun_file;
-    struct lun_node *next;
-};
-
-static struct lun_node *lun_head = NULL;
-static struct lun_node *lun_tail = NULL;
-
-int control_usb_storage_set_lun(Volume* vol, bool enable, const char *lun_file) {
-    const char *vol_device = enable ? vol->blk_device : "";
-    int fd;
-    struct lun_node *node;
-
-    // Verify that we have not already used this LUN file
-    for(node = lun_head; node; node = node->next) {
-        if (!strcmp(node->lun_file, lun_file)) {
-            // Skip any LUN files that are already in use
-            return -1;
-        }
-    }
-
-    // Open a handle to the LUN file
-    LOGI("Trying %s on LUN file %s\n", vol->blk_device, lun_file);
-    if ((fd = open(lun_file, O_WRONLY)) < 0) {
-        LOGW("Unable to open ums lunfile %s (%s)\n", lun_file, strerror(errno));
-        return -1;
-    }
-
-    // Write the volume path to the LUN file
-    if ((write(fd, vol_device, strlen(vol_device) + 1) < 0) &&
-       (!enable || !vol->blk_device2 || (write(fd, vol->blk_device2, strlen(vol->blk_device2)) < 0))) {
-        LOGW("Unable to write to ums lunfile %s (%s)\n", lun_file, strerror(errno));
-        close(fd);
-        return -1;
-    } else {
-        // Volume path to LUN association succeeded
-        close(fd);
-
-        // Save off a record of this lun_file being in use now
-        node = (struct lun_node *)malloc(sizeof(struct lun_node));
-        node->lun_file = strdup(lun_file);
-        node->next = NULL;
-        if (lun_head == NULL)
-           lun_head = lun_tail = node;
-        else {
-           lun_tail->next = node;
-           lun_tail = node;
-        }
-
-        LOGI("Successfully %sshared %s on LUN file %s\n", enable ? "" : "un", vol->blk_device, lun_file);
-        return 0;
-    }
-}
-
-int control_usb_storage_for_lun(Volume* vol, bool enable) {
-    static const char* lun_files[] = {
-#ifdef BOARD_UMS_LUNFILE
-        BOARD_UMS_LUNFILE,
-#endif
-#ifdef TARGET_USE_CUSTOM_LUN_FILE_PATH
-        TARGET_USE_CUSTOM_LUN_FILE_PATH,
-#endif
-        "/sys/devices/platform/usb_mass_storage/lun%d/file",
-        "/sys/class/android_usb/android0/f_mass_storage/lun/file",
-        "/sys/class/android_usb/android0/f_mass_storage/lun_ex/file",
-        NULL
-    };
-
-    // If recovery.fstab specifies a LUN file, use it
-    if (vol->lun) {
-        return control_usb_storage_set_lun(vol, enable, vol->lun);
-    }
-
-    // Try to find a LUN for this volume
-    //   - iterate through the lun file paths
-    //   - expand any %d by LUN_FILE_EXPANDS
-    int lun_num = 0;
-    int i;
-    for(i = 0; lun_files[i]; i++) {
-        const char *lun_file = lun_files[i];
-        for(lun_num = 0; lun_num < LUN_FILE_EXPANDS; lun_num++) {
-            char formatted_lun_file[255];
-    
-            // Replace %d with the LUN number
-            bzero(formatted_lun_file, 255);
-            snprintf(formatted_lun_file, 254, lun_file, lun_num);
-    
-            // Attempt to use the LUN file
-            if (control_usb_storage_set_lun(vol, enable, formatted_lun_file) == 0) {
-                return 0;
+    for (i = 0; i < get_num_volumes(); i++) {
+        Volume *v = get_device_volumes() + i;
+        if (fs_mgr_is_voldmanaged(v) && vold_is_volume_available(v->mount_point)) {
+            if (on) {
+                vold_share_volume(v->mount_point);
+            } else {
+                vold_unshare_volume(v->mount_point, 1);
             }
+            num++;
         }
     }
-
-    // All LUNs were exhausted and none worked
-    LOGW("Could not %sable %s on LUN %d\n", enable ? "en" : "dis", vol->blk_device, lun_num);
-
-    return -1;  // -1 failure, 0 success
-}
-
-int control_usb_storage(Volume **volumes, bool enable) {
-    int res = -1;
-    int i;
-    for(i = 0; i < MAX_NUM_USB_VOLUMES; i++) {
-        Volume *volume = volumes[i];
-        if (volume) {
-            int vol_res = control_usb_storage_for_lun(volume, enable);
-            if (vol_res == 0) res = 0; // if any one path succeeds, we return success
-        }
-    }
-
-    // Release memory used by the LUN file linked list
-    struct lun_node *node = lun_head;
-    while(node) {
-       struct lun_node *next = node->next;
-       free((void *)node->lun_file);
-       free(node);
-       node = next;
-    }
-    lun_head = lun_tail = NULL;
-
-    return res;  // -1 failure, 0 success
+    return num;
 }
 
 void show_mount_usb_storage_menu()
 {
-    // Build a list of Volume objects; some or all may not be valid
-    Volume* volumes[MAX_NUM_USB_VOLUMES] = {
-        volume_for_path("/sdcard"),
-        volume_for_path("/emmc"),
-        volume_for_path("/external_sd")
-    };
-
-    // Enable USB storage
-    if (control_usb_storage(volumes, 1))
+    // Enable USB storage using vold
+    if (!control_usb_storage(true))
         return;
 
     static char* headers[] = {  "USB Mass Storage device",
@@ -603,7 +488,7 @@ void show_mount_usb_storage_menu()
     }
 
     // Disable USB storage
-    control_usb_storage(volumes, 0);
+    control_usb_storage(false);
 }
 
 int confirm_selection(const char* title, const char* confirm)
@@ -874,7 +759,9 @@ void show_partition_menu()
     for (i = 0; i < num_volumes; ++i) {
         Volume* v = &device_volumes[i];
 
-        if (fs_mgr_is_voldmanaged(v)) continue;
+        if (fs_mgr_is_voldmanaged(v) && !vold_is_volume_available(v->mount_point)) {
+            continue;
+        }
 
         if(strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0 && strcmp("emmc", v->fs_type) != 0 && strcmp("bml", v->fs_type) != 0) {
             if (strcmp("datamedia", v->fs_type) != 0) {
