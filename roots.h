@@ -39,6 +39,10 @@ int ensure_path_unmounted(const char* path);
 // it is mounted.
 int format_volume(const char* volume);
 
+char* get_primary_storage_path();
+char* get_secondary_storage_path();
+void setup_legacy_storage_paths();
+
 int get_num_volumes();
 
 Volume* get_device_volumes();
