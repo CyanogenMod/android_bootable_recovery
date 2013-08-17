@@ -41,6 +41,8 @@
 #include "roots.h"
 #include "recovery_ui.h"
 
+#include "voldclient/voldclient.h"
+
 #include "adb_install.h"
 #include "minadbd/adb.h"
 
@@ -848,8 +850,22 @@ main(int argc, char **argv) {
             setup_adbd();
             return 0;
         }
+        if (strstr(argv[0], "start")) {
+            property_set("ctl.start", argv[1]);
+            return 0;
+        }
+        if (strstr(argv[0], "stop")) {
+            property_set("ctl.stop", argv[1]);
+            return 0;
+        }
         if (strstr(argv[0], "fsck_msdos"))
             return fsck_msdos_main(argc, argv);
+        if (strstr(argv[0], "newfs_msdos"))
+            return newfs_msdos_main(argc, argv);
+        if (strstr(argv[0], "minivold"))
+            return vold_main(argc, argv);
+        if (strstr(argv[0], "vdc"))
+            return vdc_main(argc, argv, true);
         return busybox_driver(argc, argv);
     }
     __system("/sbin/postrecoveryboot.sh");
@@ -867,6 +883,7 @@ main(int argc, char **argv) {
     ui_print(EXPAND(RECOVERY_VERSION)"\n");
     load_volume_table();
     process_volumes();
+    vold_client_start(NULL, 1);
     LOGI("Processing arguments.\n");
     ensure_path_mounted(LAST_LOG_FILE);
     rotate_last_logs(5);
