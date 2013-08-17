@@ -45,7 +45,7 @@
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
-static const char *SDCARD_UPDATE_FILE = "/sdcard/update.zip";
+static const char *SDCARD_UPDATE_FILE = "update.zip";
 
 int
 get_filtered_menu_selection(char** headers, char** items, int menu_only, int initial_selection, int items_count) {
@@ -88,10 +88,9 @@ void write_string_to_file(const char* filename, const char* string) {
 }
 
 void write_recovery_version() {
-    if ( is_data_media() ) {
-        write_string_to_file("/sdcard/0/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
-    }
-    write_string_to_file("/sdcard/clockworkmod/.recovery_version",EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
+    char path[PATH_MAX];
+    sprintf(path, "%s%sclockworkmod/.recovery_version", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+    write_string_to_file(path,EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
 }
 
 void
@@ -127,28 +126,34 @@ int install_zip(const char* packagefilepath)
 
 void show_install_update_menu()
 {
+    char* primary_path = get_primary_storage_path();
+    char* secondary_path = get_primary_storage_path();
+    char buf[80];
+    char* update_zip_path[PATH_MAX];
+
+    sprintf(update_zip_path, "%s/%s", primary_path, SDCARD_UPDATE_FILE);
+
     static char* headers[] = {  "Install update from zip file",
                                 "",
                                 NULL
     };
     
-    char* install_menu_items[] = {  "choose zip from sdcard",
+    char* install_menu_items[] = {  NULL, // choose zip
                                     "install zip from sideload",
-                                    "apply /sdcard/update.zip",
+                                    NULL, // apply /sdcard/update.zip
                                     "toggle signature verification",
                                     NULL,
                                     NULL };
 
-    char *other_sd = NULL;
-    if (volume_for_path("/emmc") != NULL) {
-        other_sd = "/emmc/";
-        install_menu_items[4] = "choose zip from internal sdcard";
+    sprintf(buf, "choose zip from %s", primary_path);
+    install_menu_items[0] = strdup(buf);
+    if (secondary_path != NULL) {
+        sprintf(buf, "choose zip from %s", secondary_path);
+        install_menu_items[4] = strdup(buf);
     }
-    else if (volume_for_path("/external_sd") != NULL) {
-        other_sd = "/external_sd/";
-        install_menu_items[4] = "choose zip from external sdcard";
-    }
-    
+    sprintf(buf, "apply %s", update_zip_path);
+    install_menu_items[1] = strdup(buf);
+
     for (;;)
     {
         int chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
@@ -159,20 +164,21 @@ void show_install_update_menu()
                 break;
             case ITEM_APPLY_UPDATE:
             {
-                if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
-                    install_zip(SDCARD_UPDATE_FILE);
+                sprintf(buf, "Yes - Install %s", update_zip_path);
+                if (confirm_selection("Confirm install?", strdup(buf)))
+                    install_zip(update_zip_path);
                 break;
             }
             case ITEM_CHOOSE_ZIP:
-                show_choose_zip_menu("/sdcard/");
+                show_choose_zip_menu(primary_path);
                 write_recovery_version();
                 break;
             case ITEM_APPLY_SIDELOAD:
                 apply_from_adb();
                 break;
             case ITEM_CHOOSE_ZIP_INT:
-                if (other_sd != NULL)
-                    show_choose_zip_menu(other_sd);
+                if (secondary_path != NULL)
+                    show_choose_zip_menu(secondary_path);
                 break;
             default:
                 return;
@@ -446,144 +452,29 @@ void show_nandroid_delete_menu(const char* path)
     }
 }
 
-#define MAX_NUM_USB_VOLUMES 3
-#define LUN_FILE_EXPANDS    2
+static int control_usb_storage(bool on)
+{
+    int i = 0;
+    int num = 0;
 
-struct lun_node {
-    const char *lun_file;
-    struct lun_node *next;
-};
-
-static struct lun_node *lun_head = NULL;
-static struct lun_node *lun_tail = NULL;
-
-int control_usb_storage_set_lun(Volume* vol, bool enable, const char *lun_file) {
-    const char *vol_device = enable ? vol->blk_device : "";
-    int fd;
-    struct lun_node *node;
-
-    // Verify that we have not already used this LUN file
-    for(node = lun_head; node; node = node->next) {
-        if (!strcmp(node->lun_file, lun_file)) {
-            // Skip any LUN files that are already in use
-            return -1;
-        }
-    }
-
-    // Open a handle to the LUN file
-    LOGI("Trying %s on LUN file %s\n", vol->blk_device, lun_file);
-    if ((fd = open(lun_file, O_WRONLY)) < 0) {
-        LOGW("Unable to open ums lunfile %s (%s)\n", lun_file, strerror(errno));
-        return -1;
-    }
-
-    // Write the volume path to the LUN file
-    if ((write(fd, vol_device, strlen(vol_device) + 1) < 0) &&
-       (!enable || !vol->blk_device2 || (write(fd, vol->blk_device2, strlen(vol->blk_device2)) < 0))) {
-        LOGW("Unable to write to ums lunfile %s (%s)\n", lun_file, strerror(errno));
-        close(fd);
-        return -1;
-    } else {
-        // Volume path to LUN association succeeded
-        close(fd);
-
-        // Save off a record of this lun_file being in use now
-        node = (struct lun_node *)malloc(sizeof(struct lun_node));
-        node->lun_file = strdup(lun_file);
-        node->next = NULL;
-        if (lun_head == NULL)
-           lun_head = lun_tail = node;
-        else {
-           lun_tail->next = node;
-           lun_tail = node;
-        }
-
-        LOGI("Successfully %sshared %s on LUN file %s\n", enable ? "" : "un", vol->blk_device, lun_file);
-        return 0;
-    }
-}
-
-int control_usb_storage_for_lun(Volume* vol, bool enable) {
-    static const char* lun_files[] = {
-#ifdef BOARD_UMS_LUNFILE
-        BOARD_UMS_LUNFILE,
-#endif
-#ifdef TARGET_USE_CUSTOM_LUN_FILE_PATH
-        TARGET_USE_CUSTOM_LUN_FILE_PATH,
-#endif
-        "/sys/devices/platform/usb_mass_storage/lun%d/file",
-        "/sys/class/android_usb/android0/f_mass_storage/lun/file",
-        "/sys/class/android_usb/android0/f_mass_storage/lun_ex/file",
-        NULL
-    };
-
-    // If recovery.fstab specifies a LUN file, use it
-    if (vol->lun) {
-        return control_usb_storage_set_lun(vol, enable, vol->lun);
-    }
-
-    // Try to find a LUN for this volume
-    //   - iterate through the lun file paths
-    //   - expand any %d by LUN_FILE_EXPANDS
-    int lun_num = 0;
-    int i;
-    for(i = 0; lun_files[i]; i++) {
-        const char *lun_file = lun_files[i];
-        for(lun_num = 0; lun_num < LUN_FILE_EXPANDS; lun_num++) {
-            char formatted_lun_file[255];
-    
-            // Replace %d with the LUN number
-            bzero(formatted_lun_file, 255);
-            snprintf(formatted_lun_file, 254, lun_file, lun_num);
-    
-            // Attempt to use the LUN file
-            if (control_usb_storage_set_lun(vol, enable, formatted_lun_file) == 0) {
-                return 0;
+    for (i = 0; i < get_num_volumes(); i++) {
+        Volume *v = get_device_volumes() + i;
+        if (fs_mgr_is_voldmanaged(v) && vold_is_volume_available(v->mount_point)) {
+            if (on) {
+                vold_share_volume(v->mount_point);
+            } else {
+                vold_unshare_volume(v->mount_point, 1);
             }
+            num++;
         }
     }
-
-    // All LUNs were exhausted and none worked
-    LOGW("Could not %sable %s on LUN %d\n", enable ? "en" : "dis", vol->blk_device, lun_num);
-
-    return -1;  // -1 failure, 0 success
-}
-
-int control_usb_storage(Volume **volumes, bool enable) {
-    int res = -1;
-    int i;
-    for(i = 0; i < MAX_NUM_USB_VOLUMES; i++) {
-        Volume *volume = volumes[i];
-        if (volume) {
-            int vol_res = control_usb_storage_for_lun(volume, enable);
-            if (vol_res == 0) res = 0; // if any one path succeeds, we return success
-        }
-    }
-
-    // Release memory used by the LUN file linked list
-    struct lun_node *node = lun_head;
-    while(node) {
-       struct lun_node *next = node->next;
-       free((void *)node->lun_file);
-       free(node);
-       node = next;
-    }
-    lun_head = lun_tail = NULL;
-
-    return res;  // -1 failure, 0 success
+    return num;
 }
 
 void show_mount_usb_storage_menu()
 {
-    // Build a list of Volume objects; some or all may not be valid
-    Volume* volumes[MAX_NUM_USB_VOLUMES] = {
-        volume_for_path("/sdcard"),
-        volume_for_path("/emmc"),
-        volume_for_path("/external_sd")
-    };
-
-    // Enable USB storage
-    if (control_usb_storage(volumes, 1))
+    // Enable USB storage using vold
+    if (!control_usb_storage(true))
         return;
 
     static char* headers[] = {  "USB Mass Storage device",
@@ -603,7 +494,7 @@ void show_mount_usb_storage_menu()
     }
 
     // Disable USB storage
-    control_usb_storage(volumes, 0);
+    control_usb_storage(false);
 }
 
 int confirm_selection(const char* title, const char* confirm)
@@ -874,7 +765,9 @@ void show_partition_menu()
     for (i = 0; i < num_volumes; ++i) {
         Volume* v = &device_volumes[i];
 
-        if (fs_mgr_is_voldmanaged(v)) continue;
+        if (fs_mgr_is_voldmanaged(v) && !vold_is_volume_available(v->mount_point)) {
+            continue;
+        }
 
         if(strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0 && strcmp("emmc", v->fs_type) != 0 && strcmp("bml", v->fs_type) != 0) {
             if (strcmp("datamedia", v->fs_type) != 0) {
@@ -1061,14 +954,18 @@ void show_nandroid_advanced_restore_menu(const char* path)
     }
 }
 
-static void run_dedupe_gc(const char* other_sd) {
-    ensure_path_mounted("/sdcard");
-    nandroid_dedupe_gc("/sdcard/clockworkmod/blobs");
-    if (other_sd) {
-        ensure_path_mounted(other_sd);
-        char tmp[PATH_MAX];
-        sprintf(tmp, "%s/clockworkmod/blobs", other_sd);
-        nandroid_dedupe_gc(tmp);
+static void run_dedupe_gc(const char* secondary_path) {
+    char path[PATH_MAX];
+    char* fmt = "%s/clockworkmod/blobs";
+    char* primary_path = get_primary_storage_path();
+
+    sprintf(path, fmt, primary_path); 
+    ensure_path_mounted(primary_path);
+    nandroid_dedupe_gc(path);
+    if (secondary_path) {
+        ensure_path_mounted(secondary_path);
+        sprintf(path, fmt, secondary_path);
+        nandroid_dedupe_gc(path);
     }
 }
 
@@ -1109,6 +1006,12 @@ static void choose_default_backup_format() {
 
 void show_nandroid_menu()
 {
+    char* primary_path = NULL;
+    char* secondary_path = NULL;
+
+    primary_path = get_primary_storage_path();
+    secondary_path = get_secondary_storage_path();
+
     static char* headers[] = {  "Backup and Restore",
                                 "",
                                 NULL
@@ -1129,20 +1032,16 @@ void show_nandroid_menu()
                             NULL
     };
 
-    char *other_sd = NULL;
-    if (volume_for_path("/emmc") != NULL) {
-        other_sd = "/emmc";
-        list[6] = "backup to internal sdcard";
-        list[7] = "restore from internal sdcard";
-        list[8] = "advanced restore from internal sdcard";
-        list[9] = "delete from internal sdcard";
-    }
-    else if (volume_for_path("/external_sd") != NULL) {
-        other_sd = "/external_sd";
-        list[6] = "backup to external sdcard";
-        list[7] = "restore from external sdcard";
-        list[8] = "advanced restore from external sdcard";
-        list[9] = "delete from external sdcard";
+    if (secondary_path != NULL) {
+        char buf[80];
+        sprintf(buf, "backup to %s", secondary_path);
+        list[6] = strdup(buf);
+        sprintf(buf, "restore from %s", secondary_path);
+        list[7] = strdup(buf);
+        sprintf(buf, "advanced restore from %s", secondary_path);
+        list[8] = strdup(buf);
+        sprintf(buf, "delete from %s", secondary_path);
+        list[9] = strdup(buf);
     }
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
     extend_nandroid_menu(list, 10, sizeof(list) / sizeof(char*));
@@ -1163,30 +1062,34 @@ void show_nandroid_menu()
                     {
                         struct timeval tp;
                         gettimeofday(&tp, NULL);
-                        sprintf(backup_path, "/sdcard/clockworkmod/backup/%d", tp.tv_sec);
+                        sprintf(backup_path, "%s/clockworkmod/backup/%d", primary_path, tp.tv_sec);
                     }
                     else
                     {
-                        strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+                        char path_fmt[PATH_MAX];
+                        strftime(path_fmt, sizeof(path_fmt), "clockworkmod/backup/%F.%H.%M.%S", tmp);
+                        // this sprintf results in:
+                        // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
+                        sprintf(backup_path, "%s/%s", primary_path, path_fmt);
                     }
                     nandroid_backup(backup_path);
                     write_recovery_version();
                 }
                 break;
             case 1:
-                show_nandroid_restore_menu("/sdcard");
+                show_nandroid_restore_menu(primary_path);
                 write_recovery_version();
                 break;
             case 2:
-                show_nandroid_delete_menu("/sdcard");
+                show_nandroid_delete_menu(primary_path);
                 write_recovery_version();
                 break;
             case 3:
-                show_nandroid_advanced_restore_menu("/sdcard");
+                show_nandroid_advanced_restore_menu(primary_path);
                 write_recovery_version();
                 break;
             case 4:
-                run_dedupe_gc(other_sd);
+                run_dedupe_gc(secondary_path);
                 break;
             case 5:
                 choose_default_backup_format();
@@ -1200,8 +1103,8 @@ void show_nandroid_menu()
                     {
                         struct timeval tp;
                         gettimeofday(&tp, NULL);
-                        if (other_sd != NULL) {
-                            sprintf(backup_path, "%s/clockworkmod/backup/%d", other_sd, tp.tv_sec);
+                        if (secondary_path != NULL) {
+                            sprintf(backup_path, "%s/clockworkmod/backup/%d", secondary_path, tp.tv_sec);
                         }
                         else {
                             break;
@@ -1209,12 +1112,12 @@ void show_nandroid_menu()
                     }
                     else
                     {
-                        if (other_sd != NULL) {
+                        if (primary_path != NULL) {
                             char tmp[PATH_MAX];
                             strftime(tmp, sizeof(tmp), "clockworkmod/backup/%F.%H.%M.%S", timeptr);
                             // this sprintf results in:
                             // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
-                            sprintf(backup_path, "%s/%s", other_sd, tmp);
+                            sprintf(backup_path, "%s/%s", secondary_path, tmp);
                         }
                         else {
                             break;
@@ -1224,18 +1127,18 @@ void show_nandroid_menu()
                 }
                 break;
             case 7:
-                if (other_sd != NULL) {
-                    show_nandroid_restore_menu(other_sd);
+                if (secondary_path != NULL) {
+                    show_nandroid_restore_menu(secondary_path);
                 }
                 break;
             case 8:
-                if (other_sd != NULL) {
-                    show_nandroid_advanced_restore_menu(other_sd);
+                if (secondary_path != NULL) {
+                    show_nandroid_advanced_restore_menu(secondary_path);
                 }
                 break;
             case 9:
-                if (other_sd != NULL) {
-                    show_nandroid_delete_menu(other_sd);
+                if (secondary_path != NULL) {
+                    show_nandroid_delete_menu(secondary_path);
                 }
                 break;
             default:
@@ -1328,6 +1231,13 @@ int can_partition(const char* volume) {
 
 void show_advanced_menu()
 {
+    char* primary_path = NULL;
+    char* secondary_path = NULL;
+    char buf[80];
+
+    primary_path = get_primary_storage_path();
+    secondary_path = get_secondary_storage_path();
+
     static char* headers[] = {  "Advanced Menu",
                                 "",
                                 NULL
@@ -1340,9 +1250,8 @@ void show_advanced_menu()
                             "report error",
                             "key test",
                             "show log",
-                            "partition sdcard",
-                            "partition external sdcard",
-                            "partition internal sdcard",
+                            NULL,
+                            NULL,
                             NULL
     };
 
@@ -1352,14 +1261,13 @@ void show_advanced_menu()
         list[1] = "reboot to download mode";
     }
 
-    if (!can_partition("/sdcard")) {
-        list[7] = NULL;
+    if (can_partition(primary_path)) {
+        sprintf(buf, "partition %s", primary_path);
+        list[7] = strdup(buf);
     }
-    if (!can_partition("/external_sd")) {
-        list[8] = NULL;
-    }
-    if (!can_partition("/emmc")) {
-        list[9] = NULL;
+    if (can_partition(secondary_path)) {
+        sprintf(buf, "partition %s", secondary_path);
+        list[8] = strdup(buf);
     }
 
     for (;;)
@@ -1427,13 +1335,10 @@ void show_advanced_menu()
                 ui_printlogtail(12);
                 break;
             case 7:
-                partition_sdcard("/sdcard");
+                partition_sdcard(primary_path);
                 break;
             case 8:
-                partition_sdcard("/external_sd");
-                break;
-            case 9:
-                partition_sdcard("/emmc");
+                partition_sdcard(secondary_path);
                 break;
         }
     }
@@ -1537,7 +1442,7 @@ void process_volumes() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     sprintf(backup_name, "before-ext4-convert-%d", tp.tv_sec);
-    sprintf(backup_path, "/sdcard/clockworkmod/backup/%s", backup_name);
+    sprintf(backup_path, "%s/clockworkmod/backup/%s", get_primary_storage_path(), backup_name);
 
     ui_set_show_text(1);
     ui_print("Filesystems need to be converted to ext4.\n");
@@ -1555,7 +1460,7 @@ void handle_failure(int ret)
 {
     if (ret == 0)
         return;
-    if (0 != ensure_path_mounted("/sdcard"))
+    if (0 != ensure_path_mounted(get_primary_storage_path()))
         return;
     mkdir("/sdcard/clockworkmod", S_IRWXU | S_IRWXG | S_IRWXO);
     __system("cp /tmp/recovery.log /sdcard/clockworkmod/recovery.log");
