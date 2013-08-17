@@ -63,6 +63,10 @@ int run_and_remove_extendedcommand();
 
 int verify_root_and_recovery();
 
+void free_string_array(char** array);
+
+int can_partition(const char* volume);
+
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
 void extend_nandroid_menu(char** items, int item_count, int max_items);
 void handle_nandroid_menu(int item_count, int selected);

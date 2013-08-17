@@ -33,6 +33,7 @@
 #include <cutils/properties.h>
 #include "minui/minui.h"
 #include "recovery_ui.h"
+#include "voldclient/voldclient.h"
 
 extern int __system(const char *command);
 
@@ -466,6 +467,7 @@ static int input_callback(int fd, short revents, void *data)
     }
 
     if (ev.value > 0 && device_reboot_now(key_pressed, ev.code)) {
+        vold_unmount_all();
         android_reboot(ANDROID_RB_RESTART, 0, 0);
     }
 
