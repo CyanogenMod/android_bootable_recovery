@@ -33,6 +33,8 @@
 #include "flashutils/flashutils.h"
 #include "extendedcommands.h"
 
+#include "voldclient/voldclient.h"
+
 static struct fstab *fstab = NULL;
 
 int get_num_volumes() {
@@ -102,6 +104,9 @@ int is_data_media() {
         if (strcmp(vol->fs_type, "datamedia") == 0)
             return 1;
         if (strcmp(vol->mount_point, "/sdcard") == 0)
+            has_sdcard = 1;
+        if (fs_mgr_is_voldmanaged(vol) &&
+                (strcmp(vol->mount_point, "/storage/sdcard0") == 0))
             has_sdcard = 1;
     }
     return !has_sdcard;
@@ -178,7 +183,10 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
 
     mkdir(mount_point, 0755);  // in case it doesn't already exist
 
-    if (strcmp(v->fs_type, "yaffs2") == 0) {
+    if (fs_mgr_is_voldmanaged(v)) {
+        return vold_mount_volume(mount_point, 1) == CommandOkay ? 0 : -1;
+
+    } else if (strcmp(v->fs_type, "yaffs2") == 0) {
         // mount an MTD partition as a YAFFS2 filesystem.
         mtd_scan_partitions();
         const MtdPartition* partition;
@@ -246,6 +254,9 @@ int ensure_path_unmounted(const char* path) {
         return 0;
     }
 
+    if (fs_mgr_is_voldmanaged(volume_for_path(v->mount_point)))
+        return vold_unmount_volume(v->mount_point, 1) == CommandOkay ? 0 : -1;
+
     return unmount_mounted_volume(mv);
 }
 
@@ -266,6 +277,13 @@ int format_volume(const char* volume) {
             LOGI("Skipping format of sd-ext\n");
             return -1;
         }
+    }
+
+    if (fs_mgr_is_voldmanaged(v)) {
+        if (ensure_path_unmounted(volume) != 0) {
+            LOGE("format_volume failed to unmount %s", v->mount_point);
+        }
+        return vold_format_volume(v->mount_point, 1) == CommandOkay ? 0 : -1;
     }
 
     if (is_data_media_volume_path(volume)) {
