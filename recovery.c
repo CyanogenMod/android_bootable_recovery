@@ -848,6 +848,8 @@ main(int argc, char **argv) {
             setup_adbd();
             return 0;
         }
+        if (strstr(argv[0], "fsck_msdos"))
+            return fsck_msdos_main(argc, argv);
         return busybox_driver(argc, argv);
     }
     __system("/sbin/postrecoveryboot.sh");
