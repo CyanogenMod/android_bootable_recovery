@@ -49,12 +49,13 @@ service ueventd /sbin/ueventd
 
 service recovery /sbin/recovery
 
+service setup_adbd /sbin/setup_adbd
+    oneshot
+
 service adbd /sbin/adbd recovery
     disabled
 
-# Recovery will start adb once it has checked the keys
-
-# Restart adbd so it can run as root
+# setup_adbd will start adb once it has checked the keys
 on property:service.adb.root=1
     write /sys/class/android_usb/android0/enable 0
     restart adbd
