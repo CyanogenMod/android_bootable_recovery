@@ -350,7 +350,14 @@ install_package(const char* path)
     } else {
         LOGE("failed to open last_install: %s\n", strerror(errno));
     }
-    int result = really_install_package(path);
+    int result;
+    if (setup_install_mounts() != 0) {
+        LOGE("failed to set up expected mounts for install; aborting\n");
+        result = INSTALL_ERROR;
+    } else {
+        result = really_install_package(path);
+    }
+
     if (install_log) {
         fputc(result == INSTALL_SUCCESS ? '1' : '0', install_log);
         fputc('\n', install_log);

@@ -55,4 +55,9 @@ void ignore_data_media_workaround(int ignore);
 
 #define MAX_NUM_MANAGED_VOLUMES 10
 
+// Ensure that all and only the volumes that packages expect to find
+// mounted (/tmp and /cache) are mounted.  Returns 0 on success.
+int setup_install_mounts();
+
+
 #endif  // RECOVERY_ROOTS_H_

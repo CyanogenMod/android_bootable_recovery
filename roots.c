@@ -438,3 +438,23 @@ void setup_legacy_storage_paths() {
         symlink(primary_path, "/sdcard");
     }
 }
+
+int setup_install_mounts() {
+    int i;
+    if (fstab == NULL) {
+        LOGE("can't set up install mounts: no fstab loaded\n");
+        return -1;
+    }
+    for (i = 0; i < fstab->num_entries; ++i) {
+        Volume* v = fstab->recs + i;
+
+        if (strcmp(v->mount_point, "/tmp") == 0 ||
+            strcmp(v->mount_point, "/cache") == 0) {
+            if (ensure_path_mounted(v->mount_point) != 0) return -1;
+
+        } else {
+            if (ensure_path_unmounted(v->mount_point) != 0) return -1;
+        }
+    }
+    return 0;
+}
