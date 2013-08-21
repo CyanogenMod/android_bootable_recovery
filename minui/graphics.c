@@ -163,9 +163,9 @@ static int get_framebuffer(GGLSurface *fb)
     fb->width = vi.xres;
     fb->height = vi.yres;
     fb->stride = fi.line_length/PIXEL_SIZE;
-    fb->data = (void*) (((unsigned) bits) + vi.yres * fi.line_length);
+    fb->data = bits;
     fb->format = PIXEL_FORMAT;
-    memset(fb->data, 0, vi.yres * fi.line_length);
+    memset(fb->data, 0, vi.yres * NUM_BUFFERS * fi.line_length);
 
     return fd;
 }
