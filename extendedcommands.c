@@ -475,6 +475,7 @@ static int control_usb_storage(bool on)
             } else {
                 vold_unshare_volume(v->mount_point, 1);
             }
+            property_set("sys.storage.ums_enabled", on ? "1" : "0");
             num++;
         }
     }
