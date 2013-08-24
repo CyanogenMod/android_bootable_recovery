@@ -26,6 +26,7 @@ void ui_init();
 // Use KEY_* codes from <linux/input.h> or KEY_DREAM_* from "minui/minui.h".
 void ui_cancel_wait_key();
 int ui_wait_key();            // waits for a key/button press, returns the code
+int ui_wait_key_with_repeat();
 int ui_key_pressed(int key);  // returns >0 if the code is currently pressed
 int ui_text_visible();        // returns >0 if text log is currently visible
 int ui_text_ever_visible();   // returns >0 if text log was ever visible
@@ -60,6 +61,8 @@ void ui_end_menu();
 int ui_get_showing_back_button();
 void ui_set_showing_back_button(int showBackButton);
 
+void ui_set_log_stdout(int enabled);
+int ui_should_log_stdout();
 // Set the icon (normally the only thing visible besides the progress bar).
 enum {
   BACKGROUND_ICON_NONE,
