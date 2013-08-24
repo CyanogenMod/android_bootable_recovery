@@ -59,7 +59,7 @@ int vold_unmount_volume(const char* path, int force, int wait) {
     int state = vold_get_volume_state(path);
 
     if (state <= State_Idle) {
-        LOGI("Volume %s is not mounted", path);
+        LOGI("Volume %s is not mounted\n", path);
         return 0;
     }
 
@@ -89,7 +89,7 @@ int vold_unshare_volume(const char* path, int mount) {
     int ret = 0;
 
     if (state != State_Shared) {
-        LOGE("Volume %s is not shared - state=%d", path, state);
+        LOGE("Volume %s is not shared - state=%d\n", path, state);
         return 0;
     }
 
