@@ -14,5 +14,6 @@ unsigned nandroid_get_default_backup_format();
 #define NANDROID_BACKUP_FORMAT_FILE "/sdcard/clockworkmod/.default_backup_format"
 #define NANDROID_BACKUP_FORMAT_TAR 0
 #define NANDROID_BACKUP_FORMAT_DUP 1
+#define NANDROID_BACKUP_FORMAT_TGZ 2
 
 #endif
