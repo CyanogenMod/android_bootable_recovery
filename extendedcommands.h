@@ -37,6 +37,8 @@ __system(const char *command);
 int
 show_advanced_menu();
 
+int format_device(const char *device, const char *path, const char *fs_type);
+
 int format_unknown_device(const char *device, const char* path, const char *fs_type);
 
 void
