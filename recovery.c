@@ -913,6 +913,8 @@ main(int argc, char **argv) {
             return vdc_main(argc, argv, true);
         if (strstr(argv[0], "sdcard"))
             return sdcard_main(argc, argv);
+        if (strstr(argv[0], "pigz"))
+            return pigz_main(argc, argv, true);
         return busybox_driver(argc, argv);
     }
     __system("/sbin/postrecoveryboot.sh");

@@ -990,18 +990,28 @@ static void choose_default_backup_format() {
                                 NULL
     };
 
+    int fmt = nandroid_get_default_backup_format();
+
     char **list;
     char* list_tar_default[] = { "tar (default)",
         "dup",
+        "tar + gzip",
         NULL
     };
     char* list_dup_default[] = { "tar",
         "dup (default)",
+        "tar + gzip",
         NULL
     };
-
-    if (nandroid_get_default_backup_format() == NANDROID_BACKUP_FORMAT_DUP) {
+    char* list_tgz_default[] = { "tar",
+        "dup",
+        "tar + gzip (default)",
+        NULL
+    };
+    if (fmt == NANDROID_BACKUP_FORMAT_DUP) {
         list = list_dup_default;
+    } else if (fmt == NANDROID_BACKUP_FORMAT_TGZ) {
+        list = list_tgz_default;
     } else {
         list = list_tar_default;
     }
@@ -1015,6 +1025,10 @@ static void choose_default_backup_format() {
         case 1:
             write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
             ui_print("Default backup format set to dedupe.\n");
+            break;
+        case 2:
+            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tgz");
+            ui_print("Default backup format set to tar + gzip.\n");
             break;
     }
 }
