@@ -90,7 +90,7 @@ int cmd_bml_restore_raw_partition(const char *partition, const char *filename)
 
 int cmd_bml_backup_raw_partition(const char *partition, const char *out_file)
 {
-    char* bml;
+    const char* bml;
     if (strcmp("boot", partition) == 0)
         bml = BOARD_BML_BOOT;
     else if (strcmp("recovery", partition) == 0)
@@ -112,9 +112,8 @@ int cmd_bml_backup_raw_partition(const char *partition, const char *out_file)
     unsigned sz = 0;
     unsigned i;
     int ret = -1;
-    char *in_file = bml;
 
-    in  = fopen ( in_file,  "r" );
+    in  = fopen ( bml,  "r" );
     if (in == NULL)
         goto ERROR3;
 
@@ -142,7 +141,7 @@ int cmd_bml_backup_raw_partition(const char *partition, const char *out_file)
         }
     }
 
-    fsync(out);
+    fsync(fileno(out));
     ret = 0;
 ERROR1:
     fclose ( out );

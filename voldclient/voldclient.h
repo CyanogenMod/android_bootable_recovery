@@ -43,7 +43,7 @@ struct vold_callbacks {
 };
 
 void vold_client_start(struct vold_callbacks* callbacks, int automount);
-
+void vold_set_automount(int enabled);
 int vold_command(int len, const char** command, int wait);
 
 #endif

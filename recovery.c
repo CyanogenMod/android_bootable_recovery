@@ -46,9 +46,13 @@
 #include "adb_install.h"
 #include "minadbd/adb.h"
 
+#include "firmware.h"
 #include "extendedcommands.h"
 #include "flashutils/flashutils.h"
 #include "dedupe/dedupe.h"
+#include "voldclient/voldclient.h"
+
+#include "recovery_cmds.h"
 
 struct selabel_handle *sehandle = NULL;
 
@@ -72,7 +76,6 @@ static const char *CACHE_ROOT = "/cache";
 static const char *SDCARD_ROOT = "/sdcard";
 static int allow_display_toggle = 0;
 static int poweroff = 0;
-static const char *SDCARD_PACKAGE_FILE = "/sdcard/update.zip";
 static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
 static const char *SIDELOAD_TEMP_DIR = "/tmp/sideload";
 
@@ -434,21 +437,21 @@ copy_sideloaded_package(const char* original_path) {
   return strdup(copy_path);
 }
 
-static char**
-prepend_title(char** headers) {
-    char* title[] = { EXPAND(RECOVERY_VERSION),
+static const char**
+prepend_title(const char** headers) {
+    const char* title[] = { EXPAND(RECOVERY_VERSION),
                       "",
                       NULL };
 
     // count the number of lines in our title, plus the
     // caller-provided headers.
     int count = 0;
-    char** p;
+    const char** p;
     for (p = title; *p; ++p, ++count);
     for (p = headers; *p; ++p, ++count);
 
-    char** new_headers = malloc((count+1) * sizeof(char*));
-    char** h = new_headers;
+    const char** new_headers = malloc((count+1) * sizeof(const char*));
+    const char** h = new_headers;
     for (p = title; *p; ++p, ++h) *h = *p;
     for (p = headers; *p; ++p, ++h) *h = *p;
     *h = NULL;
@@ -552,7 +555,7 @@ update_directory(const char* path, const char* unmount_when_done) {
         return 0;
     }
 
-    char** headers = prepend_title(MENU_HEADERS);
+    const char** headers = prepend_title(MENU_HEADERS);
 
     int d_size = 0;
     int d_alloc = 10;
@@ -679,7 +682,7 @@ wipe_data(int confirm) {
 
 static void headless_wait() {
   ui_show_text(0);
-  char** headers = prepend_title((const char**)MENU_HEADERS);
+  const char** headers = prepend_title((const char**)MENU_HEADERS);
   for (;;) {
     finish_recovery(NULL);
     get_menu_selection(headers, MENU_ITEMS, 0, 0);
@@ -690,7 +693,7 @@ int ui_menu_level = 1;
 int ui_root_menu = 0;
 static void
 prompt_and_wait() {
-    char** headers = prepend_title((const char**)MENU_HEADERS);
+    const char** headers = prepend_title((const char**)MENU_HEADERS);
 
     for (;;) {
         finish_recovery(NULL);
@@ -848,73 +851,37 @@ main(int argc, char **argv) {
     // set by init
     umask(0);
 
-    if (strcmp(basename(argv[0]), "recovery") != 0)
+    char* command = argv[0];
+    char* stripped = strrchr(argv[0], '/');
+    if (stripped)
+        command = stripped + 1;
+
+    if (strcmp(command, "recovery") != 0)
     {
-        if (strstr(argv[0], "minizip") != NULL)
-            return minizip_main(argc, argv);
-        if (strstr(argv[0], "dedupe") != NULL)
-            return dedupe_main(argc, argv);
-        if (strstr(argv[0], "flash_image") != NULL)
-            return flash_image_main(argc, argv);
-        if (strstr(argv[0], "volume") != NULL)
-            return volume_main(argc, argv);
-        if (strstr(argv[0], "edify") != NULL)
-            return edify_main(argc, argv);
-        if (strstr(argv[0], "dump_image") != NULL)
-            return dump_image_main(argc, argv);
-        if (strstr(argv[0], "erase_image") != NULL)
-            return erase_image_main(argc, argv);
-        if (strstr(argv[0], "mkyaffs2image") != NULL)
-             return mkyaffs2image_main(argc, argv);
-        if (strstr(argv[0], "make_ext4fs") != NULL)
-            return make_ext4fs_main(argc, argv);
-        if (strstr(argv[0], "unyaffs") != NULL)
-            return unyaffs_main(argc, argv);
-        if (strstr(argv[0], "nandroid"))
-            return nandroid_main(argc, argv);
-        if (strstr(argv[0], "bu") == argv[0] + strlen(argv[0]) - 2)
-            return bu_main(argc, argv);
-        if (strstr(argv[0], "reboot"))
-            return reboot_main(argc, argv);
+        struct recovery_cmd cmd = get_command(command);
+        if (cmd.name)
+            return cmd.main_func(argc, argv);
+
 #ifdef BOARD_RECOVERY_HANDLES_MOUNT
-        if (strstr(argv[0], "mount") && argc == 2 && !strstr(argv[0], "umount"))
+        if (!strcmp(command, "mount") && argc == 2)
         {
             load_volume_table();
             return ensure_path_mounted(argv[1]);
         }
 #endif
-        if (strstr(argv[0], "poweroff")){
-            return reboot_main(argc, argv);
-        }
-        if (strstr(argv[0], "setprop"))
-            return setprop_main(argc, argv);
-        if (strstr(argv[0], "getprop"))
-            return getprop_main(argc, argv);
-        if (strstr(argv[0], "setup_adbd")) {
+        if (!strcmp(command, "setup_adbd")) {
             load_volume_table();
             setup_adbd();
             return 0;
         }
-        if (strstr(argv[0], "start")) {
+        if (!strcmp(command, "start")) {
             property_set("ctl.start", argv[1]);
             return 0;
         }
-        if (strstr(argv[0], "stop")) {
+        if (!strcmp(command, "stop")) {
             property_set("ctl.stop", argv[1]);
             return 0;
         }
-        if (strstr(argv[0], "fsck_msdos"))
-            return fsck_msdos_main(argc, argv);
-        if (strstr(argv[0], "newfs_msdos"))
-            return newfs_msdos_main(argc, argv);
-        if (strstr(argv[0], "minivold"))
-            return vold_main(argc, argv);
-        if (strstr(argv[0], "vdc"))
-            return vdc_main(argc, argv, true);
-        if (strstr(argv[0], "sdcard"))
-            return sdcard_main(argc, argv);
-        if (strstr(argv[0], "pigz"))
-            return pigz_main(argc, argv, true);
         return busybox_driver(argc, argv);
     }
     __system("/sbin/postrecoveryboot.sh");

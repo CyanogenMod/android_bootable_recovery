@@ -68,6 +68,8 @@ int can_partition(const char* volume);
 
 static int is_path_mounted(const char* path);
 
+int volume_main(int argc, char **argv);
+
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
 void extend_nandroid_menu(char** items, int item_count, int max_items);
 void handle_nandroid_menu(int item_count, int selected);
