@@ -89,7 +89,7 @@ int vold_unshare_volume(const char* path, int mount) {
     int ret = 0;
 
     if (state != State_Shared) {
-        LOGE("Volume %s is not shared - state=%d", path, state);
+        LOGE("Volume %s is not shared - state=%d\n", path, state);
         return 0;
     }
 
