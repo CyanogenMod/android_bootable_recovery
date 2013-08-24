@@ -115,7 +115,7 @@ apply_from_adb() {
     pthread_t sideload_thread;
     pthread_create(&sideload_thread, NULL, &adb_sideload_thread, &data);
     
-    static char* headers[] = {  "ADB Sideload",
+    static const char* headers[] = {  "ADB Sideload",
                                 "",
                                 NULL
     };

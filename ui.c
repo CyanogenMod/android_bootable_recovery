@@ -745,7 +745,7 @@ void ui_printlogtail(int nb_lines) {
 #define MENU_ITEM_HEADER " - "
 #define MENU_ITEM_HEADER_LENGTH strlen(MENU_ITEM_HEADER)
 
-int ui_start_menu(char** headers, char** items, int initial_selection) {
+int ui_start_menu(const char** headers, char** items, int initial_selection) {
     int i;
     pthread_mutex_lock(&gUpdateMutex);
     if (text_rows > 0 && text_cols > 0) {

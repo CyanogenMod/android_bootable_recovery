@@ -50,7 +50,7 @@ void ui_increment_frame();
 // Display some header text followed by a menu of items, which appears
 // at the top of the screen (in place of any scrolling ui_print()
 // output, if necessary).
-int ui_start_menu(char** headers, char** items, int initial_selection);
+int ui_start_menu(const char** headers, char** items, int initial_selection);
 // Set the menu highlight to the given index, and return it (capped to
 // the range [0..numitems).
 int ui_menu_select(int sel);
