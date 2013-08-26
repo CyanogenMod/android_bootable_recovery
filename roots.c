@@ -340,7 +340,9 @@ int format_volume(const char* volume) {
         }
     }
 
-    if (fs_mgr_is_voldmanaged(v)) {
+    // Only use vold format for exact matches (otherwise /sdcard will be
+    // formatted instead of /sdcard/.android_secure)
+    if (fs_mgr_is_voldmanaged(v) && strcmp(volume, v->mount_point) == 0) {
         if (ensure_path_unmounted(volume) != 0) {
             LOGE("format_volume failed to unmount %s", v->mount_point);
         }
