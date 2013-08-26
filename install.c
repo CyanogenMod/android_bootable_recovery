@@ -267,6 +267,25 @@ really_install_package(const char *path)
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_print("Finding update package...\n");
     ui_show_indeterminate_progress();
+
+    // Resolve symlink in case legacy /sdcard is used
+    if (strlen(path) > 1) {
+        char *rest = strchr(path + 1, '/');
+        if (rest != NULL) {
+            char *root = malloc(rest - path + 1);
+            strncpy(root, path, rest - path);
+            char *real_root = realpath(root, NULL);
+            if (real_root != NULL) {
+                char *new_path = malloc(strlen(real_root) + strlen(rest) + 1);
+                strcpy(new_path, real_root);
+                strcat(new_path, rest);
+                path = new_path;
+                free(real_root);
+            }
+            free(root);
+        }
+    }
+
     LOGI("Update location: %s\n", path);
 
     if (ensure_path_mounted(path) != 0) {
