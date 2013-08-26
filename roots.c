@@ -132,7 +132,7 @@ char** get_extra_storage_paths() {
 static char* android_secure_path = NULL;
 char* get_android_secure_path() {
     if (android_secure_path == NULL) {
-        android_secure_path = malloc((17 + strlen(get_primary_storage_path())) * sizeof(char *));
+        android_secure_path = malloc(sizeof("/.android_secure") + strlen(get_primary_storage_path()) + 1);
         sprintf(android_secure_path, "%s/.android_secure", primary_storage_path);
     }
     return android_secure_path;
