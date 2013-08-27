@@ -829,7 +829,7 @@ static int handle_volume_state_changed(char* label, char* path, int state) {
         state == State_Idle ||
         state == State_Formatting ||
         state == State_Shared)
-    ui_print("%s: %s\n", path, stateToStr(state));
+    ui_print("%s: %s\n", path, volume_state_to_string(state));
     return 0;
 }
 
