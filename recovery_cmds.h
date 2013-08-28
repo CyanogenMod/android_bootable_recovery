@@ -41,6 +41,7 @@ extern int newfs_msdos_main(int argc, char **argv);
 extern int vdc_main(int argc, char **argv);
 extern int pigz_main(int argc, char **argv);
 extern int sdcard_main(int argc, char **argv);
+extern int f2fs_format_main(int argc, char **argv);
 
 extern int busybox_driver(int argc, char **argv);
 
@@ -71,6 +72,7 @@ static const struct recovery_cmd recovery_cmds[] = {
     { "vdc",            vdc_main },
     { "pigz",           pigz_main },
     { "sdcard",         sdcard_main },
+    { "mkfs.f2fs_arm",  f2fs_format_main },
     { NULL, NULL },
 };
 
