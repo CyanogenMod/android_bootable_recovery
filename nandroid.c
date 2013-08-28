@@ -222,6 +222,7 @@ void nandroid_force_backup_format(const char* fmt) {
 }
 static void refresh_default_backup_handler() {
     char fmt[5];
+    char prefer_backup_format[3];
     if (strlen(forced_backup_format) > 0) {
         strcpy(fmt, forced_backup_format);
     }
@@ -229,8 +230,17 @@ static void refresh_default_backup_handler() {
         ensure_path_mounted(get_primary_storage_path());
         FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
         if (NULL == f) {
-            default_backup_handler = tar_compress_wrapper;
-            return;
+            property_get("ro.cwm.prefer.backup_format", prefer_backup_format, "");
+            if (0 == strcmp("dup", prefer_backup_format)) {
+                default_backup_handler = dedupe_compress_wrapper;
+                return;
+            } else if (0 == strcmp("tgz", prefer_backup_format)) {
+                default_backup_handler = tar_gzip_compress_wrapper;
+                return;
+            } else {
+                default_backup_handler = tar_compress_wrapper;
+                return;
+            }
         }
         fread(fmt, 1, sizeof(fmt), f);
         fclose(f);
