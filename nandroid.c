@@ -619,7 +619,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     char* name = basename(mount_point);
 
     nandroid_restore_handler restore_handler = NULL;
-    const char *filesystems[] = { "yaffs2", "ext2", "ext3", "ext4", "vfat", "rfs", NULL };
+    const char *filesystems[] = { "yaffs2", "ext2", "ext3", "ext4", "vfat", "rfs", "f2fs", NULL };
     const char* backup_filesystem = NULL;
     Volume *vol = volume_for_path(mount_point);
     const char *device = NULL;
