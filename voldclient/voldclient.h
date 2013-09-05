@@ -27,6 +27,7 @@ int vold_share_volume(const char* path);
 int vold_unshare_volume(const char* path, int remount);
 
 int vold_format_volume(const char* path, int wait);
+int vold_custom_format_volume(const char* path, const char* fstype, int wait);
 
 int vold_is_volume_available(const char* path);
 int vold_get_volume_state(const char* path);
