@@ -107,6 +107,11 @@ int vold_format_volume(const char* path, int wait) {
     return vold_command(3, cmd, wait);
 }
 
+int vold_custom_format_volume(const char* path, const char* fstype, int wait) {
+    const char* cmd[4] = { "volume", "format", path, fstype };
+    return vold_command(4, cmd, wait);
+}
+
 const char* volume_state_to_string(int state) {
     if (state == State_Init)
         return "Initializing";
