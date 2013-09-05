@@ -765,6 +765,7 @@ typedef struct {
 typedef struct {
     char txt[255];
     char path[PATH_MAX];
+    char type[255];
 } FormatMenuEntry;
 
 int is_safe_to_format(char* name)
@@ -831,6 +832,7 @@ int show_partition_menu()
             if (is_safe_to_format(v->mount_point)) {
                 sprintf(format_menu[formatable_volumes].txt, "format %s", v->mount_point);
                 sprintf(format_menu[formatable_volumes].path, "%s", v->mount_point);
+                sprintf(format_menu[formatable_volumes].type, "%s", v->fs_type);
                 ++formatable_volumes;
             }
         }
@@ -838,6 +840,7 @@ int show_partition_menu()
         {
             sprintf(format_menu[formatable_volumes].txt, "format %s", v->mount_point);
             sprintf(format_menu[formatable_volumes].path, "%s", v->mount_point);
+            sprintf(format_menu[formatable_volumes].type, "%s", v->fs_type);
             ++formatable_volumes;
         }
     }
@@ -910,6 +913,13 @@ int show_partition_menu()
             FormatMenuEntry* e = &format_menu[chosen_item];
 
             sprintf(confirm_string, "%s - %s", e->path, confirm_format);
+
+            // support user choice fstype when formatting external storage
+            // ensure fstype==auto because most devices with internal vfat storage cannot be formatted to other types
+            if (strcmp(e->type, "auto") == 0) {
+                format_sdcard(e->path);
+                continue;
+            }
 
             if (!confirm_selection(confirm_string, confirm))
                 continue;
@@ -1190,6 +1200,71 @@ out:
     return chosen_item;
 }
 
+void format_sdcard(const char* volume) {
+    // datamedia check is probably useless, but added for extra care
+    if (!can_partition(volume) || is_data_media_volume_path(volume))
+        return;
+
+    char* headers[] = {"Format device:", volume, "", NULL };
+
+    static char* list[] = { "default",
+                            "vfat",
+                            "exfat",
+                            "ntfs",
+                            "ext4",
+                            "ext3",
+                            "ext2",
+                            NULL
+    };
+
+    int ret = -1;
+    char cmd[PATH_MAX];
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    if (chosen_item == GO_BACK)
+        return;
+    if (!confirm_selection( "Confirm formatting?", "Yes - Format device"))
+        return;
+
+    Volume *v = volume_for_path(volume);
+    if (ensure_path_unmounted(v->mount_point) != 0)
+        return;
+
+    switch (chosen_item)
+    {
+        case 0:
+            ret = format_volume(v->mount_point);
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            if (fs_mgr_is_voldmanaged(v)) {
+                ret = vold_custom_format_volume(v->mount_point, list[chosen_item], 1) == CommandOkay ? 0 : -1;
+            } else if (strcmp(list[chosen_item], "vfat") == 0) {
+                sprintf(cmd, "/sbin/newfs_msdos -F 32 -O android -c 8 %s", v->blk_device);
+                ret = __system(cmd);
+            } else if (strcmp(list[chosen_item], "exfat") == 0) {
+                sprintf(cmd, "/sbin/mkfs.exfat %s", v->blk_device);
+                ret = __system(cmd);
+            } else if (strcmp(list[chosen_item], "ntfs") == 0) {
+                sprintf(cmd, "/sbin/mkntfs -f %s", v->blk_device);
+                ret = __system(cmd);
+            } else if (strcmp(list[chosen_item], "ext4") == 0) {
+                ret = make_ext4fs(v->blk_device, v->length, volume, sehandle);
+            }
+            break;
+        case 5:
+        case 6:
+            ret = format_unknown_device(v->blk_device, v->mount_point, list[chosen_item]);
+            break;
+    }
+
+    if (ret)
+        ui_print("Could not format %s (%s)\n", volume, list[chosen_item]);
+    else
+        ui_print("Done formatting %s (%s)\n", volume, list[chosen_item]);
+}
+
 static void partition_sdcard(const char* volume) {
     if (!can_partition(volume)) {
         ui_print("Can't partition device: %s\n", volume);
@@ -1264,7 +1339,7 @@ int can_partition(const char* volume) {
         return 0;
     }
     
-    if (strcmp(vol->fs_type, "vfat") != 0) {
+    if (strcmp(vol->fs_type, "auto") != 0) {
         LOGI("Can't partition non-vfat: %s\n", vol->fs_type);
         return 0;
     }
