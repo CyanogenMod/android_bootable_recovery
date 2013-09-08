@@ -652,7 +652,7 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         Volume *vol = volume_for_path("/sd-ext");
         if (vol == NULL || 0 != stat(vol->blk_device, &st))
         {
-            ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
+            LOGI("No app2sd partition found. Skipping format of /sd-ext.\n");
             return 0;
         }
     }
