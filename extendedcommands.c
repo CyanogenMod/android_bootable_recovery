@@ -1359,7 +1359,7 @@ int show_advanced_menu()
     char buf[80];
     int i = 0, j = 0, chosen_item = 0;
     /* Default number of entries if no compile-time extras are added */
-    static char* list[MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 2];
+    static char* list[MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1];
 
     char* primary_path = get_primary_storage_path();
     char** extra_paths = get_extra_storage_paths();
@@ -1370,7 +1370,7 @@ int show_advanced_menu()
                                 NULL
     };
 
-    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 2);
+    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1);
 
     list[0] = "reboot recovery";
 
@@ -1391,8 +1391,9 @@ int show_advanced_menu()
     list[7] = "toggle loki support";
 #endif
 
+    char list_prefix[] = "partition ";
     if (can_partition(primary_path)) {
-        sprintf(buf, "partition %s", primary_path);
+        sprintf(buf, "%s%s", list_prefix, primary_path);
         list[FIXED_ADVANCED_ENTRIES] = strdup(buf);
         j++;
     }
@@ -1400,12 +1401,13 @@ int show_advanced_menu()
     if (extra_paths != NULL) {
         for (i = 0; i < num_extra_volumes; i++) {
             if (can_partition(extra_paths[i])) {
-                sprintf(buf, "partition %s", extra_paths[i]);
+                sprintf(buf, "%s%s", list_prefix, extra_paths[i]);
                 list[FIXED_ADVANCED_ENTRIES + j] = strdup(buf);
                 j++;
             }
         }
     }
+    list[FIXED_ADVANCED_ENTRIES + j] = NULL;
 
     for (;;)
     {
@@ -1476,20 +1478,14 @@ int show_advanced_menu()
                 toggle_loki_support();
                 break;
 #endif
-            case FIXED_ADVANCED_ENTRIES:
-                partition_sdcard(primary_path);
-                break;
             default:
-                if (chosen_item >= (FIXED_ADVANCED_ENTRIES+1)) {
-                    partition_sdcard(list[chosen_item] + 10);
-                }
+                partition_sdcard(list[chosen_item] + strlen(list_prefix));
                 break;
         }
     }
-    free(list[FIXED_ADVANCED_ENTRIES]);
-    if (extra_paths != NULL) {
-        for (; j >= 0; --j)
-            free(list[FIXED_ADVANCED_ENTRIES + 1 + j]);
+
+    for (; j > 0; --j) {
+        free(list[FIXED_ADVANCED_ENTRIES + j - 1]);
     }
     return chosen_item;
 }
