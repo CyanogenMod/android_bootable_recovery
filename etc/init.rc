@@ -78,6 +78,7 @@ service setup_adbd /sbin/setup_adbd
 
 service adbd /sbin/adbd recovery
     disabled
+    socket adbd stream 660 system system
 
 service vold /sbin/minivold
     socket vold stream 0660 root mount
