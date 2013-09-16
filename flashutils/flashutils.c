@@ -90,7 +90,7 @@ int backup_raw_partition(const char* partitionType, const char *partition, const
         case BML:
             return cmd_bml_backup_raw_partition(partition, filename);
         default:
-            printf("unable to detect device type");
+            printf("unable to detect device type\n");
             return -1;
     }
 }
