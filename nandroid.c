@@ -64,7 +64,7 @@ static void ensure_directory(const char* dir) {
 }
 
 static int print_and_error(const char* message) {
-    ui_print("%s", message);
+    ui_print("%s\n", message);
     return 1;
 }
 
@@ -347,8 +347,8 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
             strcpy(tmp, "/proc/self/fd/1");
         else
             sprintf(tmp, "%s/%s.img", backup_path, name);
-        ui_print("Backing up %s image...\n", name);
 
+        ui_print("Backing up %s image...\n", name);
         if (0 != (ret = backup_raw_partition(vol->fs_type, vol->blk_device, tmp))) {
             ui_print("Error while backing up %s image!", name);
             return ret;
@@ -537,7 +537,7 @@ static int do_tar_extract(char* command, int callback) {
 
 static int tar_gzip_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; pigz -d -c %s* | tar xv ; exit $?", backup_path, backup_file_image);
+    sprintf(tmp, "cd $(dirname %s) ; cat %s* | pigz -d -c | tar xv ; exit $?", backup_path, backup_file_image);
 
     return do_tar_extract(tmp, callback);
 }
@@ -765,7 +765,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
 
         ui_print("Restoring %s image...\n", name);
         if (0 != (ret = restore_raw_partition(vol->fs_type, vol->blk_device, tmp))) {
-            ui_print("Error while flashing %s image!", name);
+            ui_print("Error while flashing %s image!\n", name);
             return ret;
         }
         return 0;
@@ -961,7 +961,7 @@ int nandroid_main(int argc, char** argv)
             return nandroid_usage();
         return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
     }
-    
+
     if (strcmp("dump", argv[1]) == 0)
     {
         if (argc != 3)
