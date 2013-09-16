@@ -678,12 +678,12 @@ wipe_data(int confirm) {
 }
 
 static void headless_wait() {
-  ui_show_text(0);
-  const char** headers = prepend_title((const char**)MENU_HEADERS);
-  for (;;) {
-    finish_recovery(NULL);
-    get_menu_selection(headers, MENU_ITEMS, 0, 0);
-  }
+    ui_show_text(0);
+    const char** headers = prepend_title((const char**)MENU_HEADERS);
+    for(;;) {
+        finish_recovery(NULL);
+        get_menu_selection(headers, MENU_ITEMS, 0, 0);
+    }
 }
 
 int ui_menu_level = 1;
@@ -889,7 +889,7 @@ main(int argc, char **argv) {
     // If these fail, there's not really anywhere to complain...
     freopen(TEMPORARY_LOG_FILE, "a", stdout); setbuf(stdout, NULL);
     freopen(TEMPORARY_LOG_FILE, "a", stderr); setbuf(stderr, NULL);
-    printf("Starting recovery on %s", ctime(&start));
+    printf("Starting recovery on %s\n", ctime(&start));
 
     device_ui_init(&ui_parameters);
     ui_init();
@@ -995,7 +995,7 @@ main(int argc, char **argv) {
     } else if (sideload) {
         signature_check_enabled = 0;
         if (!headless)
-          ui_set_show_text(1);
+            ui_set_show_text(1);
         if (0 == apply_from_adb()) {
             status = INSTALL_SUCCESS;
             ui_set_show_text(0);
@@ -1009,10 +1009,10 @@ main(int argc, char **argv) {
         script_assert_enabled = 0;
         is_user_initiated_recovery = 1;
         if (!headless) {
-          ui_set_show_text(1);
-          ui_set_background(BACKGROUND_ICON_CLOCKWORK);
+            ui_set_show_text(1);
+            ui_set_background(BACKGROUND_ICON_CLOCKWORK);
         }
-        
+
         if (extendedcommand_file_exists()) {
             LOGI("Running extendedcommand...\n");
             int ret;
@@ -1029,7 +1029,7 @@ main(int argc, char **argv) {
     }
 
     if (headless) {
-      headless_wait();
+        headless_wait();
     }
     if (status != INSTALL_SUCCESS && !is_user_initiated_recovery) {
         ui_set_show_text(1);
