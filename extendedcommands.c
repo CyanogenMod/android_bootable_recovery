@@ -54,7 +54,6 @@ int signature_check_enabled = 1;
 int loki_support_enabled = 1;
 #endif
 int script_assert_enabled = 1;
-static const char *SDCARD_UPDATE_FILE = "update.zip";
 
 int
 get_filtered_menu_selection(const char** headers, char** items, int menu_only, int initial_selection, int items_count) {
