@@ -65,14 +65,22 @@ extern int device_perform_action(int which);
 // are erased after this returns (whether it returns success or not).
 int device_wipe_data();
 
+// ui_wait_key() special return codes
+/*
+#define REBOOT              -1 // ui_wait_key() timeout to reboot
+#define CANCEL              -2 // ui_cancel_wait_key()
+*/
+#define REFRESH             -3
+
+// return actions by ui_handle_key() for get_menu_selection()
 #define NO_ACTION           -1
 
 #define HIGHLIGHT_UP        -2
 #define HIGHLIGHT_DOWN      -3
 #define SELECT_ITEM         -4
 #define GO_BACK             -5
-#define REFRESH             -6
 
+// main menu items for prompt_and_wait()
 #define ITEM_REBOOT          0
 #define ITEM_APPLY_EXT       1
 #define ITEM_APPLY_SDCARD    1  // historical synonym for ITEM_APPLY_EXT
