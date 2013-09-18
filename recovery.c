@@ -518,9 +518,6 @@ get_menu_selection(const char** headers, char** items, int menu_only,
                 case GO_BACK:
                     chosen_item = GO_BACK;
                     break;
-                case REFRESH:
-                    chosen_item = REFRESH;
-                    break;
             }
         } else if (!menu_only) {
             chosen_item = action;
