@@ -406,6 +406,17 @@ int format_volume(const char* volume) {
         return 0;
     }
 
+#ifdef USE_F2FS
+    if (strcmp(v->fs_type, "f2fs") == 0) {
+        int result = make_f2fs_main(v->blk_device, v->mount_point);
+        if (result != 0) {
+            LOGE("format_volume: mkfs.f2f2 failed on %s\n", v->blk_device);
+            return -1;
+        }
+        return 0;
+    }
+#endif
+
 #if 0
     LOGE("format_volume: fs_type \"%s\" unsupported\n", v->fs_type);
     return -1;
