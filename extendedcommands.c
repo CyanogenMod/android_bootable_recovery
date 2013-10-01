@@ -1200,8 +1200,8 @@ out:
 }
 
 void format_sdcard(const char* volume) {
-    // datamedia check is probably useless, but added for extra care
-    if (!can_partition(volume) || is_data_media_volume_path(volume))
+    // this will also ensure it is not /data/media
+    if (!can_partition(volume))
         return;
 
     char* headers[] = {"Format device:", volume, "", NULL };
@@ -1219,7 +1219,7 @@ void format_sdcard(const char* volume) {
     int ret = -1;
     char cmd[PATH_MAX];
     int chosen_item = get_menu_selection(headers, list, 0, 0);
-    if (chosen_item == GO_BACK)
+    if (chosen_item < 0) // REFRESH or GO_BACK
         return;
     if (!confirm_selection( "Confirm formatting?", "Yes - Format device"))
         return;
@@ -1295,15 +1295,15 @@ static void partition_sdcard(const char* volume) {
     static const char* fstype_headers[] = {"Partition Type", "", NULL };
 
     int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0);
-    if (ext_size == GO_BACK)
+    if (ext_size < 0)
         return;
 
     int swap_size = get_menu_selection(swap_headers, swap_sizes, 0, 0);
-    if (swap_size == GO_BACK)
+    if (swap_size < 0)
         return;
 
     int partition_type = get_menu_selection(fstype_headers, partition_types, 0, 0);
-    if (partition_type == GO_BACK)
+    if (partition_type < 0)
         return;
 
     char sddevice[256];
