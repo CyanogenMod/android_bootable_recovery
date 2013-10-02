@@ -1197,8 +1197,13 @@ out:
 }
 
 void format_sdcard(const char* volume) {
-    // datamedia check is probably useless, but added for extra care
-    if (!can_partition(volume) || is_data_media_volume_path(volume))
+    if (is_data_media_volume_path(volume))
+        return;
+
+    Volume *vol = volume_for_path(volume);
+    if (vol == NULL || strcmp(vol->fs_type, "auto") != 0)
+        return;
+    if (!fs_mgr_is_voldmanaged(vol) && !can_partition(volume))
         return;
 
     char* headers[] = {"Format device:", volume, "", NULL };
@@ -1216,7 +1221,7 @@ void format_sdcard(const char* volume) {
     int ret = -1;
     char cmd[PATH_MAX];
     int chosen_item = get_menu_selection(headers, list, 0, 0);
-    if (chosen_item == GO_BACK)
+    if (chosen_item < 0) // REFRESH or GO_BACK
         return;
     if (!confirm_selection( "Confirm formatting?", "Yes - Format device"))
         return;
@@ -1251,8 +1256,14 @@ void format_sdcard(const char* volume) {
             break;
         case 5:
         case 6:
-            ret = format_unknown_device(v->blk_device, v->mount_point, list[chosen_item]);
-            break;
+            {
+                // workaround for new vold managed volumes that cannot be recognized by prebuilt ext2/ext3 bins
+                const char *device = v->blk_device2;
+                if (device == NULL)
+                    device = v->blk_device;
+                ret = format_unknown_device(device, v->mount_point, list[chosen_item]);
+                break;
+            }
     }
 
     if (ret)
@@ -1292,20 +1303,25 @@ static void partition_sdcard(const char* volume) {
     static const char* fstype_headers[] = {"Partition Type", "", NULL };
 
     int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0);
-    if (ext_size == GO_BACK)
+    if (ext_size < 0)
         return;
 
     int swap_size = get_menu_selection(swap_headers, swap_sizes, 0, 0);
-    if (swap_size == GO_BACK)
+    if (swap_size < 0)
         return;
 
     int partition_type = get_menu_selection(fstype_headers, partition_types, 0, 0);
-    if (partition_type == GO_BACK)
+    if (partition_type < 0)
         return;
 
     char sddevice[256];
     Volume *vol = volume_for_path(volume);
-    strcpy(sddevice, vol->blk_device);
+
+    // can_partition() ensured either blk_device or blk_device2 has /dev/block/mmcblk format
+    if (strstr(vol->blk_device, "/dev/block/mmcblk") != NULL)
+        strcpy(sddevice, vol->blk_device);
+    else strcpy(sddevice, vol->blk_device2);
+
     // we only want the mmcblk, not the partition
     sddevice[strlen("/dev/block/mmcblkX")] = '\0';
     char cmd[PATH_MAX];
@@ -1327,16 +1343,27 @@ int can_partition(const char* volume) {
         LOGI("Can't format unknown volume: %s\n", volume);
         return 0;
     }
-
-    int vol_len = strlen(vol->blk_device);
-    // do not allow partitioning of a device that isn't mmcblkX or mmcblkXp1
-    if (vol->blk_device[vol_len - 2] == 'p' && vol->blk_device[vol_len - 1] != '1') {
-        LOGI("Can't partition unsafe device: %s\n", vol->blk_device);
+    if (strcmp(vol->fs_type, "auto") != 0) {
+        LOGI("Can't partition non-vfat: %s (%s)\n", volume, vol->fs_type);
         return 0;
     }
-    
-    if (strcmp(vol->fs_type, "auto") != 0) {
-        LOGI("Can't partition non-vfat: %s\n", vol->fs_type);
+
+    // do not allow partitioning of a device that isn't mmcblkX or mmcblkXp1
+    // needed with new vold managed volumes and virtual device path links
+    int vol_len;
+    char *device = NULL;
+    if (strstr(vol->blk_device, "/dev/block/mmcblk") != NULL) {
+        device = vol->blk_device;
+    } else if (vol->blk_device2 != NULL && strstr(vol->blk_device2, "/dev/block/mmcblk") != NULL) {
+        device = vol->blk_device2;
+    } else {
+        LOGI("Can't partition non mmcblk device: %s\n", vol->blk_device);
+        return 0;
+    }
+
+    vol_len = strlen(device);
+    if (device[vol_len - 2] == 'p' && device[vol_len - 1] != '1') {
+        LOGI("Can't partition unsafe device: %s\n", device);
         return 0;
     }
 
