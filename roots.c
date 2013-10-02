@@ -283,6 +283,9 @@ static int ignore_data_media = 0;
 
 int ensure_path_unmounted(const char* path) {
     // if we are using /data/media, do not ever unmount volumes /data or /sdcard
+    if (is_data_media_volume_path(path)) {
+        return ensure_path_unmounted("/data");
+    }
     if (strstr(path, "/data") == path && is_data_media() && !ignore_data_media) {
         return 0;
     }
@@ -292,9 +295,7 @@ int ensure_path_unmounted(const char* path) {
         LOGE("unknown volume for path [%s]\n", path);
         return -1;
     }
-    if (is_data_media_volume_path(path)) {
-        return ensure_path_unmounted("/data");
-    }
+
     if (strcmp(v->fs_type, "ramdisk") == 0) {
         // the ramdisk is always mounted; you can't unmount it.
         return -1;
@@ -323,11 +324,20 @@ int ensure_path_unmounted(const char* path) {
 extern struct selabel_handle *sehandle;
 
 int format_volume(const char* volume) {
+    if (is_data_media_volume_path(volume)) {
+        return format_unknown_device(NULL, volume, NULL);
+    }
+    // check to see if /data is being formatted, and if it is /data/media
+    // Note: the /sdcard check is redundant probably, just being safe.
+    if (strstr(volume, "/data") == volume && is_data_media() && !ignore_data_media) {
+        return format_unknown_device(NULL, volume, NULL);
+    }
+
     Volume* v = volume_for_path(volume);
     if (v == NULL) {
         // silent failure for sd-ext
         if (strcmp(volume, "/sd-ext") != 0)
-            LOGE("unknown volume \"%s\"\n", volume);
+            LOGE("unknown volume '%s'\n", volume);
         return -1;
     }
     // silent failure to format non existing sd-ext when defined in recovery.fstab
@@ -339,8 +349,8 @@ int format_volume(const char* volume) {
         }
     }
 
-    // Only use vold format for exact matches (otherwise /sdcard will be
-    // formatted instead of /sdcard/.android_secure)
+    // Only use vold format for exact matches otherwise /sdcard will be
+    // formatted instead of /storage/sdcard0/.android_secure
     if (fs_mgr_is_voldmanaged(v) && strcmp(volume, v->mount_point) == 0) {
         if (ensure_path_unmounted(volume) != 0) {
             LOGE("format_volume failed to unmount %s", v->mount_point);
@@ -348,14 +358,6 @@ int format_volume(const char* volume) {
         return vold_format_volume(v->mount_point, 1) == CommandOkay ? 0 : -1;
     }
 
-    if (is_data_media_volume_path(volume)) {
-        return format_unknown_device(NULL, volume, NULL);
-    }
-    // check to see if /data is being formatted, and if it is /data/media
-    // Note: the /sdcard check is redundant probably, just being safe.
-    if (strstr(volume, "/data") == volume && is_data_media() && !ignore_data_media) {
-        return format_unknown_device(NULL, volume, NULL);
-    }
     if (strcmp(v->fs_type, "ramdisk") == 0) {
         // you can't format the ramdisk.
         LOGE("can't format_volume \"%s\"", volume);
