@@ -1044,6 +1044,8 @@ main(int argc, char **argv) {
         }
     }
 
+    write_recovery_version();
+
     if (headless) {
         headless_wait();
     }
