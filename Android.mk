@@ -64,6 +64,10 @@ ifeq ($(ENABLE_LOKI_RECOVERY),true)
     compact_loki.c
 endif
 
+ifeq ($(RECOVERY_NEED_FIXCON),true)
+  LOCAL_CFLAGS += -DNEED_FIXCON
+endif
+
 BOARD_RECOVERY_CHAR_WIDTH := $(shell echo $(BOARD_USE_CUSTOM_RECOVERY_FONT) | cut -d _  -f 2 | cut -d . -f 1 | cut -d x -f 1)
 BOARD_RECOVERY_CHAR_HEIGHT := $(shell echo $(BOARD_USE_CUSTOM_RECOVERY_FONT) | cut -d _  -f 2 | cut -d . -f 1 | cut -d x -f 2)
 
