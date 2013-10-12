@@ -389,6 +389,25 @@ static void *progress_thread(void *cookie)
 }
 
 static int rel_sum = 0;
+static int in_touch = 0; // 1 = in a touch
+static int slide_right = 0;
+static int slide_left = 0;
+static int touch_x = 0;
+static int touch_y = 0;
+static int old_x = 0;
+static int old_y = 0;
+static int diff_x = 0;
+static int diff_y = 0;
+
+
+static void reset_gestures() {
+    diff_x = 0;
+    diff_y = 0;
+    old_x = 0;
+    old_y = 0;
+    touch_x = 0;
+    touch_y = 0;
+}
 
 static int input_callback(int fd, short revents, void *data)
 {
@@ -402,7 +421,7 @@ static int input_callback(int fd, short revents, void *data)
 
 #ifdef BOARD_TOUCH_RECOVERY
     if (touch_handle_input(fd, ev))
-      return 0;
+        return 0;
 #endif
 
     if (ev.type == EV_SYN) {
@@ -431,6 +450,70 @@ static int input_callback(int fd, short revents, void *data)
     } else {
         rel_sum = 0;
     }
+
+    int abs[6] = {0};
+    int k;
+
+    ioctl(fd, EVIOCGABS(ABS_MT_POSITION_X), abs);
+    int max_x_touch = abs[2];
+
+    ioctl(fd, EVIOCGABS(ABS_MT_POSITION_Y), abs);
+    int max_y_touch = abs[2];
+
+#ifdef BOARD_HAS_RECOVERY_TOUCH
+    // Start touch code
+    if(ev.type == EV_ABS && ev.code == ABS_MT_TRACKING_ID) {
+        if(in_touch == 0) {
+            in_touch = 1;
+            reset_gestures();
+        } else { // finger lifted
+            ev.type = EV_KEY;
+            int keywidth = gr_fb_width() / 4;
+            if(slide_right == 1) {
+                ev.code = KEY_POWER;
+                slide_right = 0;
+            } else if(slide_left == 1) {
+                ev.code = KEY_BACK;
+                slide_left = 0;
+            }
+
+            ev.value = 1;
+            in_touch = 0;
+            reset_gestures();
+        }
+    } else if(ev.type == EV_ABS && ev.code == ABS_MT_POSITION_X) {
+        old_x = touch_x;
+        float touch_x_rel = (float)ev.value / (float)max_x_touch;
+        touch_x = touch_x_rel * gr_fb_width();
+
+        if(old_x != 0) diff_x += touch_x - old_x;
+
+        if(diff_x > 100) {
+            slide_right = 1;
+            reset_gestures();
+        } else if(diff_x < -100) {
+            slide_left = 1;
+            reset_gestures();
+        }
+    } else if(ev.type == EV_ABS && ev.code == ABS_MT_POSITION_Y) {
+        old_y = touch_y;
+        float touch_y_rel = (float)ev.value / (float)max_y_touch;
+        touch_y = touch_y_rel * gr_fb_height();
+
+        if(old_y != 0) diff_y += touch_y - old_y;
+
+        if(diff_y > 80) {
+            ev.code = KEY_VOLUMEDOWN;
+            ev.type = EV_KEY;
+            reset_gestures();
+        } else if(diff_y < -80) {
+            ev.code = KEY_VOLUMEUP;
+            ev.type = EV_KEY;
+            reset_gestures();
+        }
+    }
+    // End touch code
+#endif
 
     if (ev.type != EV_KEY || ev.code > KEY_MAX)
         return 0;
@@ -582,6 +665,12 @@ void ui_init(void)
     pthread_t t;
     pthread_create(&t, NULL, progress_thread, NULL);
     pthread_create(&t, NULL, input_thread, NULL);
+
+#ifdef BOARD_HAS_RECOVERY_TOUCH
+    ui_print("Swipe up/down to change selections.\n");
+    ui_print("Swipe to the right for enter.\n");
+    ui_print("Swipe to the left for back.\n");
+#endif
 }
 
 char *ui_copy_image(int icon, int *width, int *height, int *bpp) {
