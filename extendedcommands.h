@@ -2,9 +2,6 @@ extern int signature_check_enabled;
 extern int script_assert_enabled;
 
 void
-write_recovery_version();
-
-void
 toggle_signature_check();
 
 void

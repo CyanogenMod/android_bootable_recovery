@@ -99,6 +99,10 @@ void write_recovery_version() {
     char path[PATH_MAX];
     sprintf(path, "%s%sclockworkmod/.recovery_version", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
     write_string_to_file(path,EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
+    // force unmount /data on /data/media devices as we call this on recovery start
+    ignore_data_media_workaround(1);
+    ensure_path_unmounted(path);
+    ignore_data_media_workaround(0);
 }
 
 void
@@ -190,7 +194,6 @@ int show_install_update_menu()
                 break;
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu(primary_path);
-                write_recovery_version();
                 break;
             case ITEM_APPLY_SIDELOAD:
                 apply_from_adb();
@@ -1165,20 +1168,16 @@ int show_nandroid_menu()
                         sprintf(backup_path, "%s/%s", chosen_path, path_fmt);
                     }
                     nandroid_backup(backup_path);
-                    write_recovery_version();
                 }
                 break;
             case 1:
                 show_nandroid_restore_menu(chosen_path);
-                write_recovery_version();
                 break;
             case 2:
                 show_nandroid_delete_menu(chosen_path);
-                write_recovery_version();
                 break;
             case 3:
                 show_nandroid_advanced_restore_menu(chosen_path);
-                write_recovery_version();
                 break;
             default:
                 break;
@@ -1669,6 +1668,8 @@ int volume_main(int argc, char **argv) {
 }
 
 int verify_root_and_recovery() {
+    write_recovery_version();
+
     if (ensure_path_mounted("/system") != 0)
         return 0;
 
