@@ -1046,6 +1046,8 @@ main(int argc, char **argv) {
         }
     }
 
+    write_recovery_version();
+
     if (sideload) {
         signature_check_enabled = 0;
         if (!headless)
