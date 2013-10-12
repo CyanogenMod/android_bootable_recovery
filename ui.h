@@ -143,6 +143,20 @@ private:
     bool has_up_key;
     bool has_down_key;
 
+    // Swipe tracking
+    int in_touch; // 1 = in a touch
+    int touch_x;
+    int touch_y;
+    int old_x;
+    int old_y;
+    int diff_x;
+    int diff_y;
+    int min_x_swipe_px;
+    int min_y_swipe_px;
+    int max_x_touch;
+    int max_y_touch;
+    int mt_count;
+
     struct key_timer_t {
         RecoveryUI* ui;
         int key_code;
@@ -161,6 +175,10 @@ private:
 
     static void* time_key_helper(void* cookie);
     void time_key(int key_code, int count);
+
+    void ProcessSwipe(int fd, struct input_event *ev);
+    void set_min_swipe_lengths();
+    void reset_gestures();
 };
 
 #endif  // RECOVERY_UI_H
