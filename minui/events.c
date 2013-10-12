@@ -81,7 +81,7 @@ int ev_init(ev_callback input_cb, void *data)
             ev_fdinfo[ev_count].data = data;
             ev_count++;
             ev_dev_count++;
-            if(ev_dev_count == MAX_DEVICES) break;
+            if(ev_dev_count == (MAX_DEVICES + MAX_MISC_FDS)) break;
         }
     }
 
