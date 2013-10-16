@@ -566,6 +566,7 @@ void ui_init(void)
         gInstallationOverlay = NULL;
     }
 
+#ifndef BOARD_RECOVERY_SWIPE
     char enable_key_repeat[PROPERTY_VALUE_MAX];
     property_get("ro.cwm.enable_key_repeat", enable_key_repeat, "");
     if (!strcmp(enable_key_repeat, "true") || !strcmp(enable_key_repeat, "1")) {
@@ -586,6 +587,7 @@ void ui_init(void)
             }
         }
     }
+#endif
 
     pthread_t t;
     pthread_create(&t, NULL, progress_thread, NULL);
