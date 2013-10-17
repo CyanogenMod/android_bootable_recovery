@@ -837,12 +837,22 @@ static int handle_volume_hotswap(char* label, char* path) {
 }
 
 static int handle_volume_state_changed(char* label, char* path, int state) {
-    if (state == State_Checking ||
-        state == State_Mounted ||
-        state == State_Idle ||
-        state == State_Formatting ||
-        state == State_Shared)
-    ui_print("%s: %s\n", path, volume_state_to_string(state));
+    int log = -1;
+    if (state == State_Checking || state == State_Mounted || state == State_Idle) {
+        // do not ever log to screen mount/unmount events for sdcards
+        if (strncmp(path, "/storage/sdcard", 15) == 0)
+            log = 0;
+        else log = 1;
+    }
+    else if (state == State_Formatting || state == State_Shared) {
+            log = 1;
+    }
+
+    if (log == 0)
+        LOGI("%s: %s\n", path, volume_state_to_string(state));
+    else if (log == 1)
+        ui_print("%s: %s\n", path, volume_state_to_string(state));
+
     return 0;
 }
 
