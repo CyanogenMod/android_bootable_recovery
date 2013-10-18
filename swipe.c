@@ -60,7 +60,11 @@ void swipe_handle_input(int fd, struct input_event *ev) {
             in_touch = 0;
             reset_gestures();
         }
+#ifdef BOARD_RECOVERY_SWIPE_SWAPXY
+    } else if(ev->type == EV_ABS && ev->code == ABS_MT_POSITION_Y) {
+#else
     } else if(ev->type == EV_ABS && ev->code == ABS_MT_POSITION_X) {
+#endif
         old_x = touch_x;
         float touch_x_rel = (float)ev->value / (float)max_x_touch;
         touch_x = touch_x_rel * gr_fb_width();
@@ -74,7 +78,11 @@ void swipe_handle_input(int fd, struct input_event *ev) {
             slide_left = 1;
             reset_gestures();
         }
+#ifdef BOARD_RECOVERY_SWIPE_SWAPXY
+    } else if(ev->type == EV_ABS && ev->code == ABS_MT_POSITION_X) {
+#else
     } else if(ev->type == EV_ABS && ev->code == ABS_MT_POSITION_Y) {
+#endif
         old_y = touch_y;
         float touch_y_rel = (float)ev->value / (float)max_y_touch;
         touch_y = touch_y_rel * gr_fb_height();
@@ -82,11 +90,19 @@ void swipe_handle_input(int fd, struct input_event *ev) {
         if(old_y != 0) diff_y += touch_y - old_y;
 
         if(diff_y > min_y_swipe_px) {
+#ifdef BOARD_RECOVERY_SWIPE_SWAPXY
+            ev->code = KEY_VOLUMEUP;
+#else
             ev->code = KEY_VOLUMEDOWN;
+#endif
             ev->type = EV_KEY;
             reset_gestures();
         } else if(diff_y < -min_y_swipe_px) {
+#ifdef BOARD_RECOVERY_SWIPE_SWAPXY
+            ev->code = KEY_VOLUMEDOWN;
+#else
             ev->code = KEY_VOLUMEUP;
+#endif
             ev->type = EV_KEY;
             reset_gestures();
         }
