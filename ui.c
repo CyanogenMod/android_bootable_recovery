@@ -397,6 +397,7 @@ static int rel_sum = 0;
 static int input_callback(int fd, short revents, void *data)
 {
     struct input_event ev;
+    static int swipe_key = 0;
     int ret;
     int fake_key = 0;
 
@@ -409,7 +410,7 @@ static int input_callback(int fd, short revents, void *data)
         return 0;
 #else
 #ifdef BOARD_RECOVERY_SWIPE
-    swipe_handle_input(fd, &ev);
+    swipe_key = swipe_handle_input(fd, &ev);
 #endif
 #endif
 
@@ -443,8 +444,10 @@ static int input_callback(int fd, short revents, void *data)
     if (ev.type != EV_KEY || ev.code > KEY_MAX)
         return 0;
 
-    if (ev.value == 2) {
+    if (ev.value == 2 || swipe_key == 1) {
         boardEnableKeyRepeat = 0;
+    } else {
+        boardEnableKeyRepeat = 1;
     }
 
     pthread_mutex_lock(&key_queue_mutex);

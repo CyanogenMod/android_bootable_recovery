@@ -17,9 +17,10 @@ static void reset_gestures() {
     touch_y = 0;
 }
 
-void swipe_handle_input(int fd, struct input_event *ev) {
+int swipe_handle_input(int fd, struct input_event *ev) {
     int abs_store[6] = {0};
     int k;
+    int ret = 0;
 
     ioctl(fd, EVIOCGABS(ABS_MT_POSITION_X), abs_store);
     int max_x_touch = abs_store[2];
@@ -46,6 +47,9 @@ void swipe_handle_input(int fd, struct input_event *ev) {
             in_touch = 0;
             reset_gestures();
         }
+
+        ret = 1;
+
     } else if(ev->type == EV_ABS && ev->code == ABS_MT_POSITION_X) {
         old_x = touch_x;
         float touch_x_rel = (float)ev->value / (float)max_x_touch;
@@ -60,6 +64,7 @@ void swipe_handle_input(int fd, struct input_event *ev) {
             slide_left = 1;
             reset_gestures();
         }
+        ret = 1;
     } else if(ev->type == EV_ABS && ev->code == ABS_MT_POSITION_Y) {
         old_y = touch_y;
         float touch_y_rel = (float)ev->value / (float)max_y_touch;
@@ -76,7 +81,8 @@ void swipe_handle_input(int fd, struct input_event *ev) {
             ev->type = EV_KEY;
             reset_gestures();
         }
+        ret = 1;
     }
 
-    return;
+    return ret;
 }
