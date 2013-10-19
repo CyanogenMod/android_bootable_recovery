@@ -137,9 +137,8 @@ int install_zip(const char* packagefilepath)
 #ifdef ENABLE_LOKI
     if(loki_support_enabled) {
        ui_print("Checking if loki-fying is needed");
-       int result;
-       if(result = loki_check()) {
-           return result;
+       if (loki_check() != 0) {
+           return 1;
        }
     }
 #endif
