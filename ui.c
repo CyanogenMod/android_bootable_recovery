@@ -238,7 +238,7 @@ static void draw_progress_locked()
 static void draw_text_line(int row, const char* t) {
   if (t[0] != '\0') {
     if (ui_get_rainbow_mode()) ui_rainbow_mode();
-    gr_text(0, (row+1)*CHAR_HEIGHT-1, t);
+    gr_text(0, (row+1)*CHAR_HEIGHT-1, t, 0);
   }
 }
 
