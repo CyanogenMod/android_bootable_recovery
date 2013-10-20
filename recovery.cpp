@@ -60,6 +60,10 @@
 #include "ui.h"
 #include "screen_ui.h"
 
+extern "C" {
+#include "recovery_cmds.h"
+}
+
 struct selabel_handle *sehandle;
 
 static const struct option OPTIONS[] = {
@@ -111,6 +115,8 @@ char* stage = NULL;
 char* reason = NULL;
 bool modified_flash = false;
 static bool has_cache = false;
+
+extern "C" int toybox_driver(int argc, char **argv);
 
 /*
  * The recovery tool communicates with the main system through /cache files.
@@ -1154,6 +1160,40 @@ load_locale_from_cache() {
     }
 }
 
+static const char *key_src = "/data/misc/adb/adb_keys";
+static const char *key_dest = "/adb_keys";
+
+
+static void
+setup_adbd() {
+    struct stat f;
+    // Mount /data and copy adb_keys to root if it exists
+    ensure_path_mounted("/data");
+    if (stat(key_src, &f) == 0) {
+        FILE *file_src = fopen(key_src, "r");
+        if (file_src == NULL) {
+            LOGE("Can't open %s\n", key_src);
+        } else {
+            FILE *file_dest = fopen(key_dest, "w");
+            if (file_dest == NULL) {
+                LOGE("Can't open %s\n", key_dest);
+            } else {
+                char buf[4096];
+                while (fgets(buf, sizeof(buf), file_src)) fputs(buf, file_dest);
+                check_and_fclose(file_dest, key_dest);
+
+                // Enable secure adbd
+                property_set("ro.adb.secure", "1");
+            }
+            check_and_fclose(file_src, key_src);
+        }
+    }
+    ensure_path_unmounted("/data");
+
+    // Trigger (re)start of adb daemon
+    property_set("service.adb.root", "1");
+}
+
 static RecoveryUI* gCurrentUI = NULL;
 
 void
@@ -1323,6 +1363,37 @@ int main(int argc, char **argv) {
         adb_server_main(0, DEFAULT_ADB_PORT, -1);
         return 0;
     }
+
+    // Handle alternative invocations
+    char* command = argv[0];
+    char* stripped = strrchr(argv[0], '/');
+    if (stripped)
+        command = stripped + 1;
+
+    if (strcmp(command, "recovery") != 0) {
+        struct recovery_cmd cmd = get_command(command);
+        if (cmd.name)
+            return cmd.main_func(argc, argv);
+
+        if (!strcmp(command, "setup_adbd")) {
+            load_volume_table();
+            setup_adbd();
+            return 0;
+        }
+        if (strstr(argv[0], "start")) {
+            property_set("ctl.start", argv[1]);
+            return 0;
+        }
+        if (strstr(argv[0], "stop")) {
+            property_set("ctl.stop", argv[1]);
+            return 0;
+        }
+        return toybox_driver(argc, argv);
+    }
+
+    // Clear umask for packages that copy files out to /tmp and then over
+    // to /system without properly setting all permissions (eg. gapps).
+    umask(0);
 
     time_t start = time(NULL);
 
