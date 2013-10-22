@@ -15,6 +15,8 @@ static void reset_gestures() {
     old_y = 0;
     touch_x = 0;
     touch_y = 0;
+
+    ui_clear_key_queue();
 }
 
 void swipe_handle_input(int fd, struct input_event *ev) {
