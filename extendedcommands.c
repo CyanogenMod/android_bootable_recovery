@@ -168,76 +168,74 @@ int install_zip(const char* packagefilepath)
     return 0;
 }
 
-#define ITEM_CHOOSE_ZIP       0
-#define ITEM_CHOOSE_LAST      1
-#define ITEM_APPLY_SIDELOAD   2
-#define ITEM_SIG_CHECK        3
-#define ITEM_CHOOSE_ZIP_INT   4
+// top fixed menu items, those before extra storage volumes
+#define FIXED_TOP_INSTALL_ZIP_MENUS 1
+// bottom fixed menu items, those after extra storage volumes
+#define FIXED_BOTTOM_INSTALL_ZIP_MENUS 3
+#define FIXED_INSTALL_ZIP_MENUS (FIXED_TOP_INSTALL_ZIP_MENUS + FIXED_BOTTOM_INSTALL_ZIP_MENUS)
 
 int show_install_update_menu()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 4];
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + FIXED_INSTALL_ZIP_MENUS + 1];
 
     char* primary_path = get_primary_storage_path();
     char** extra_paths = get_extra_storage_paths();
     int num_extra_volumes = get_num_extra_volumes();
 
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 4);
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_INSTALL_ZIP_MENUS + 1);
 
     static const char* headers[] = {  "Install update from zip file",
                                 "",
                                 NULL
     };
 
+    // FIXED_TOP_INSTALL_ZIP_MENUS
     sprintf(buf, "choose zip from %s", primary_path);
     install_menu_items[0] = strdup(buf);
 
-    install_menu_items[1] = "choose zip from last install directory";
-
-    install_menu_items[2] = "install zip from sideload";
-
-    install_menu_items[3] = "toggle signature verification";
-
-    install_menu_items[4 + num_extra_volumes] = NULL;
-
+    // extra storage volumes (vold managed)
     for (i = 0; i < num_extra_volumes; i++) {
         sprintf(buf, "choose zip from %s", extra_paths[i]);
-        install_menu_items[4 + i] = strdup(buf);
+        install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + i] = strdup(buf);
     }
+
+    // FIXED_BOTTOM_INSTALL_ZIP_MENUS
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes]     = "choose zip from last install folder";
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 1] = "install zip from sideload";
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 2] = "toggle signature verification";
+
+    // extra NULL for GO_BACK
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 3] = NULL;
 
     for (;;)
     {
         chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
-        switch (chosen_item)
-        {
-            case ITEM_SIG_CHECK:
-                toggle_signature_check();
-                break;
-            case ITEM_CHOOSE_ZIP:
+        if (chosen_item == 0) {
+            show_choose_zip_menu(primary_path);
+        }
+        else if (chosen_item >= FIXED_TOP_INSTALL_ZIP_MENUS &&
+                    chosen_item < FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
+            show_choose_zip_menu(extra_paths[chosen_item - FIXED_TOP_INSTALL_ZIP_MENUS]);
+        }
+        else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
+            char *last_path_used;
+            last_path_used = read_last_install_path();
+            if (last_path_used == NULL)
                 show_choose_zip_menu(primary_path);
-                break;
-            case ITEM_CHOOSE_LAST:
-            {
-                char *last_path_used;
-                last_path_used = read_last_install_path();
-                if (last_path_used == NULL) {
-                    show_choose_zip_menu(primary_path);
-                } else {
-                    show_choose_zip_menu(last_path_used);
-                }
-                break;
-            }
-            case ITEM_APPLY_SIDELOAD:
-                apply_from_adb();
-                break;
-            default:
-                if (chosen_item >= ITEM_CHOOSE_ZIP_INT) {
-                    show_choose_zip_menu(extra_paths[chosen_item - 4]);
-                } else {
-                    goto out;
-                }
+            else
+                show_choose_zip_menu(last_path_used);
+        }
+        else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 1) {
+            apply_from_adb();
+        }
+        else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 2) {
+            toggle_signature_check();
+        }
+        else {
+            // GO_BACK or REFRESH (chosen_item < 0)
+            goto out;
         }
     }
 out:
@@ -245,7 +243,7 @@ out:
     free(install_menu_items[0]);
     if (extra_paths != NULL) {
         for (i = 0; i < num_extra_volumes; i++)
-            free(install_menu_items[4 + i]);
+            free(install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + i]);
     }
     return chosen_item;
 }
