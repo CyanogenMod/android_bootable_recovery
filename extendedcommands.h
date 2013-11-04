@@ -56,6 +56,8 @@ int run_and_remove_extendedcommand();
 
 int verify_root_and_recovery();
 
+void write_recovery_version();
+
 void free_string_array(char** array);
 
 int can_partition(const char* volume);
