@@ -75,7 +75,6 @@ static const char *LOG_FILE = "/cache/recovery/log";
 static const char *CACHE_ROOT = "/cache";
 static const char *SDCARD_ROOT = "/sdcard";
 static int allow_display_toggle = 0;
-static int poweroff = 0;
 static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
 static const char *SIDELOAD_TEMP_DIR = "/tmp/sideload";
 
@@ -732,7 +731,6 @@ prompt_and_wait() {
         for (;;) {
             switch (chosen_item) {
                 case ITEM_REBOOT:
-                    poweroff = 0;
                     return;
 
                 case ITEM_WIPE_DATA:
@@ -1077,25 +1075,15 @@ main(int argc, char **argv) {
         prompt_and_wait();
     }
 
-    verify_root_and_recovery();
-
+    // We reach here when in main menu we choose reboot main system or for some wipe commands on start
     // If there is a radio image pending, reboot now to install it.
     maybe_install_firmware_update(send_intent);
 
     // Otherwise, get ready to boot the main system...
     finish_recovery(send_intent);
+    ui_print("Rebooting...\n");
+    reboot_main_system(ANDROID_RB_RESTART, 0, 0);
 
-    vold_unmount_all();
-
-    sync();
-    if(!poweroff) {
-        ui_print("Rebooting...\n");
-        android_reboot(ANDROID_RB_RESTART, 0, 0);
-    }
-    else {
-        ui_print("Shutting down...\n");
-        android_reboot(ANDROID_RB_POWEROFF, 0, 0);
-    }
     return EXIT_SUCCESS;
 }
 
