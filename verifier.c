@@ -173,7 +173,7 @@ int verify_file(const char* path, const RSAPublicKey *pKeys, unsigned int numKey
         // The 6 bytes is the "(signature_start) $ff $ff (comment_size)" that
         // the signing tool appends after the signature itself.
         if (RSA_verify(pKeys+i, eocd + eocd_size - 6 - RSANUMBYTES,
-                       RSANUMBYTES, sha1)) {
+                       RSANUMBYTES, sha1, SHA_DIGEST_SIZE)) {
             LOGI("whole-file signature verified against key %d\n", i);
             free(eocd);
             return VERIFY_SUCCESS;
