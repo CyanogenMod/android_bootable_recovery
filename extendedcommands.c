@@ -1703,8 +1703,6 @@ int volume_main(int argc, char **argv) {
 }
 
 int verify_root_and_recovery() {
-    write_recovery_version();
-
     if (ensure_path_mounted("/system") != 0)
         return 0;
 
