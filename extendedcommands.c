@@ -1718,24 +1718,34 @@ int verify_root_and_recovery() {
         if (0 == lstat("/system/etc/install-recovery.sh", &st)) {
             if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
                 ui_show_text(1);
-                ret = 1;
                 if (confirm_selection("ROM may flash stock recovery on boot. Fix?", "Yes - Disable recovery flash")) {
                     __system("chmod -x /system/etc/install-recovery.sh");
+                    ret = 1;
                 }
             }
         }
     }
 
+    // do not check permissions if system android version is 4.3+
+    // in that case, no need to chmod 06755 as it could break root on +4.3 ROMs
+    // for 4.3+, su daemon will set proper 755 permissions before app requests root
+    // if no su file is found, recovery will just install su daemon on 4.3 ROMs to gain root
+    // credits @Chainfire
+    char value[PROPERTY_VALUE_MAX];
+    int needs_suid = 1;
+    read_config_file("/system/build.prop", "ro.build.version.sdk", value, "0");
+    if (atoi(value) >= 18)
+        needs_suid = 0;
 
     int exists = 0;
     if (0 == lstat("/system/bin/su", &st)) {
         exists = 1;
-        if (S_ISREG(st.st_mode)) {
+        if (needs_suid && S_ISREG(st.st_mode)) {
             if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
                 ui_show_text(1);
-                ret = 1;
                 if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system/bin/su)")) {
                     __system("chmod 6755 /system/bin/su");
+                    ret = 1;
                 }
             }
         }
@@ -1743,12 +1753,12 @@ int verify_root_and_recovery() {
 
     if (0 == lstat("/system/xbin/su", &st)) {
         exists = 1;
-        if (S_ISREG(st.st_mode)) {
+        if (needs_suid && S_ISREG(st.st_mode)) {
             if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
                 ui_show_text(1);
-                ret = 1;
                 if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system/xbin/su)")) {
                     __system("chmod 6755 /system/xbin/su");
+                    ret = 1;
                 }
             }
         }
@@ -1756,9 +1766,9 @@ int verify_root_and_recovery() {
 
     if (!exists) {
         ui_show_text(1);
-        ret = 1;
         if (confirm_selection("Root access is missing. Root device?", "Yes - Root device (/system/xbin/su)")) {
             __system("/sbin/install-su.sh");
+            ret = 2;
         }
     }
 
