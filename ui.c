@@ -556,9 +556,9 @@ void ui_init(void)
         // base image on the screen.
         if (gBackgroundIcon[BACKGROUND_ICON_INSTALLING] != NULL) {
             gr_surface bg = gBackgroundIcon[BACKGROUND_ICON_INSTALLING];
-            ui_parameters.install_overlay_offset_x +=
+            ui_parameters.install_overlay_offset_x =
                 (gr_fb_width() - gr_get_width(bg)) / 2;
-            ui_parameters.install_overlay_offset_y +=
+            ui_parameters.install_overlay_offset_y =
                 (gr_fb_height() - gr_get_height(bg)) / 2;
         }
     } else {
