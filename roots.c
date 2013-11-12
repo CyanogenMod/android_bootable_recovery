@@ -63,6 +63,19 @@ void load_volume_table() {
         return;
     }
 
+    // Process vold-managed volumes with mount point "auto"
+    for (i = 0; i < fstab->num_entries; ++i) {
+        Volume* v = &fstab->recs[i];
+        if (fs_mgr_is_voldmanaged(v) && strcmp(v->mount_point, "auto") == 0) {
+            char mount[PATH_MAX];
+
+            // Set the mount point to /storage/label which as used by vold
+            snprintf(mount, PATH_MAX, "/storage/%s", v->label);
+            free(v->mount_point);
+            v->mount_point = strdup(mount);
+        }
+    }
+
     fprintf(stderr, "recovery filesystem table\n");
     fprintf(stderr, "=========================\n");
     for (i = 0; i < fstab->num_entries; ++i) {
