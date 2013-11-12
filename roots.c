@@ -74,19 +74,43 @@ void load_volume_table() {
 }
 
 Volume* volume_for_path(const char* path) {
+    if ((strcmp(path, "/sdcard") == 0) || (strcmp(path, "/storage/sdcard0") == 0)) {
+        return volume_for_label("sdcard0");
+    } else if (strcmp(path, "/storage/sdcard1") == 0) {
+        return volume_for_label("sdcard1");
+    }
     return fs_mgr_get_entry_for_mount_point(fstab, path);
+}
+
+Volume* volume_for_label(const char* label) {
+    int i;
+
+    if (!fstab) {
+        return NULL;
+    }
+
+    for (i = 0; i < fstab->num_entries; i++) {
+        if (fstab->recs[i].label == NULL) {
+            continue;
+        }
+        if (strcmp(label, fstab->recs[i].label) == 0) {
+            return &fstab->recs[i];
+        }
+    }
+
+    return NULL;
 }
 
 int is_primary_storage_voldmanaged() {
     Volume* v;
-    v = volume_for_path("/storage/sdcard0");
+    v = volume_for_label("sdcard0");
     return fs_mgr_is_voldmanaged(v);
 }
 
 static char* primary_storage_path = NULL;
 char* get_primary_storage_path() {
     if (primary_storage_path == NULL) {
-        if (volume_for_path("/storage/sdcard0"))
+        if (volume_for_label("sdcard0"))
             primary_storage_path = "/storage/sdcard0";
         else
             primary_storage_path = "/sdcard";
@@ -167,7 +191,7 @@ int is_data_media() {
         if (strcmp(vol->mount_point, "/sdcard") == 0)
             has_sdcard = 1;
         if (fs_mgr_is_voldmanaged(vol) &&
-                (strcmp(vol->mount_point, "/storage/sdcard0") == 0))
+                (strcmp(vol->label, "sdcard0") == 0))
             has_sdcard = 1;
     }
     return !has_sdcard;
@@ -234,6 +258,10 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
 
     if (NULL == mount_point)
         mount_point = v->mount_point;
+
+    if ((strcmp(v->mount_point, "auto") == 0) && fs_mgr_is_voldmanaged(v) && (v->label != NULL)) {
+        sprintf(mount_point, "/storage/%s", v->label);
+    }
 
     const MountedVolume* mv =
         find_mounted_volume_by_mount_point(mount_point);
