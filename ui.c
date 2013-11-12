@@ -456,7 +456,8 @@ static int input_callback(int fd, short revents, void *data)
     }
     const int queue_max = sizeof(key_queue) / sizeof(key_queue[0]);
     if (ev.value > 0 && key_queue_len < queue_max) {
-        key_queue[key_queue_len++] = ev.code;
+        key_queue[key_queue_len] = ev.code;
+        key_queue_len++;
 
         if (boardEnableKeyRepeat) {
             struct timeval now;
