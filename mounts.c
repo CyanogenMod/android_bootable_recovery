@@ -123,6 +123,12 @@ scan_mounted_volumes()
             filesystem[sizeof(filesystem)-1] = '\0';
             flags[sizeof(flags)-1] = '\0';
 
+            // Volumes mounted at /mnt/media_rw/* are vold-managed and
+            // are referred to as /storage/* by vold.
+            if (strncmp(mount_point, MEDIA_DIR, strlen(MEDIA_DIR)) == 0) {
+                snprintf(mount_point, PATH_MAX, "%s%s", FUSE_DIR, mount_point + strlen(MEDIA_DIR));
+            }
+
             MountedVolume *v =
                     &g_mounts_state.volumes[g_mounts_state.volume_count++];
             v->device = strdup(device);
