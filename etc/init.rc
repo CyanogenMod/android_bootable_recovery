@@ -29,7 +29,8 @@ on init
     chmod 0775 /tmp
 
     mkdir /mnt 0775 root system
-    mkdir /storage 0050 root sdcard_r
+    mkdir /mnt/media_rw 0700 media_rw media_rw
+    mkdir /storage 0751 root sdcard_r
     mount tmpfs tmpfs /storage mode=0050,uid=0,gid=1028
 
     # See storage config details at http://source.android.com/tech/storage/
