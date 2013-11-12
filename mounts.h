@@ -17,6 +17,9 @@
 #ifndef MTDUTILS_MOUNTS_H_
 #define MTDUTILS_MOUNTS_H_
 
+#define VOLD_MEDIA_DIR "/mnt/media_rw"
+#define VOLD_FUSE_DIR "/storage"
+
 typedef struct {
  const char *device;
  const char *mount_point;
