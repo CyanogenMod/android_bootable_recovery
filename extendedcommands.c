@@ -105,6 +105,27 @@ void write_recovery_version() {
     ignore_data_media_workaround(0);
 }
 
+static void write_last_install_path(const char* install_path) {
+    char path[PATH_MAX];
+    sprintf(path, "%s%sclockworkmod/.last_install_path", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+    write_string_to_file(path, install_path);
+}
+
+const char* read_last_install_path() {
+    char path[PATH_MAX];
+    sprintf(path, "%s%sclockworkmod/.last_install_path", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+
+    ensure_path_mounted(path);
+    FILE *f = fopen(path, "r");
+    if (f != NULL) {
+        fgets(path, PATH_MAX, f);
+        fclose(f);
+
+        return path;
+    }
+    return NULL;
+}
+
 void
 toggle_signature_check()
 {
@@ -148,21 +169,22 @@ int install_zip(const char* packagefilepath)
 }
 
 #define ITEM_CHOOSE_ZIP       0
-#define ITEM_APPLY_SIDELOAD   1
-#define ITEM_SIG_CHECK        2
-#define ITEM_CHOOSE_ZIP_INT   3
+#define ITEM_CHOOSE_LAST      1
+#define ITEM_APPLY_SIDELOAD   2
+#define ITEM_SIG_CHECK        3
+#define ITEM_CHOOSE_ZIP_INT   4
 
 int show_install_update_menu()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 3];
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 4];
 
     char* primary_path = get_primary_storage_path();
     char** extra_paths = get_extra_storage_paths();
     int num_extra_volumes = get_num_extra_volumes();
 
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 4);
 
     static const char* headers[] = {  "Install update from zip file",
                                 "",
@@ -172,15 +194,17 @@ int show_install_update_menu()
     sprintf(buf, "choose zip from %s", primary_path);
     install_menu_items[0] = strdup(buf);
 
-    install_menu_items[1] = "install zip from sideload";
+    install_menu_items[1] = "choose zip from last install directory";
 
-    install_menu_items[2] = "toggle signature verification";
+    install_menu_items[2] = "install zip from sideload";
 
-    install_menu_items[3 + num_extra_volumes] = NULL;
+    install_menu_items[3] = "toggle signature verification";
+
+    install_menu_items[4 + num_extra_volumes] = NULL;
 
     for (i = 0; i < num_extra_volumes; i++) {
         sprintf(buf, "choose zip from %s", extra_paths[i]);
-        install_menu_items[3 + i] = strdup(buf);
+        install_menu_items[4 + i] = strdup(buf);
     }
 
     for (;;)
@@ -194,12 +218,23 @@ int show_install_update_menu()
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu(primary_path);
                 break;
+            case ITEM_CHOOSE_LAST:
+            {
+                char *last_path_used;
+                last_path_used = read_last_install_path();
+                if (last_path_used == NULL) {
+                    show_choose_zip_menu(primary_path);
+                } else {
+                    show_choose_zip_menu(last_path_used);
+                }
+                break;
+            }
             case ITEM_APPLY_SIDELOAD:
                 apply_from_adb();
                 break;
             default:
                 if (chosen_item >= ITEM_CHOOSE_ZIP_INT) {
-                    show_choose_zip_menu(extra_paths[chosen_item - 3]);
+                    show_choose_zip_menu(extra_paths[chosen_item - 4]);
                 } else {
                     goto out;
                 }
@@ -210,7 +245,7 @@ out:
     free(install_menu_items[0]);
     if (extra_paths != NULL) {
         for (i = 0; i < num_extra_volumes; i++)
-            free(install_menu_items[3 + i]);
+            free(install_menu_items[4 + i]);
     }
     return chosen_item;
 }
@@ -437,8 +472,11 @@ void show_choose_zip_menu(const char *mount_point)
     static char* confirm_install  = "Confirm install?";
     static char confirm[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
-    if (confirm_selection(confirm_install, confirm))
+
+    if (confirm_selection(confirm_install, confirm)) {
         install_zip(file);
+        write_last_install_path(dirname(file));
+    }
 }
 
 void show_nandroid_restore_menu(const char* path)
