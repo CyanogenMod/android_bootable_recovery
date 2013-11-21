@@ -7,6 +7,18 @@ static int old_x = 0;
 static int old_y = 0;
 static int diff_x = 0;
 static int diff_y = 0;
+static int min_x_swipe_px = 100;
+static int min_y_swipe_px = 80;
+
+static void set_min_swipe_lengths() {
+    char value[PROPERTY_VALUE_MAX];
+    property_get("ro.sf.lcd_density", value, "0");
+    int screen_density = atoi(value);
+    if(screen_density > 0) {
+        min_x_swipe_px = (int)(0.5 * screen_density); // Roughly 0.5in
+        min_y_swipe_px = (int)(0.3 * screen_density); // Roughly 0.3in
+    }
+}
 
 static void reset_gestures() {
     diff_x = 0;
@@ -22,6 +34,7 @@ static void reset_gestures() {
 void swipe_handle_input(int fd, struct input_event *ev) {
     int abs_store[6] = {0};
     int k;
+    set_min_swipe_lengths();
 
     ioctl(fd, EVIOCGABS(ABS_MT_POSITION_X), abs_store);
     int max_x_touch = abs_store[2];
@@ -35,7 +48,6 @@ void swipe_handle_input(int fd, struct input_event *ev) {
             reset_gestures();
         } else { // finger lifted
             ev->type = EV_KEY;
-            int keywidth = gr_fb_width() / 4;
             if(slide_right == 1) {
                 ev->code = KEY_POWER;
                 slide_right = 0;
@@ -55,10 +67,10 @@ void swipe_handle_input(int fd, struct input_event *ev) {
 
         if(old_x != 0) diff_x += touch_x - old_x;
 
-        if(diff_x > 100) {
+        if(diff_x > min_x_swipe_px) {
             slide_right = 1;
             reset_gestures();
-        } else if(diff_x < -100) {
+        } else if(diff_x < -min_x_swipe_px) {
             slide_left = 1;
             reset_gestures();
         }
@@ -69,11 +81,11 @@ void swipe_handle_input(int fd, struct input_event *ev) {
 
         if(old_y != 0) diff_y += touch_y - old_y;
 
-        if(diff_y > 80) {
+        if(diff_y > min_y_swipe_px) {
             ev->code = KEY_VOLUMEDOWN;
             ev->type = EV_KEY;
             reset_gestures();
-        } else if(diff_y < -80) {
+        } else if(diff_y < -min_y_swipe_px) {
             ev->code = KEY_VOLUMEUP;
             ev->type = EV_KEY;
             reset_gestures();
