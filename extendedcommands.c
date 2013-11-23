@@ -429,20 +429,21 @@ char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory
             int chosen_item = get_menu_selection(fixed_headers, list, 0, 0);
             if (chosen_item == GO_BACK || chosen_item == REFRESH)
                 break;
-            static char ret[PATH_MAX];
+            char ret[PATH_MAX];
             if (chosen_item < numDirs)
             {
                 char* subret = choose_file_menu(dirs[chosen_item], fileExtensionOrDirectory, headers);
                 if (subret != NULL)
                 {
                     strcpy(ret, subret);
-                    return_value = ret;
+                    return_value = strdup(ret);
+                    free(subret);
                     break;
                 }
                 continue;
             }
             strcpy(ret, files[chosen_item - numDirs]);
-            return_value = ret;
+            return_value = strdup(ret);
             break;
         }
         free_string_array(list);
@@ -476,6 +477,8 @@ void show_choose_zip_menu(const char *mount_point)
         install_zip(file);
         write_last_install_path(dirname(file));
     }
+
+    free(file);
 }
 
 void show_nandroid_restore_menu(const char* path)
@@ -498,6 +501,8 @@ void show_nandroid_restore_menu(const char* path)
 
     if (confirm_selection("Confirm restore?", "Yes - Restore"))
         nandroid_restore(file, 1, 1, 1, 1, 1, 0);
+
+    free(file);
 }
 
 void show_nandroid_delete_menu(const char* path)
@@ -523,6 +528,8 @@ void show_nandroid_delete_menu(const char* path)
         sprintf(tmp, "rm -rf %s", file);
         __system(tmp);
     }
+
+    free(file);
 }
 
 static int control_usb_storage(bool on)
@@ -1053,6 +1060,8 @@ void show_nandroid_advanced_restore_menu(const char* path)
                 nandroid_restore(file, 0, 0, 0, 0, 0, 1);
             break;
     }
+
+    free(file);
 }
 
 static void run_dedupe_gc() {
