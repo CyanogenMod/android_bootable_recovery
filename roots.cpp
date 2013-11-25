@@ -37,6 +37,20 @@ static struct fstab *fstab = NULL;
 
 extern struct selabel_handle *sehandle;
 
+static void write_fstab_entry(Volume *v, FILE *file)
+{
+    if (NULL != v && strcmp(v->fs_type, "mtd") != 0 && strcmp(v->fs_type, "emmc") != 0
+                  && strcmp(v->fs_type, "bml") != 0 && !fs_mgr_is_voldmanaged(v)
+                  && strncmp(v->blk_device, "/", 1) == 0
+                  && strncmp(v->mount_point, "/", 1) == 0) {
+
+        fprintf(file, "%s ", v->blk_device);
+        fprintf(file, "%s ", v->mount_point);
+        fprintf(file, "%s ", v->fs_type);
+        fprintf(file, "%s 0 0\n", v->fs_options == NULL ? "defaults" : v->fs_options);
+    }
+}
+
 void load_volume_table()
 {
     int i;
@@ -56,13 +70,25 @@ void load_volume_table()
         return;
     }
 
+    // Create a boring /etc/fstab so tools like Busybox work
+    FILE *file = fopen("/etc/fstab", "w");
+    if (file == NULL) {
+        LOGW("Unable to create /etc/fstab!\n");
+        return;
+    }
+
     printf("recovery filesystem table\n");
     printf("=========================\n");
     for (i = 0; i < fstab->num_entries; ++i) {
         Volume* v = &fstab->recs[i];
         printf("  %d %s %s %s %lld\n", i, v->mount_point, v->fs_type,
                v->blk_device, v->length);
+
+        write_fstab_entry(v, file);
     }
+
+    fclose(file);
+
     printf("\n");
 }
 
