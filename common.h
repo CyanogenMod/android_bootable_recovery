@@ -47,6 +47,9 @@ void ui_set_show_text(int value);
 int ui_get_text_cols();
 void ui_setMenuTextColor(int r, int g, int b, int a);
 
+// Show a stage indicator.  Call immediately after Init().
+void ui_set_stage(int current, int max);
+
 #ifdef ENABLE_LOKI
 extern int loki_support_enabled;
 int loki_check();
