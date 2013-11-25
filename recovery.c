@@ -60,6 +60,7 @@ static const struct option OPTIONS[] = {
   { "wipe_cache", no_argument, NULL, 'c' },
   { "show_text", no_argument, NULL, 't' },
   { "sideload", no_argument, NULL, 'l' },
+  { "stages", required_argument, NULL, 'g' },
   { NULL, 0, NULL, 0 },
 };
 
@@ -75,6 +76,7 @@ static const char *TEMPORARY_INSTALL_FILE = "/tmp/last_install";
 static const char *SIDELOAD_TEMP_DIR = "/tmp/sideload";
 
 extern UIParameters ui_parameters;    // from ui.c
+char* stage = NULL;
 
 /*
  * The recovery tool communicates with the main system through /cache files.
@@ -171,6 +173,7 @@ get_args(int *argc, char ***argv) {
     struct bootloader_message boot;
     memset(&boot, 0, sizeof(boot));
     get_bootloader_message(&boot);  // this may fail, leaving a zeroed structure
+    stage = strndup(boot.stage, sizeof(boot.stage));
 
     if (boot.command[0] != 0 && boot.command[0] != 255) {
         LOGI("Boot command: %.*s\n", sizeof(boot.command), boot.command);
@@ -1008,15 +1011,6 @@ main(int argc, char **argv) {
     ui_init();
     ui_print(EXPAND(RECOVERY_VERSION)"\n");
 
-#ifdef BOARD_RECOVERY_SWIPE
-#ifndef BOARD_TOUCH_RECOVERY
-    //display directions for swipe controls
-    ui_print("Swipe up/down to change selections.\n");
-    ui_print("Swipe to the right for enter.\n");
-    ui_print("Swipe to the left for back.\n");
-#endif
-#endif
-
     load_volume_table();
     process_volumes();
     vold_init();
@@ -1053,11 +1047,35 @@ main(int argc, char **argv) {
         case 'c': wipe_cache = 1; break;
         case 't': ui_show_text(1); break;
         case 'l': sideload = 1; break;
+        case 'g': {
+            if (stage == NULL || *stage == '\0') {
+                char buffer[20] = "1/";
+                strncat(buffer, optarg, sizeof(buffer)-3);
+                stage = strdup(buffer);
+            }
+            break;
+        }
         case '?':
             LOGE("Invalid command argument\n");
             continue;
         }
     }
+
+    int st_cur, st_max;
+    if (stage != NULL && sscanf(stage, "%d/%d", &st_cur, &st_max) == 2) {
+        ui_print("Multi-stage update: step %s\n", stage);
+        ui_print("Wait for all stages to complete...\n", stage);
+    }
+#ifdef BOARD_RECOVERY_SWIPE
+#ifndef BOARD_TOUCH_RECOVERY
+    else {
+        //display directions for swipe controls
+        ui_print("Swipe up/down to change selections.\n");
+        ui_print("Swipe to the right for enter.\n");
+        ui_print("Swipe to the left for back.\n");
+    }
+#endif
+#endif
 
     struct selinux_opt seopts[] = {
       { SELABEL_OPT_PATH, "/file_contexts" }
