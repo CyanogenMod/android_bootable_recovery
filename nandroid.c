@@ -35,6 +35,7 @@
 #include <sys/vfs.h>
 
 #include "extendedcommands.h"
+#include "recovery_settings.h"
 #include "nandroid.h"
 #include "mounts.h"
 
@@ -292,7 +293,11 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     strcpy(name, basename(mount_point));
 
     struct stat file_info;
-    int callback = stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info) != 0;
+    // sdcard is mounted at this point by previous call to refresh_default_backup_handler()
+    // let's ensure it anyway
+    sprintf(tmp, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
+    ensure_path_mounted(tmp);
+    int callback = stat(tmp, &file_info) != 0;
 
     ui_print("Backing up %s...\n", name);
     if (0 != (ret = ensure_path_mounted(mount_point) != 0)) {
@@ -695,7 +700,10 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
 
     ensure_directory(mount_point);
 
-    int callback = stat("/sdcard/clockworkmod/.hidenandroidprogress", &file_info) != 0;
+    char path[PATH_MAX];
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
+    ensure_path_mounted(path);
+    int callback = stat(path, &file_info) != 0;
 
     ui_print("Restoring %s...\n", name);
     if (backup_filesystem == NULL) {
