@@ -32,6 +32,7 @@
 #include "recovery_ui.h"
 
 #include "extendedcommands.h"
+#include "recovery_settings.h"
 #include "nandroid.h"
 #include "mounts.h"
 #include "flashutils/flashutils.h"
@@ -97,7 +98,7 @@ void write_string_to_file(const char* filename, const char* string) {
 
 void write_recovery_version() {
     char path[PATH_MAX];
-    sprintf(path, "%s%sclockworkmod/.recovery_version", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_VERSION_FILE);
     write_string_to_file(path,EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
     // force unmount /data on /data/media devices as we call this on recovery start
     ignore_data_media_workaround(1);
@@ -107,13 +108,13 @@ void write_recovery_version() {
 
 static void write_last_install_path(const char* install_path) {
     char path[PATH_MAX];
-    sprintf(path, "%s%sclockworkmod/.last_install_path", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_LAST_INSTALL_FILE);
     write_string_to_file(path, install_path);
 }
 
 const char* read_last_install_path() {
     char path[PATH_MAX];
-    sprintf(path, "%s%sclockworkmod/.last_install_path", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_LAST_INSTALL_FILE);
 
     ensure_path_mounted(path);
     FILE *f = fopen(path, "r");
@@ -575,12 +576,20 @@ int confirm_selection(const char* title, const char* confirm)
     struct stat info;
     int ret = 0;
 
-    if (0 == stat("/sdcard/clockworkmod/.no_confirm", &info))
+    char path[PATH_MAX];
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_NO_CONFIRM_FILE);
+    ensure_path_mounted(path);
+    if (0 == stat(path, &info))
         return 1;
 
+    int many_confirm;
     char* confirm_str = strdup(confirm);
     const char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
-    int many_confirm = 0 == stat("/sdcard/clockworkmod/.many_confirm", &info);
+
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_MANY_CONFIRM_FILE);
+    ensure_path_mounted(path);
+    many_confirm = 0 == stat(path, &info);
+
     if (many_confirm) {
         char* items[] = { "No",
                         "No",
@@ -1098,18 +1107,20 @@ static void choose_default_backup_format() {
         list = list_tar_default;
     }
 
+    char path[PATH_MAX];
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), NANDROID_BACKUP_FORMAT_FILE);
     int chosen_item = get_menu_selection(headers, list, 0, 0);
     switch (chosen_item) {
         case 0:
-            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tar");
+            write_string_to_file(path, "tar");
             ui_print("Default backup format set to tar.\n");
             break;
         case 1:
-            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
+            write_string_to_file(path, "dup");
             ui_print("Default backup format set to dedupe.\n");
             break;
         case 2:
-            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tgz");
+            write_string_to_file(path, "tgz");
             ui_print("Default backup format set to tar + gzip.\n");
             break;
     }
