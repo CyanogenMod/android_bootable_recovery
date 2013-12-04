@@ -45,14 +45,7 @@
 
 #include "adb_install.h"
 
-#ifdef ENABLE_LOKI
-#include "compact_loki.h"
-#endif
-
 int signature_check_enabled = 1;
-#ifdef ENABLE_LOKI
-int loki_support_enabled = 1;
-#endif
 int script_assert_enabled = 1;
 
 int
@@ -134,9 +127,8 @@ toggle_signature_check()
 }
 
 #ifdef ENABLE_LOKI
-void
-toggle_loki_support()
-{
+int loki_support_enabled = 1;
+void toggle_loki_support() {
     loki_support_enabled = !loki_support_enabled;
     ui_print("Loki Support: %s\n", loki_support_enabled ? "Enabled" : "Disabled");
 }
@@ -148,6 +140,7 @@ int install_zip(const char* packagefilepath)
     if (device_flash_type() == MTD) {
         set_sdcard_update_bootloader_message();
     }
+
     int status = install_package(packagefilepath);
     ui_reset_progress();
     if (status != INSTALL_SUCCESS) {
@@ -155,14 +148,18 @@ int install_zip(const char* packagefilepath)
         ui_print("Installation aborted.\n");
         return 1;
     }
+
 #ifdef ENABLE_LOKI
-    if(loki_support_enabled) {
-       ui_print("Checking if loki-fying is needed");
-       if (loki_check() != 0) {
-           return 1;
-       }
+    if (loki_support_enabled) {
+        ui_print("Checking if loki-fying is needed");
+        status = loki_check();
+        if (status != INSTALL_SUCCESS) {
+            ui_set_background(BACKGROUND_ICON_ERROR);
+            return 1;
+        }
     }
 #endif
+
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_print("\nInstall from sdcard complete.\n");
     return 0;
