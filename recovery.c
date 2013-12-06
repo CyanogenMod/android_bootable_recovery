@@ -1091,3 +1091,8 @@ main(int argc, char **argv) {
 int get_allow_toggle_display() {
     return allow_display_toggle;
 }
+
+void set_perf_mode(int on) {
+    property_set("recovery.perf.mode", on ? "1" : "0");
+}
+

@@ -154,4 +154,6 @@ FILE* fopen_path(const char *path, const char *mode);
 int ui_get_selected_item();
 int ui_is_showing_back_button();
 
+void set_perf_mode(int on);
+
 #endif  // RECOVERY_COMMON_H
