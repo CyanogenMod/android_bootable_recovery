@@ -10,6 +10,7 @@ int nandroid_undump(const char* partition);
 void nandroid_dedupe_gc(const char* blob_dir);
 void nandroid_force_backup_format(const char* fmt);
 unsigned nandroid_get_default_backup_format();
+static void set_perf_mode(int on);
 
 #define NANDROID_BACKUP_FORMAT_FILE "/sdcard/clockworkmod/.default_backup_format"
 #define NANDROID_BACKUP_FORMAT_TAR 0
