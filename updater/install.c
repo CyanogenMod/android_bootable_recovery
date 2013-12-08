@@ -816,7 +816,11 @@ static int ApplyParsedPerms(
 
     if (parsed.has_capabilities && S_ISREG(statptr->st_mode)) {
         if (parsed.capabilities == 0) {
-            if ((removexattr(filename, XATTR_NAME_CAPS) == -1) && (errno != ENODATA)) {
+            if ((removexattr(filename, XATTR_NAME_CAPS) == -1) && ((errno != ENODATA)
+#ifdef RECOVERY_CANT_USE_CONFIG_EXT4_FS_XATTR
+                 && (errno != EOPNOTSUPP)
+#endif
+               )) {
                 // Report failure unless it's ENODATA (attribute not set)
                 printf("ApplyParsedPerms: removexattr of %s to %" PRIx64 " failed: %s\n",
                        filename, parsed.capabilities, strerror(errno));
@@ -830,7 +834,11 @@ static int ApplyParsedPerms(
             cap_data.data[0].inheritable = 0;
             cap_data.data[1].permitted = (uint32_t) (parsed.capabilities >> 32);
             cap_data.data[1].inheritable = 0;
-            if (setxattr(filename, XATTR_NAME_CAPS, &cap_data, sizeof(cap_data), 0) < 0) {
+            if (setxattr(filename, XATTR_NAME_CAPS, &cap_data, sizeof(cap_data), 0) < 0
+#ifdef RECOVERY_CANT_USE_CONFIG_EXT4_FS_XATTR
+                 && (errno != EOPNOTSUPP)
+#endif
+               ) {
                 printf("ApplyParsedPerms: setcap of %s to %" PRIx64 " failed: %s\n",
                        filename, parsed.capabilities, strerror(errno));
                 bad++;
