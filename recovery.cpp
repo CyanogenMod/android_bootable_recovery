@@ -714,7 +714,7 @@ get_menu_selection(const char* const * headers, const char* const * items,
     int selected = initial_selection;
     int chosen_item = -1;
 
-    while (chosen_item < 0) {
+    while (chosen_item < 0 && chosen_item != Device::kGoBack) {
         int key = ui->WaitKey();
         int visible = ui->IsTextVisible();
 
@@ -726,6 +726,8 @@ get_menu_selection(const char* const * headers, const char* const * items,
                 ui->EndMenu();
                 return 0; // XXX fixme
             }
+        } else if (key == -2) { // we are returning from ui_cancel_wait_key(): trigger a GO_BACK
+            return Device::kGoBack;
         }
 
         int action = device->HandleMenuKey(key, visible);
@@ -742,6 +744,9 @@ get_menu_selection(const char* const * headers, const char* const * items,
                     chosen_item = selected;
                     break;
                 case Device::kNoAction:
+                    break;
+                case Device::kGoBack:
+                    chosen_item = Device::kGoBack;
                     break;
             }
         } else if (!menu_only) {
@@ -1071,6 +1076,8 @@ static int apply_from_sdcard(Device* device, bool* wipe_cache) {
     return result;
 }
 
+int ui_root_menu = 0;
+
 // Return REBOOT, SHUTDOWN, or REBOOT_BOOTLOADER.  Returning NO_ACTION
 // means to take the default, which is to reboot or shutdown depending
 // on if the --shutdown_after flag was passed to recovery.
@@ -1078,6 +1085,7 @@ static Device::BuiltinAction
 prompt_and_wait(Device* device, int status) {
     for (;;) {
         finish_recovery(NULL);
+        ui_root_menu = 1;
         switch (status) {
             case INSTALL_SUCCESS:
             case INSTALL_NONE:
@@ -1092,6 +1100,7 @@ prompt_and_wait(Device* device, int status) {
         ui->SetProgressType(RecoveryUI::EMPTY);
 
         int chosen_item = get_menu_selection(nullptr, device->GetMenuItems(), 0, 0, device);
+        ui_root_menu = 0;
 
         // device-specific code may take some action here.  It may
         // return one of the core actions handled in the switch
