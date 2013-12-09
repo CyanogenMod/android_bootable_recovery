@@ -52,6 +52,7 @@
 
 #define NUM_BUFFERS 2
 #define ALIGN(x, align) (((x) + ((align)-1)) & ~((align)-1))
+#define MAX_DISPLAY_DIM  2048
 
 typedef struct {
     GGLSurface texture;
@@ -78,6 +79,8 @@ static struct fb_var_screeninfo vi;
 static struct fb_fix_screeninfo fi;
 
 static bool has_overlay = false;
+static int leftSplit = 0;
+static int rightSplit = 0;
 
 bool target_has_overlay(char *version);
 int free_ion_mem(void);
@@ -110,6 +113,9 @@ static int get_framebuffer(GGLSurface *fb)
     }
 
     has_overlay = target_has_overlay(fi.id);
+
+    if(isTargetMdp5())
+        setDisplaySplit();
 
     if (!has_overlay) {
        vi.bits_per_pixel = PIXEL_SIZE * 8;
@@ -203,6 +209,59 @@ static void get_memory_surface(GGLSurface* ms) {
   ms->stride = fi.line_length/PIXEL_SIZE;
   ms->data = malloc(fi.line_length * vi.yres);
   ms->format = PIXEL_FORMAT;
+}
+
+void setDisplaySplit() {
+    char split[64] = {0};
+    FILE* fp = fopen("/sys/class/graphics/fb0/msm_fb_split", "r");
+    if (fp) {
+        //Format "left right" space as delimiter
+        if(fread(split, sizeof(char), 64, fp)) {
+            leftSplit = atoi(split);
+            printf("Left Split=%d\n",leftSplit);
+            char *rght = strpbrk(split, " ");
+            if (rght)
+                rightSplit = atoi(rght + 1);
+            printf("Right Split=%d\n", rightSplit);
+        }
+    } else {
+        printf("Failed to open mdss_fb_split node\n");
+    }
+    if (fp)
+        fclose(fp);
+}
+
+int getLeftSplit() {
+   //Default even split for all displays with high res
+   int lSplit = vi.xres / 2;
+
+   //Override if split published by driver
+   if (leftSplit)
+       lSplit = leftSplit;
+
+   return lSplit;
+}
+
+int getRightSplit() {
+   return rightSplit;
+}
+
+bool isDisplaySplit() {
+    if (vi.xres > MAX_DISPLAY_DIM)
+        return true;
+    //check if right split is set by driver
+    if (getRightSplit())
+        return true;
+
+    return false;
+}
+
+int getFbXres() {
+    return vi.xres;
+}
+
+int getFbYres () {
+    return vi.yres;
 }
 
 static void set_active_framebuffer(unsigned n)
