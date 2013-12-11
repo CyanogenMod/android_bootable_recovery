@@ -37,6 +37,53 @@
 
 static struct fstab *fstab = NULL;
 
+/* Support additional extra.fstab entries and add device2
+* Needed until fs_mgr_read_fstab() starts to parse a blk_device2 entries
+* extra.fstab sample:
+----> start extra.fstab
+# add here entries already existing in main device fstab, but for which you want a blk_device2, fs_type2 or fs_options2
+# used to partition sdcard and format it to custom fstype
+# ext2/ext3 support needs this too
+# used also to stat for size of mtd/yaffs2 partitions
+
+# blk_device2           # mount_point           fs_type2    fs_options2     flags (not used in extra.fstab code)
+/dev/block/mmcblk0p28   /storage/sdcard0 		auto	    defaults		defaults
+/dev/block/mmcblk1p1	/storage/sdcard1 		auto	    defaults		defaults
+/dev/block/sda1			/storage/usbdisk0 		auto	    defaults		defaults
+<---- end extra.fstab
+*/
+static struct fstab *fstab_extra = NULL;
+static void add_extra_fstab_entries(int num) {
+    int i;
+    for(i = 0; i < fstab->num_entries; ++i) {
+        if (strcmp(fstab->recs[i].mount_point, fstab_extra->recs[num].mount_point) == 0) {
+            fstab->recs[i].blk_device2 = strdup(fstab_extra->recs[num].blk_device);
+            fstab->recs[i].fs_type2 = strdup(fstab_extra->recs[num].fs_type);
+            if (fstab_extra->recs[num].fs_options != NULL)
+                fstab->recs[i].fs_options2 = strdup(fstab_extra->recs[num].fs_options);
+        }
+    }
+}
+
+static void load_volume_table_extra() {
+    int i;
+
+    fstab_extra = fs_mgr_read_fstab("/etc/extra.fstab");
+    if (!fstab_extra) {
+        LOGI("No /etc/extra.fstab\n");
+        return;
+    }
+
+    fprintf(stderr, "extra filesystem table (device2, fstype2, options2):\n");
+    for(i = 0; i < fstab_extra->num_entries; ++i) {
+        Volume* v = &fstab_extra->recs[i];
+        add_extra_fstab_entries(i);
+        fprintf(stderr, "  %d %s %s %s %lld\n", i, v->mount_point, v->fs_type,
+                v->blk_device, v->length);
+    }
+    fprintf(stderr, "\n");
+}
+
 int get_num_volumes() {
     return fstab->num_entries;
 }
@@ -76,12 +123,18 @@ void load_volume_table() {
         }
     }
 
+    load_volume_table_extra();
+
     fprintf(stderr, "recovery filesystem table\n");
     fprintf(stderr, "=========================\n");
     for (i = 0; i < fstab->num_entries; ++i) {
         Volume* v = &fstab->recs[i];
         fprintf(stderr, "  %d %s %s %s %lld\n", i, v->mount_point, v->fs_type,
-               v->blk_device, v->length);
+                v->blk_device, v->length);
+        if (v->blk_device2 != NULL) {
+            fprintf(stderr, "  %d %s %s %s %lld\n", i, v->mount_point, v->fs_type2,
+                    v->blk_device2, v->length);
+        }
     }
     fprintf(stderr, "\n");
 }
