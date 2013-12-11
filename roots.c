@@ -258,9 +258,11 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
     mkdir(mount_point, 0755);  // in case it doesn't already exist
 
     if (fs_mgr_is_voldmanaged(v)) {
-        return vold_mount_volume(mount_point, 1) == CommandOkay ? 0 : -1;
+        result = vold_mount_volume(mount_point, 1) == CommandOkay ? 0 : -1;
+        if (result == 0) return 0;
+    }
 
-    } else if (strcmp(v->fs_type, "yaffs2") == 0) {
+    if (strcmp(v->fs_type, "yaffs2") == 0) {
         // mount an MTD partition as a YAFFS2 filesystem.
         mtd_scan_partitions();
         const MtdPartition* partition;
@@ -282,6 +284,12 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
         if ((result = try_mount(v->blk_device2, mount_point, v->fs_type2, v->fs_options2)) == 0)
             return 0;
         return result;
+    } else if (strcmp(v->fs_type, "auto") == 0) {
+        // either we are using fstab with non vold managed external storage or vold failed to mount a storage (ext2/ext4, some vfat systems)
+        // on vold managed devices, we need the blk_device2
+        char mount_cmd[PATH_MAX];
+        sprintf(mount_cmd, "mount %s %s", v->blk_device2 != NULL ? v->blk_device2 : v->blk_device, mount_point);
+        return __system(mount_cmd);
     } else {
         // let's try mounting with the mount binary and hope for the best.
         char mount_cmd[PATH_MAX];
