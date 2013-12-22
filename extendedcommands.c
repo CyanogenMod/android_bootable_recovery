@@ -1233,10 +1233,10 @@ void format_sdcard(const char* volume) {
     if (is_data_media_volume_path(volume))
         return;
 
-    Volume *vol = volume_for_path(volume);
-    if (vol == NULL || strcmp(vol->fs_type, "auto") != 0)
+    Volume *v = volume_for_path(volume);
+    if (v == NULL || strcmp(v->fs_type, "auto") != 0)
         return;
-    if (!fs_mgr_is_voldmanaged(vol) && !can_partition(volume))
+    if (!fs_mgr_is_voldmanaged(v) && !can_partition(volume))
         return;
 
     char* headers[] = {"Format device:", volume, "", NULL };
@@ -1259,7 +1259,6 @@ void format_sdcard(const char* volume) {
     if (!confirm_selection( "Confirm formatting?", "Yes - Format device"))
         return;
 
-    Volume *v = volume_for_path(volume);
     if (ensure_path_unmounted(v->mount_point) != 0)
         return;
 
