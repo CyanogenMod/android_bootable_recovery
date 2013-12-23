@@ -55,24 +55,30 @@ int loki_support_enabled = 1;
 #endif
 int script_assert_enabled = 1;
 
-int
-get_filtered_menu_selection(const char** headers, char** items, int menu_only, int initial_selection, int items_count) {
+int get_filtered_menu_selection(const char** headers, char** items, int menu_only, int initial_selection, int items_count) {
     int index;
     int offset = 0;
     int* translate_table = (int*)malloc(sizeof(int) * items_count);
+    char* items_new[items_count];
+
+    // copy the list
+    for(index = 0; index < items_count; ++index) {
+        items_new[index] = items[index];
+    }
+
     for (index = 0; index < items_count; index++) {
-        if (items[index] == NULL)
+        if (items_new[index] == NULL)
             continue;
-        char *item = items[index];
-        items[index] = NULL;
-        items[offset] = item;
+        char *item = items_new[index];
+        items_new[index] = NULL;
+        items_new[offset] = item;
         translate_table[offset] = index;
         offset++;
     }
-    items[offset] = NULL;
+    items_new[offset] = NULL;
 
     initial_selection = translate_table[initial_selection];
-    int ret = get_menu_selection(headers, items, menu_only, initial_selection);
+    int ret = get_menu_selection(headers, items_new, menu_only, initial_selection);
     if (ret < 0 || ret >= offset) {
         free(translate_table);
         return ret;
@@ -89,7 +95,7 @@ void write_string_to_file(const char* filename, const char* string) {
     sprintf(tmp, "mkdir -p $(dirname %s)", filename);
     __system(tmp);
     FILE *file = fopen(filename, "w");
-    if( file != NULL) {
+    if (file != NULL) {
         fprintf(file, "%s", string);
         fclose(file);
     }
@@ -840,7 +846,7 @@ int show_partition_menu()
 
     num_volumes = get_num_volumes();
 
-    if(!num_volumes)
+    if (!num_volumes)
         return 0;
 
     mountable_volumes = 0;
@@ -849,14 +855,14 @@ int show_partition_menu()
     mount_menu = malloc(num_volumes * sizeof(MountMenuEntry));
     format_menu = malloc(num_volumes * sizeof(FormatMenuEntry));
 
-    for (i = 0; i < num_volumes; i++) {
+    for(i = 0; i < num_volumes; i++) {
         Volume* v = get_device_volumes() + i;
 
         if (fs_mgr_is_voldmanaged(v) && !vold_is_volume_available(v->mount_point)) {
             continue;
         }
 
-        if(strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0 && strcmp("emmc", v->fs_type) != 0 && strcmp("bml", v->fs_type) != 0) {
+        if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0 && strcmp("emmc", v->fs_type) != 0 && strcmp("bml", v->fs_type) != 0) {
             if (strcmp("datamedia", v->fs_type) != 0) {
                 sprintf(mount_menu[mountable_volumes].mount, "mount %s", v->mount_point);
                 sprintf(mount_menu[mountable_volumes].unmount, "unmount %s", v->mount_point);
@@ -881,7 +887,7 @@ int show_partition_menu()
 
     for (;;)
     {
-        for (i = 0; i < mountable_volumes; i++)
+        for(i = 0; i < mountable_volumes; i++)
         {
             MountMenuEntry* e = &mount_menu[i];
             if(is_path_mounted(e->path))
@@ -890,7 +896,7 @@ int show_partition_menu()
                 list[i] = e->mount;
         }
 
-        for (i = 0; i < formatable_volumes; i++)
+        for(i = 0; i < formatable_volumes; i++)
         {
             FormatMenuEntry* e = &format_menu[i];
             list[mountable_volumes+i] = e->txt;
