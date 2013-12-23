@@ -99,9 +99,6 @@ void *adb_sideload_thread(void* v) {
 
 int
 apply_from_adb() {
-#ifdef ENABLE_LOKI
-    int loki_support;
-#endif
     stop_adbd();
     set_usb_driver(1);
 
@@ -154,19 +151,18 @@ apply_from_adb() {
         ui_print("Installation aborted.\n");
     }
 
-    remove(ADB_SIDELOAD_FILENAME);
 #ifdef ENABLE_LOKI
-    if(loki_support_enabled) {
-       ui_print("Checking if loki-fying is needed");
-       int result;
-       if(result = loki_check()) {
-           return result;
-       }
+    else if (loki_support_enabled) {
+        ui_print("Checking if loki-fying is needed");
+        install_status = loki_check();
+        if (install_status != INSTALL_SUCCESS)
+            ui_set_background(BACKGROUND_ICON_ERROR);
     }
 #endif
 
     if (install_status == INSTALL_SUCCESS)
         ui_set_background(BACKGROUND_ICON_NONE);
 
+    remove(ADB_SIDELOAD_FILENAME);
     return install_status;
 }
