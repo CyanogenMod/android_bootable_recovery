@@ -164,5 +164,10 @@ apply_from_adb() {
        }
     }
 #endif
+
+    if (install_status == INSTALL_SUCCESS)
+        ui_set_background(BACKGROUND_ICON_NONE);
+
+    remove(ADB_SIDELOAD_FILENAME);
     return install_status;
 }
