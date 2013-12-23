@@ -164,5 +164,9 @@ apply_from_adb() {
        }
     }
 #endif
+
+    if (install_status == INSTALL_SUCCESS)
+        ui_set_background(BACKGROUND_ICON_NONE);
+
     return install_status;
 }
