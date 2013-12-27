@@ -69,7 +69,6 @@ static int overlayL_id = MSMFB_NEW_REQUEST;
 static int overlayR_id = MSMFB_NEW_REQUEST;
 
 static memInfo mem_info;
-static isMDP5 = false;
 
 static int map_mdp_pixel_format()
 {
@@ -84,6 +83,7 @@ static int map_mdp_pixel_format()
 #endif // #ifdef MSM_BSP
 
 static bool overlay_supported = false;
+static bool isMDP5 = false;
 
 bool target_has_overlay(char *version)
 {

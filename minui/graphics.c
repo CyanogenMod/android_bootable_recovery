@@ -83,6 +83,7 @@ static int leftSplit = 0;
 static int rightSplit = 0;
 
 bool target_has_overlay(char *version);
+bool isTargetMdp5(void);
 int free_ion_mem(void);
 int alloc_ion_mem(unsigned int size);
 int allocate_overlay(int fd, GGLSurface gr_fb[]);
@@ -211,7 +212,7 @@ static void get_memory_surface(GGLSurface* ms) {
   ms->format = PIXEL_FORMAT;
 }
 
-void setDisplaySplit() {
+void setDisplaySplit(void) {
     char split[64] = {0};
     FILE* fp = fopen("/sys/class/graphics/fb0/msm_fb_split", "r");
     if (fp) {
@@ -231,7 +232,7 @@ void setDisplaySplit() {
         fclose(fp);
 }
 
-int getLeftSplit() {
+int getLeftSplit(void) {
    //Default even split for all displays with high res
    int lSplit = vi.xres / 2;
 
@@ -242,11 +243,11 @@ int getLeftSplit() {
    return lSplit;
 }
 
-int getRightSplit() {
+int getRightSplit(void) {
    return rightSplit;
 }
 
-bool isDisplaySplit() {
+bool isDisplaySplit(void) {
     if (vi.xres > MAX_DISPLAY_DIM)
         return true;
     //check if right split is set by driver
@@ -256,11 +257,11 @@ bool isDisplaySplit() {
     return false;
 }
 
-int getFbXres() {
+int getFbXres(void) {
     return vi.xres;
 }
 
-int getFbYres () {
+int getFbYres (void) {
     return vi.yres;
 }
 
