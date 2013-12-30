@@ -1287,7 +1287,11 @@ void format_sdcard(const char* volume) {
                 sprintf(cmd, "/sbin/mkntfs -f %s", v->blk_device);
                 ret = __system(cmd);
             } else if (strcmp(list[chosen_item], "ext4") == 0) {
-                ret = make_ext4fs(v->blk_device, v->length, volume, sehandle);
+                char options[64] = "";
+                if (v->length)
+                    sprintf(options, "-l %lld", v->length);
+                sprintf(cmd, "/sbin/make_ext4fs -J %s %s", options, v->blk_device);
+                ret = __system(cmd);
             }
             break;
         case 5:
