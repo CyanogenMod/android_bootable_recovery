@@ -1286,7 +1286,14 @@ void format_sdcard(const char* volume) {
                 sprintf(cmd, "/sbin/mkntfs -f %s", v->blk_device);
                 ret = __system(cmd);
             } else if (strcmp(list[chosen_item], "ext4") == 0) {
-                ret = make_ext4fs(v->blk_device, v->length, volume, sehandle);
+                char *secontext = NULL;
+                if (selabel_lookup(sehandle, &secontext, v->mount_point, S_IFDIR) < 0) {
+                    LOGE("cannot lookup security context for %s\n", v->mount_point);
+                    ret = make_ext4fs(v->blk_device, v->length, volume, NULL);
+                } else {
+                    ret = make_ext4fs(v->blk_device, v->length, volume, sehandle);
+                    freecon(secontext);
+                }
             }
             break;
         }
