@@ -216,6 +216,10 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
     return __pclose(fp);
 }
 
+static void build_configuration_path(char *path_buf, const char *file) {
+    sprintf(path_buf, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), file);
+}
+
 static nandroid_backup_handler default_backup_handler = tar_compress_wrapper;
 static char forced_backup_format[5] = "";
 void nandroid_force_backup_format(const char* fmt) {
@@ -227,8 +231,11 @@ static void refresh_default_backup_handler() {
         strcpy(fmt, forced_backup_format);
     }
     else {
-        ensure_path_mounted(get_primary_storage_path());
-        FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
+        char path[PATH_MAX];
+
+        build_configuration_path(path, NANDROID_BACKUP_FORMAT_FILE);
+        ensure_path_mounted(path);
+        FILE* f = fopen(path, "r");
         if (NULL == f) {
             default_backup_handler = tar_compress_wrapper;
             return;
@@ -295,7 +302,7 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     struct stat file_info;
     // sdcard is mounted at this point by previous call to refresh_default_backup_handler()
     // let's ensure it anyway
-    sprintf(tmp, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
+    build_configuration_path(tmp, NANDROID_HIDE_PROGRESS_FILE);
     ensure_path_mounted(tmp);
     int callback = stat(tmp, &file_info) != 0;
 
@@ -701,7 +708,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     ensure_directory(mount_point);
 
     char path[PATH_MAX];
-    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
+    build_configuration_path(path, NANDROID_HIDE_PROGRESS_FILE);
     ensure_path_mounted(path);
     int callback = stat(path, &file_info) != 0;
 
