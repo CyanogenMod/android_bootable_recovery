@@ -68,19 +68,17 @@ static const struct option OPTIONS[] = {
 };
 
 #define LAST_LOG_FILE "/cache/recovery/last_log"
-
 static const char *CACHE_LOG_DIR = "/cache/recovery";
 static const char *COMMAND_FILE = "/cache/recovery/command";
 static const char *INTENT_FILE = "/cache/recovery/intent";
 static const char *LOG_FILE = "/cache/recovery/log";
 static const char *LAST_INSTALL_FILE = "/cache/recovery/last_install";
 static const char *CACHE_ROOT = "/cache";
-static const char *SDCARD_ROOT = "/sdcard";
-static int allow_display_toggle = 0;
 static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
 static const char *TEMPORARY_INSTALL_FILE = "/tmp/last_install";
 static const char *SIDELOAD_TEMP_DIR = "/tmp/sideload";
 
+static int allow_display_toggle = 0;
 extern UIParameters ui_parameters;    // from ui.c
 
 /*
