@@ -42,18 +42,14 @@
 #include "flashutils/flashutils.h"
 #include <libgen.h>
 
-void nandroid_generate_timestamp_path(char* backup_path)
-{
+void nandroid_generate_timestamp_path(char* backup_path) {
     time_t t = time(NULL);
     struct tm *tmp = localtime(&t);
-    if (tmp == NULL)
-    {
+    if (tmp == NULL) {
         struct timeval tp;
         gettimeofday(&tp, NULL);
         sprintf(backup_path, "/sdcard/clockworkmod/backup/%ld", tp.tv_sec);
-    }
-    else
-    {
+    } else {
         strftime(backup_path, PATH_MAX, "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
     }
 }
@@ -74,8 +70,7 @@ static int nandroid_backup_bitfield = 0;
 #define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
 static int nandroid_files_total = 0;
 static int nandroid_files_count = 0;
-static void nandroid_callback(const char* filename)
-{
+static void nandroid_callback(const char* filename) {
     if (filename == NULL)
         return;
     const char* justfile = basename(filename);
@@ -93,8 +88,7 @@ static void nandroid_callback(const char* filename)
         ui_delete_line();
 }
 
-static void compute_directory_stats(const char* directory)
-{
+static void compute_directory_stats(const char* directory) {
     char tmp[PATH_MAX];
     sprintf(tmp, "find %s | %s wc -l > /tmp/dircount", directory, strcmp(directory, "/data") == 0 && is_data_media() ? "grep -v /data/media |" : "");
     __system(tmp);
@@ -230,8 +224,7 @@ static void refresh_default_backup_handler() {
     char fmt[5];
     if (strlen(forced_backup_format) > 0) {
         strcpy(fmt, forced_backup_format);
-    }
-    else {
+    } else {
         char path[PATH_MAX];
 
         build_configuration_path(path, NANDROID_BACKUP_FORMAT_FILE);
@@ -372,8 +365,7 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
     return nandroid_backup_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_backup(const char* backup_path)
-{
+int nandroid_backup(const char* backup_path) {
     nandroid_backup_bitfield = 0;
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     refresh_default_backup_handler();
@@ -415,8 +407,7 @@ int nandroid_backup(const char* backup_path)
         goto out;
 
     Volume *vol = volume_for_path("/wimax");
-    if (vol != NULL && 0 == stat(vol->blk_device, &s))
-    {
+    if (vol != NULL && 0 == stat(vol->blk_device, &s)) {
         char serialno[PROPERTY_VALUE_MAX];
         ui_print("Backing up WiMAX...\n");
         serialno[0] = 0;
@@ -440,8 +431,7 @@ int nandroid_backup(const char* backup_path)
 
     if (is_data_media() || 0 != stat(get_android_secure_path(), &s)) {
         ui_print("No .android_secure found. Skipping backup of applications on external storage.\n");
-    }
-    else {
+    } else {
         if (0 != (ret = nandroid_backup_partition_extended(backup_path, get_android_secure_path(), 0)))
             goto out;
     }
@@ -450,12 +440,9 @@ int nandroid_backup(const char* backup_path)
         goto out;
 
     vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->blk_device, &s))
-    {
+    if (vol == NULL || 0 != stat(vol->blk_device, &s)) {
         LOGI("No sd-ext found. Skipping backup of sd-ext.\n");
-    }
-    else
-    {
+    } else {
         if (0 != ensure_path_mounted("/sd-ext"))
             LOGI("Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n");
         else if (0 != (ret = nandroid_backup_partition(backup_path, "/sd-ext")))
@@ -614,7 +601,6 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
         return tar_extract_wrapper;
     }
-
     // cwr 5, we prefer tar for everything unless it is yaffs2
     char str[255];
     char* partition;
@@ -650,8 +636,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             backup_filesystem = vol->fs_type;
         restore_handler = tar_extract_wrapper;
         strcpy(tmp, "/proc/self/fd/0");
-    }
-    else if (0 != (ret = stat(tmp, &file_info))) {
+    } else if (0 != (ret = stat(tmp, &file_info))) {
         // can't find the backup, it may be the new backup format?
         // iterate through the backup types
         printf("couldn't find default\n");
@@ -688,12 +673,10 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         if (backup_filesystem == NULL || restore_handler == NULL) {
             ui_print("%s.img not found. Skipping restore of %s.\n", name, mount_point);
             return 0;
-        }
-        else {
+        } else {
             printf("Found new backup image: %s\n", tmp);
         }
     }
-
     // If the fs_type of this volume is "auto" or mount_point is /data
     // and is_data_media, let's revert
     // to using a rm -rf, rather than trying to do a
@@ -722,8 +705,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             ui_print("Error while formatting %s!\n", mount_point);
             return ret;
         }
-    }
-    else if (0 != (ret = format_device(device, mount_point, backup_filesystem))) {
+    } else if (0 != (ret = format_device(device, mount_point, backup_filesystem))) {
         ui_print("Error while formatting %s!\n", mount_point);
         return ret;
     }
@@ -792,8 +774,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
     return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax)
-{
+int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax) {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
     nandroid_files_total = 0;
@@ -817,8 +798,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     struct stat s;
     Volume *vol = volume_for_path("/wimax");
-    if (restore_wimax && vol != NULL && 0 == stat(vol->blk_device, &s))
-    {
+    if (restore_wimax && vol != NULL && 0 == stat(vol->blk_device, &s)) {
         char serialno[PROPERTY_VALUE_MAX];
 
         serialno[0] = 0;
@@ -826,15 +806,12 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
 
         struct stat st;
-        if (0 != stat(tmp, &st))
-        {
+        if (0 != stat(tmp, &st)) {
             ui_print("WARNING: WiMAX partition exists, but nandroid\n");
             ui_print("         backup does not contain WiMAX image.\n");
             ui_print("         You should create a new backup to\n");
             ui_print("         protect your WiMAX keys.\n");
-        }
-        else
-        {
+        } else {
             ui_print("Erasing WiMAX before restore...\n");
             if (0 != (ret = format_volume("/wimax")))
                 return print_and_error("Error while formatting wimax!\n");
@@ -884,17 +861,17 @@ int nandroid_undump(const char* partition) {
     }
 
     if (strcmp(partition, "recovery") == 0) {
-        if(0 != (ret = nandroid_restore_partition("-", "/recovery")))
+        if (0 != (ret = nandroid_restore_partition("-", "/recovery")))
             return ret;
     }
 
     if (strcmp(partition, "system") == 0) {
-        if(0 != (ret = nandroid_restore_partition("-", "/system")))
+        if (0 != (ret = nandroid_restore_partition("-", "/system")))
             return ret;
     }
 
     if (strcmp(partition, "data") == 0) {
-        if(0 != (ret = nandroid_restore_partition("-", "/data")))
+        if (0 != (ret = nandroid_restore_partition("-", "/data")))
             return ret;
     }
 
@@ -902,8 +879,7 @@ int nandroid_undump(const char* partition) {
     return 0;
 }
 
-int nandroid_usage()
-{
+int nandroid_usage() {
     printf("Usage: nandroid backup\n");
     printf("Usage: nandroid restore <directory>\n");
     printf("Usage: nandroid dump <partition>\n");
@@ -934,13 +910,11 @@ int bu_main(int argc, char** argv) {
             dup2(fd, STDOUT_FILENO);
             close(fd);
         }
-
         // fprintf(stderr, "%d %d %s\n", fd, STDOUT_FILENO, argv[3]);
         int ret = nandroid_dump(partition);
         sleep(10);
         return ret;
-    }
-    else if (strcmp(argv[2], "restore") == 0) {
+    } else if (strcmp(argv[2], "restore") == 0) {
         if (argc != 3) {
             return bu_usage();
         }
@@ -962,16 +936,14 @@ int bu_main(int argc, char** argv) {
     return bu_usage();
 }
 
-int nandroid_main(int argc, char** argv)
-{
+int nandroid_main(int argc, char** argv) {
     load_volume_table();
     char backup_path[PATH_MAX];
 
     if (argc > 3 || argc < 2)
         return nandroid_usage();
 
-    if (strcmp("backup", argv[1]) == 0)
-    {
+    if (strcmp("backup", argv[1]) == 0) {
         if (argc != 2)
             return nandroid_usage();
 
@@ -979,22 +951,19 @@ int nandroid_main(int argc, char** argv)
         return nandroid_backup(backup_path);
     }
 
-    if (strcmp("restore", argv[1]) == 0)
-    {
+    if (strcmp("restore", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
         return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
     }
 
-    if (strcmp("dump", argv[1]) == 0)
-    {
+    if (strcmp("dump", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
         return nandroid_dump(argv[2]);
     }
 
-    if (strcmp("undump", argv[1]) == 0)
-    {
+    if (strcmp("undump", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
         return nandroid_undump(argv[2]);
