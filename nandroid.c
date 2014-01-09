@@ -42,29 +42,25 @@
 #include "flashutils/flashutils.h"
 #include <libgen.h>
 
-void nandroid_generate_timestamp_path(char* backup_path)
-{
+void nandroid_generate_timestamp_path(char *backup_path) {
     time_t t = time(NULL);
     struct tm *tmp = localtime(&t);
-    if (tmp == NULL)
-    {
+    if (tmp == NULL) {
         struct timeval tp;
         gettimeofday(&tp, NULL);
         sprintf(backup_path, "/sdcard/clockworkmod/backup/%ld", tp.tv_sec);
-    }
-    else
-    {
+    } else {
         strftime(backup_path, PATH_MAX, "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
     }
 }
 
-static void ensure_directory(const char* dir) {
+static void ensure_directory(const char *dir) {
     char tmp[PATH_MAX];
     sprintf(tmp, "mkdir -p %s ; chmod 777 %s", dir, dir);
     __system(tmp);
 }
 
-static int print_and_error(const char* message) {
+static int print_and_error(const char *message) {
     set_perf_mode(0);
     ui_print("%s\n", message);
     return 1;
@@ -74,11 +70,10 @@ static int nandroid_backup_bitfield = 0;
 #define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
 static int nandroid_files_total = 0;
 static int nandroid_files_count = 0;
-static void nandroid_callback(const char* filename)
-{
+static void nandroid_callback(const char *filename) {
     if (filename == NULL)
         return;
-    const char* justfile = basename(filename);
+    const char *justfile = basename(filename);
     char tmp[PATH_MAX];
     strcpy(tmp, justfile);
     if (tmp[strlen(tmp) - 1] == '\n')
@@ -88,18 +83,17 @@ static void nandroid_callback(const char* filename)
     ui_increment_frame();
     ui_nice_print("%s\n", tmp);
     if (!ui_was_niced() && nandroid_files_total != 0)
-        ui_set_progress((float)nandroid_files_count / (float)nandroid_files_total);
+        ui_set_progress((float) nandroid_files_count / (float) nandroid_files_total);
     if (!ui_was_niced())
         ui_delete_line();
 }
 
-static void compute_directory_stats(const char* directory)
-{
+static void compute_directory_stats(const char *directory) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "find %s | %s wc -l > /tmp/dircount", directory, strcmp(directory, "/data") == 0 && is_data_media() ? "grep -v /data/media |" : "");
+    sprintf(tmp, "find %s | %s wc -l > /tmp/dircount", directory, strcmp(directory, "/data") == 0 && is_data_media()? "grep -v /data/media |" : "");
     __system(tmp);
     char count_text[100];
-    FILE* f = fopen("/tmp/dircount", "r");
+    FILE *f = fopen("/tmp/dircount", "r");
     fread(count_text, 1, sizeof(count_text), f);
     fclose(f);
     nandroid_files_count = 0;
@@ -108,10 +102,10 @@ static void compute_directory_stats(const char* directory)
     ui_show_progress(1, 0);
 }
 
-typedef void (*file_event_callback)(const char* filename);
-typedef int (*nandroid_backup_handler)(const char* backup_path, const char* backup_file_image, int callback);
+typedef void (*file_event_callback) (const char *filename);
+typedef int (*nandroid_backup_handler) (const char *backup_path, const char *backup_file_image, int callback);
 
-static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
+static int mkyaffs2image_wrapper(const char *backup_path, const char *backup_file_image, int callback) {
     char tmp[PATH_MAX];
     sprintf(tmp, "cd %s ; mkyaffs2image . %s.img ; exit $?", backup_path, backup_file_image);
 
@@ -130,7 +124,7 @@ static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_fil
     return __pclose(fp);
 }
 
-static int do_tar_compress(char* command, int callback) {
+static int do_tar_compress(char *command, int callback) {
     char buf[PATH_MAX];
 
     FILE *fp = __popen(command, "r");
@@ -148,28 +142,33 @@ static int do_tar_compress(char* command, int callback) {
     return __pclose(fp);
 }
 
-static int tar_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
+static int tar_compress_wrapper(const char *backup_path, const char *backup_file_image, int callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; touch %s.tar ; (tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar.) 2> /proc/self/fd/1 ; exit $?", backup_path, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "--exclude 'media'" : "", backup_path, backup_file_image);
+    sprintf(tmp,
+            "cd $(dirname %s) ; touch %s.tar ; (tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar.) 2> /proc/self/fd/1 ; exit $?",
+            backup_path, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media()? "--exclude 'media'" : "", backup_path, backup_file_image);
 
     return do_tar_compress(tmp, callback);
 }
 
-static int tar_gzip_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
+static int tar_gzip_compress_wrapper(const char *backup_path, const char *backup_file_image, int callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s) ; touch %s.tar.gz ; (tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) | pigz -c | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar.gz.) 2> /proc/self/fd/1 ; exit $?", backup_path, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "--exclude 'media'" : "", backup_path, backup_file_image);
+    sprintf(tmp,
+            "cd $(dirname %s) ; touch %s.tar.gz ; (tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) | pigz -c | split -a 1 -b 1000000000 /proc/self/fd/0 %s.tar.gz.) 2> /proc/self/fd/1 ; exit $?",
+            backup_path, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media()? "--exclude 'media'" : "", backup_path, backup_file_image);
 
     return do_tar_compress(tmp, callback);
 }
 
-static int tar_dump_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
+static int tar_dump_wrapper(const char *backup_path, const char *backup_file_image, int callback) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "cd $(dirname %s); tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) 2> /dev/null | cat", backup_path, strcmp(backup_path, "/data") == 0 && is_data_media() ? "--exclude 'media'" : "", backup_path);
+    sprintf(tmp, "cd $(dirname %s); tar cv --exclude=data/data/com.google.android.music/files/* %s $(basename %s) 2> /dev/null | cat", backup_path,
+            strcmp(backup_path, "/data") == 0 && is_data_media()? "--exclude 'media'" : "", backup_path);
 
     return __system(tmp);
 }
 
-void nandroid_dedupe_gc(const char* blob_dir) {
+void nandroid_dedupe_gc(const char *blob_dir) {
     char backup_dir[PATH_MAX];
     strcpy(backup_dir, blob_dir);
     char *d = dirname(backup_dir);
@@ -182,7 +181,7 @@ void nandroid_dedupe_gc(const char* blob_dir) {
     ui_print("Done freeing space.\n");
 }
 
-static int dedupe_compress_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
+static int dedupe_compress_wrapper(const char *backup_path, const char *backup_file_image, int callback) {
     char tmp[PATH_MAX];
     char blob_dir[PATH_MAX];
     strcpy(blob_dir, backup_file_image);
@@ -200,7 +199,7 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
         nandroid_dedupe_gc(blob_dir);
     }
 
-    sprintf(tmp, "dedupe c %s %s %s.dup %s", backup_path, blob_dir, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media() ? "./media" : "");
+    sprintf(tmp, "dedupe c %s %s %s.dup %s", backup_path, blob_dir, backup_file_image, strcmp(backup_path, "/data") == 0 && is_data_media()? "./media" : "");
 
     FILE *fp = __popen(tmp, "r");
     if (fp == NULL) {
@@ -219,17 +218,16 @@ static int dedupe_compress_wrapper(const char* backup_path, const char* backup_f
 
 static nandroid_backup_handler default_backup_handler = tar_compress_wrapper;
 static char forced_backup_format[5] = "";
-void nandroid_force_backup_format(const char* fmt) {
+void nandroid_force_backup_format(const char *fmt) {
     strcpy(forced_backup_format, fmt);
 }
 static void refresh_default_backup_handler() {
     char fmt[5];
     if (strlen(forced_backup_format) > 0) {
         strcpy(fmt, forced_backup_format);
-    }
-    else {
+    } else {
         ensure_path_mounted(get_primary_storage_path());
-        FILE* f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
+        FILE *f = fopen(NANDROID_BACKUP_FORMAT_FILE, "r");
         if (NULL == f) {
             default_backup_handler = tar_compress_wrapper;
             return;
@@ -286,7 +284,7 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
     return default_backup_handler;
 }
 
-int nandroid_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
+int nandroid_backup_partition_extended(const char *backup_path, const char *mount_point, int umount_when_finished) {
 
     int ret = 0;
     char name[PATH_MAX];
@@ -294,7 +292,7 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     strcpy(name, basename(mount_point));
 
     struct stat file_info;
-    sprintf(tmp, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
+    sprintf(tmp, "%s%s%s", get_primary_storage_path(), (is_data_media()? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
     ensure_path_mounted(tmp);
     int callback = stat(tmp, &file_info) != 0;
 
@@ -334,7 +332,7 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     return 0;
 }
 
-int nandroid_backup_partition(const char* backup_path, const char* root) {
+int nandroid_backup_partition(const char *backup_path, const char *root) {
     Volume *vol = volume_for_path(root);
     // make sure the volume exists before attempting anything...
     if (vol == NULL || vol->fs_type == NULL)
@@ -343,10 +341,8 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
     // see if we need a raw backup (mtd)
     char tmp[PATH_MAX];
     int ret;
-    if (strcmp(vol->fs_type, "mtd") == 0 ||
-            strcmp(vol->fs_type, "bml") == 0 ||
-            strcmp(vol->fs_type, "emmc") == 0) {
-        const char* name = basename(root);
+    if (strcmp(vol->fs_type, "mtd") == 0 || strcmp(vol->fs_type, "bml") == 0 || strcmp(vol->fs_type, "emmc") == 0) {
+        const char *name = basename(root);
         if (strcmp(backup_path, "-") == 0)
             strcpy(tmp, "/proc/self/fd/1");
         else
@@ -365,8 +361,7 @@ int nandroid_backup_partition(const char* backup_path, const char* root) {
     return nandroid_backup_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_backup(const char* backup_path)
-{
+int nandroid_backup(const char *backup_path) {
     nandroid_backup_bitfield = 0;
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     refresh_default_backup_handler();
@@ -375,7 +370,7 @@ int nandroid_backup(const char* backup_path)
         return print_and_error("Can't mount backup path.\n");
     }
 
-    Volume* volume;
+    Volume *volume;
     if (is_data_media_volume_path(backup_path))
         volume = volume_for_path("/data");
     else
@@ -391,7 +386,7 @@ int nandroid_backup(const char* backup_path)
         uint64_t bavail = sfs.f_bavail;
         uint64_t bsize = sfs.f_bsize;
         uint64_t sdcard_free = bavail * bsize;
-        uint64_t sdcard_free_mb = sdcard_free / (uint64_t)(1024 * 1024);
+        uint64_t sdcard_free_mb = sdcard_free / (uint64_t) (1024 * 1024);
         ui_print("SD Card space free: %lluMB\n", sdcard_free_mb);
         if (sdcard_free_mb < 150)
             ui_print("There may not be enough free space to complete backup... continuing...\n");
@@ -408,8 +403,7 @@ int nandroid_backup(const char* backup_path)
         goto out;
 
     Volume *vol = volume_for_path("/wimax");
-    if (vol != NULL && 0 == stat(vol->blk_device, &s))
-    {
+    if (vol != NULL && 0 == stat(vol->blk_device, &s)) {
         char serialno[PROPERTY_VALUE_MAX];
         ui_print("Backing up WiMAX...\n");
         serialno[0] = 0;
@@ -433,8 +427,7 @@ int nandroid_backup(const char* backup_path)
 
     if (is_data_media() || 0 != stat(get_android_secure_path(), &s)) {
         ui_print("No .android_secure found. Skipping backup of applications on external storage.\n");
-    }
-    else {
+    } else {
         if (0 != (ret = nandroid_backup_partition_extended(backup_path, get_android_secure_path(), 0)))
             goto out;
     }
@@ -443,12 +436,9 @@ int nandroid_backup(const char* backup_path)
         goto out;
 
     vol = volume_for_path("/sd-ext");
-    if (vol == NULL || 0 != stat(vol->blk_device, &s))
-    {
+    if (vol == NULL || 0 != stat(vol->blk_device, &s)) {
         LOGI("No sd-ext found. Skipping backup of sd-ext.\n");
-    }
-    else
-    {
+    } else {
         if (0 != ensure_path_mounted("/sd-ext"))
             LOGI("Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n");
         else if (0 != (ret = nandroid_backup_partition(backup_path, "/sd-ext")))
@@ -465,19 +455,21 @@ int nandroid_backup(const char* backup_path)
     sprintf(tmp, "cp /tmp/recovery.log %s/recovery.log", backup_path);
     __system(tmp);
 
-    sprintf(tmp, "chmod -R 777 %s ; chmod -R u+r,u+w,g+r,g+w,o+r,o+w /sdcard/clockworkmod ; chmod u+x,g+x,o+x /sdcard/clockworkmod/backup ; chmod u+x,g+x,o+x /sdcard/clockworkmod/blobs", backup_path);
+    sprintf(tmp,
+            "chmod -R 777 %s ; chmod -R u+r,u+w,g+r,g+w,o+r,o+w /sdcard/clockworkmod ; chmod u+x,g+x,o+x /sdcard/clockworkmod/backup ; chmod u+x,g+x,o+x /sdcard/clockworkmod/blobs",
+            backup_path);
     __system(tmp);
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
     ui_print("\nBackup complete!\n");
 
-out:
+  out:
     set_perf_mode(0);
     return ret;
 }
 
-int nandroid_dump(const char* partition) {
+int nandroid_dump(const char *partition) {
     // silence our ui_print statements and other logging
     ui_set_log_stdout(0);
 
@@ -506,9 +498,9 @@ int nandroid_dump(const char* partition) {
     return 1;
 }
 
-typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, int callback);
+typedef int (*nandroid_restore_handler) (const char *backup_file_image, const char *backup_path, int callback);
 
-static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+static int unyaffs_wrapper(const char *backup_file_image, const char *backup_path, int callback) {
     char tmp[PATH_MAX];
     sprintf(tmp, "cd %s ; unyaffs %s ; exit $?", backup_path, backup_file_image);
     FILE *fp = __popen(tmp, "r");
@@ -526,7 +518,7 @@ static int unyaffs_wrapper(const char* backup_file_image, const char* backup_pat
     return __pclose(fp);
 }
 
-static int do_tar_extract(char* command, int callback) {
+static int do_tar_extract(char *command, int callback) {
     char buf[PATH_MAX];
 
     FILE *fp = __popen(command, "r");
@@ -544,21 +536,21 @@ static int do_tar_extract(char* command, int callback) {
     return __pclose(fp);
 }
 
-static int tar_gzip_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+static int tar_gzip_extract_wrapper(const char *backup_file_image, const char *backup_path, int callback) {
     char tmp[PATH_MAX];
     sprintf(tmp, "cd $(dirname %s) ; cat %s* | pigz -d -c | tar xv ; exit $?", backup_path, backup_file_image);
 
     return do_tar_extract(tmp, callback);
 }
 
-static int tar_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+static int tar_extract_wrapper(const char *backup_file_image, const char *backup_path, int callback) {
     char tmp[PATH_MAX];
     sprintf(tmp, "cd $(dirname %s) ; cat %s* | tar xv ; exit $?", backup_path, backup_file_image);
 
     return do_tar_extract(tmp, callback);
 }
 
-static int dedupe_extract_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+static int dedupe_extract_wrapper(const char *backup_file_image, const char *backup_path, int callback) {
     char tmp[PATH_MAX];
     char blob_dir[PATH_MAX];
     strcpy(blob_dir, backup_file_image);
@@ -584,7 +576,7 @@ static int dedupe_extract_wrapper(const char* backup_file_image, const char* bac
     return __pclose(fp);
 }
 
-static int tar_undump_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
+static int tar_undump_wrapper(const char *backup_file_image, const char *backup_path, int callback) {
     char tmp[PATH_MAX];
     sprintf(tmp, "cd $(dirname %s) ; tar xv ", backup_path);
 
@@ -607,10 +599,9 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
         return tar_extract_wrapper;
     }
-
     // cwr 5, we prefer tar for everything unless it is yaffs2
     char str[255];
-    char* partition;
+    char *partition;
     property_get("ro.cwm.prefer_tar", str, "false");
     if (strcmp("true", str) != 0) {
         return unyaffs_wrapper;
@@ -623,13 +614,13 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     return tar_extract_wrapper;
 }
 
-int nandroid_restore_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
+int nandroid_restore_partition_extended(const char *backup_path, const char *mount_point, int umount_when_finished) {
     int ret = 0;
-    char* name = basename(mount_point);
+    char *name = basename(mount_point);
 
     nandroid_restore_handler restore_handler = NULL;
     const char *filesystems[] = { "yaffs2", "ext2", "ext3", "ext4", "vfat", "rfs", "f2fs", NULL };
-    const char* backup_filesystem = NULL;
+    const char *backup_filesystem = NULL;
     Volume *vol = volume_for_path(mount_point);
     const char *device = NULL;
     if (vol != NULL)
@@ -643,8 +634,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             backup_filesystem = vol->fs_type;
         restore_handler = tar_extract_wrapper;
         strcpy(tmp, "/proc/self/fd/0");
-    }
-    else if (0 != (ret = stat(tmp, &file_info))) {
+    } else if (0 != (ret = stat(tmp, &file_info))) {
         // can't find the backup, it may be the new backup format?
         // iterate through the backup types
         printf("couldn't find default\n");
@@ -681,12 +671,10 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         if (backup_filesystem == NULL || restore_handler == NULL) {
             ui_print("%s.img not found. Skipping restore of %s.\n", name, mount_point);
             return 0;
-        }
-        else {
+        } else {
             printf("Found new backup image: %s\n", tmp);
         }
     }
-
     // If the fs_type of this volume is "auto" or mount_point is /data
     // and is_data_media, let's revert
     // to using a rm -rf, rather than trying to do a
@@ -705,7 +693,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     ensure_directory(mount_point);
 
     char path[PATH_MAX];
-    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
+    sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media()? "/0/" : "/"), NANDROID_HIDE_PROGRESS_FILE);
     ensure_path_mounted(path);
     int callback = stat(path, &file_info) != 0;
 
@@ -715,8 +703,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             ui_print("Error while formatting %s!\n", mount_point);
             return ret;
         }
-    }
-    else if (0 != (ret = format_device(device, mount_point, backup_filesystem))) {
+    } else if (0 != (ret = format_device(device, mount_point, backup_filesystem))) {
         ui_print("Error while formatting %s!\n", mount_point);
         return ret;
     }
@@ -751,7 +738,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     return 0;
 }
 
-int nandroid_restore_partition(const char* backup_path, const char* root) {
+int nandroid_restore_partition(const char *backup_path, const char *root) {
     Volume *vol = volume_for_path(root);
     // make sure the volume exists...
     if (vol == NULL || vol->fs_type == NULL)
@@ -759,11 +746,9 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
 
     // see if we need a raw restore (mtd)
     char tmp[PATH_MAX];
-    if (strcmp(vol->fs_type, "mtd") == 0 ||
-            strcmp(vol->fs_type, "bml") == 0 ||
-            strcmp(vol->fs_type, "emmc") == 0) {
+    if (strcmp(vol->fs_type, "mtd") == 0 || strcmp(vol->fs_type, "bml") == 0 || strcmp(vol->fs_type, "emmc") == 0) {
         int ret;
-        const char* name = basename(root);
+        const char *name = basename(root);
         ui_print("Erasing %s before restore...\n", name);
         if (0 != (ret = format_volume(root))) {
             ui_print("Error while erasing %s image!", name);
@@ -785,8 +770,7 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
     return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax)
-{
+int nandroid_restore(const char *backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax) {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
     nandroid_files_total = 0;
@@ -810,8 +794,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     struct stat s;
     Volume *vol = volume_for_path("/wimax");
-    if (restore_wimax && vol != NULL && 0 == stat(vol->blk_device, &s))
-    {
+    if (restore_wimax && vol != NULL && 0 == stat(vol->blk_device, &s)) {
         char serialno[PROPERTY_VALUE_MAX];
 
         serialno[0] = 0;
@@ -819,15 +802,12 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         sprintf(tmp, "%s/wimax.%s.img", backup_path, serialno);
 
         struct stat st;
-        if (0 != stat(tmp, &st))
-        {
+        if (0 != stat(tmp, &st)) {
             ui_print("WARNING: WiMAX partition exists, but nandroid\n");
             ui_print("         backup does not contain WiMAX image.\n");
             ui_print("         You should create a new backup to\n");
             ui_print("         protect your WiMAX keys.\n");
-        }
-        else
-        {
+        } else {
             ui_print("Erasing WiMAX before restore...\n");
             if (0 != (ret = format_volume("/wimax")))
                 return print_and_error("Error while formatting wimax!\n");
@@ -862,12 +842,12 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     ui_reset_progress();
     ui_print("\nRestore complete!\n");
 
-out:
+  out:
     set_perf_mode(0);
     return ret;
 }
 
-int nandroid_undump(const char* partition) {
+int nandroid_undump(const char *partition) {
     nandroid_files_total = 0;
 
     int ret;
@@ -877,17 +857,17 @@ int nandroid_undump(const char* partition) {
     }
 
     if (strcmp(partition, "recovery") == 0) {
-        if(0 != (ret = nandroid_restore_partition("-", "/recovery")))
+        if (0 != (ret = nandroid_restore_partition("-", "/recovery")))
             return ret;
     }
 
     if (strcmp(partition, "system") == 0) {
-        if(0 != (ret = nandroid_restore_partition("-", "/system")))
+        if (0 != (ret = nandroid_restore_partition("-", "/system")))
             return ret;
     }
 
     if (strcmp(partition, "data") == 0) {
-        if(0 != (ret = nandroid_restore_partition("-", "/data")))
+        if (0 != (ret = nandroid_restore_partition("-", "/data")))
             return ret;
     }
 
@@ -895,8 +875,7 @@ int nandroid_undump(const char* partition) {
     return 0;
 }
 
-int nandroid_usage()
-{
+int nandroid_usage() {
     printf("Usage: nandroid backup\n");
     printf("Usage: nandroid restore <directory>\n");
     printf("Usage: nandroid dump <partition>\n");
@@ -912,7 +891,7 @@ static int bu_usage() {
     return 1;
 }
 
-int bu_main(int argc, char** argv) {
+int bu_main(int argc, char **argv) {
     load_volume_table();
 
     if (strcmp(argv[2], "backup") == 0) {
@@ -921,19 +900,17 @@ int bu_main(int argc, char** argv) {
         }
 
         int fd = atoi(argv[1]);
-        char* partition = argv[3];
+        char *partition = argv[3];
 
         if (fd != STDOUT_FILENO) {
             dup2(fd, STDOUT_FILENO);
             close(fd);
         }
-
         // fprintf(stderr, "%d %d %s\n", fd, STDOUT_FILENO, argv[3]);
         int ret = nandroid_dump(partition);
         sleep(10);
         return ret;
-    }
-    else if (strcmp(argv[2], "restore") == 0) {
+    } else if (strcmp(argv[2], "restore") == 0) {
         if (argc != 3) {
             return bu_usage();
         }
@@ -944,7 +921,7 @@ int bu_main(int argc, char** argv) {
             close(fd);
         }
         char partition[100];
-        FILE* f = fopen("/tmp/ro.bu.restore", "r");
+        FILE *f = fopen("/tmp/ro.bu.restore", "r");
         fread(partition, 1, sizeof(partition), f);
         fclose(f);
 
@@ -955,16 +932,14 @@ int bu_main(int argc, char** argv) {
     return bu_usage();
 }
 
-int nandroid_main(int argc, char** argv)
-{
+int nandroid_main(int argc, char **argv) {
     load_volume_table();
     char backup_path[PATH_MAX];
 
     if (argc > 3 || argc < 2)
         return nandroid_usage();
 
-    if (strcmp("backup", argv[1]) == 0)
-    {
+    if (strcmp("backup", argv[1]) == 0) {
         if (argc != 2)
             return nandroid_usage();
 
@@ -972,22 +947,19 @@ int nandroid_main(int argc, char** argv)
         return nandroid_backup(backup_path);
     }
 
-    if (strcmp("restore", argv[1]) == 0)
-    {
+    if (strcmp("restore", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
         return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
     }
 
-    if (strcmp("dump", argv[1]) == 0)
-    {
+    if (strcmp("dump", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
         return nandroid_dump(argv[2]);
     }
 
-    if (strcmp("undump", argv[1]) == 0)
-    {
+    if (strcmp("undump", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
         return nandroid_undump(argv[2]);
