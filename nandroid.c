@@ -56,7 +56,7 @@ void nandroid_generate_timestamp_path(char* backup_path) {
 
 static void ensure_directory(const char* dir) {
     char tmp[PATH_MAX];
-    sprintf(tmp, "mkdir -p %s ; chmod 777 %s", dir, dir);
+    sprintf(tmp, "mkdir -p %s && chmod 777 %s", dir, dir);
     __system(tmp);
 }
 
@@ -459,8 +459,16 @@ int nandroid_backup(const char* backup_path) {
     sprintf(tmp, "cp /tmp/recovery.log %s/recovery.log", backup_path);
     __system(tmp);
 
-    sprintf(tmp, "chmod -R 777 %s ; chmod -R u+r,u+w,g+r,g+w,o+r,o+w /sdcard/clockworkmod ; chmod u+x,g+x,o+x /sdcard/clockworkmod/backup ; chmod u+x,g+x,o+x /sdcard/clockworkmod/blobs", backup_path);
+    char base_dir[PATH_MAX];
+    strcpy(base_dir, backup_path);
+    char *d = dirname(base_dir);
+    strcpy(base_dir, d);
+    d = dirname(base_dir);
+    strcpy(base_dir, d);
+
+    sprintf(tmp, "chmod -R 777 %s ; chmod -R u+r,u+w,g+r,g+w,o+r,o+w %s ; chmod u+x,g+x,o+x %s/backup ; chmod u+x,g+x,o+x %s/blobs", backup_path, base_dir, base_dir, base_dir);
     __system(tmp);
+
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
