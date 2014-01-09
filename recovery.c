@@ -1187,7 +1187,11 @@ int get_allow_toggle_display() {
     return allow_display_toggle;
 }
 
-void set_perf_mode(int on) {
-    property_set("recovery.perf.mode", on ? "1" : "0");
+void set_perf_mode(int mode) {
+    if (mode >= 0 && mode <= 2) {
+        char buf[2];
+        sprintf(buf, "%d", mode);
+        property_set("recovery.perf.mode", buf);
+    }
 }
 
