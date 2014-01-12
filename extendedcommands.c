@@ -1439,7 +1439,8 @@ int show_advanced_menu() {
             case 3: {
                 if (0 != ensure_path_mounted("/data"))
                     break;
-                ensure_path_mounted("/sd-ext");
+                if (volume_for_path("/sd-ext") != NULL)
+                    ensure_path_mounted("/sd-ext");
                 ensure_path_mounted("/cache");
                 if (confirm_selection("Confirm wipe?", "Yes - Wipe Dalvik Cache")) {
                     __system("rm -r /data/dalvik-cache");
