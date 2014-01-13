@@ -142,6 +142,66 @@ try_update_binary(const char *path, ZipArchive *zip) {
         return 1;
     }
 
+    /* Make sure the update binary is compatible with this recovery
+     *
+     * We're building this against 4.4's (or above) bionic, which
+     * has a different property namespace structure. Old updaters
+     * don't know how to deal with it, so if we think we got one
+     * of those, force the use of a fallback compatible copy and
+     * hope for the best
+     *
+     * if "set_perm_" is found, it's probably a regular updater
+     * instead of a custom one. And if "set_metadata_" isn't there,
+     * it's pre-4.4, which makes it incompatible
+     *
+     * Also, I hate matching strings in binary blobs */
+
+    FILE *updaterfile = fopen(binary, "rb");
+    char tmpbuf;
+    char setpermmatch[9] = { 's','e','t','_','p','e','r','m','_' };
+    char setmetamatch[13] = { 's','e','t','_','m','e','t','a','d','a','t','a','_' };
+    int pos=0;
+    bool foundsetperm = false;
+    bool foundsetmeta = false;
+
+    if (updaterfile == NULL) {
+        LOGE("Can't find %s for validation\n", ASSUMED_UPDATE_BINARY_NAME);
+        return 1;
+    }
+    fseek(updaterfile, 0, SEEK_SET);
+    while (!feof(updaterfile)) {
+        fread(&tmpbuf, 1, 1, updaterfile);
+        if (!foundsetperm && tmpbuf == setpermmatch[pos]) {
+            pos++;
+            if (pos == 9) foundsetperm = true;
+            continue;
+        }
+        if (!foundsetmeta && tmpbuf == setmetamatch[pos]) {
+            pos++;
+            if (pos == 13) foundsetmeta = true;
+            continue;
+        }
+        /* None of the match loops got a continuation, reset the counter */
+        pos=0;
+    }
+    fclose(updaterfile);
+
+    /* Found set_perm and !set_metadata, overwrite the binary with the fallback */
+    if (foundsetperm && !foundsetmeta) {
+        FILE *fallbackupdater = fopen("/res/updater.fallback", "rb");
+        FILE *updaterfile = fopen(binary, "wb");
+        char updbuf[1024];
+
+        LOGW("Using fallback updater for downgrade...\n");
+        while (!feof(fallbackupdater)) {
+           fread(&updbuf, 1, 1024, fallbackupdater);
+           fwrite(&updbuf, 1, 1024, updaterfile);
+        }
+        chmod(binary,0755);
+        fclose(updaterfile);
+        fclose(fallbackupdater);
+    }
+
     int pipefd[2];
     pipe(pipefd);
 
