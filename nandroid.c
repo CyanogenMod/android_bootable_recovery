@@ -61,7 +61,6 @@ static void ensure_directory(const char* dir) {
 }
 
 static int print_and_error(const char* message) {
-    set_perf_mode(0);
     ui_print("%s\n", message);
     return 1;
 }
@@ -127,9 +126,11 @@ static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_fil
 static int do_tar_compress(char* command, int callback) {
     char buf[PATH_MAX];
 
+    set_perf_mode(1);
     FILE *fp = __popen(command, "r");
     if (fp == NULL) {
         ui_print("Unable to execute tar command!\n");
+        set_perf_mode(0);
         return -1;
     }
 
@@ -139,6 +140,7 @@ static int do_tar_compress(char* command, int callback) {
             nandroid_callback(buf);
     }
 
+    set_perf_mode(0);
     return __pclose(fp);
 }
 
@@ -398,13 +400,11 @@ int nandroid_backup(const char* backup_path) {
     char tmp[PATH_MAX];
     ensure_directory(backup_path);
 
-    set_perf_mode(1);
-
     if (0 != (ret = nandroid_backup_partition(backup_path, "/boot")))
-        goto out;
+        return ret;
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "/recovery")))
-        goto out;
+        return ret;
 
     Volume *vol = volume_for_path("/wimax");
     if (vol != NULL && 0 == stat(vol->blk_device, &s)) {
@@ -419,25 +419,25 @@ int nandroid_backup(const char* backup_path) {
     }
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "/system")))
-        goto out;
+        return ret;
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "/data")))
-        goto out;
+        return ret;
 
     if (has_datadata()) {
         if (0 != (ret = nandroid_backup_partition(backup_path, "/datadata")))
-            goto out;
+            return ret;
     }
 
     if (is_data_media() || 0 != stat(get_android_secure_path(), &s)) {
         ui_print("No .android_secure found. Skipping backup of applications on external storage.\n");
     } else {
         if (0 != (ret = nandroid_backup_partition_extended(backup_path, get_android_secure_path(), 0)))
-            goto out;
+            return ret;
     }
 
     if (0 != (ret = nandroid_backup_partition_extended(backup_path, "/cache", 0)))
-        goto out;
+        return ret;
 
     vol = volume_for_path("/sd-ext");
     if (vol == NULL || 0 != stat(vol->blk_device, &s)) {
@@ -446,14 +446,14 @@ int nandroid_backup(const char* backup_path) {
         if (0 != ensure_path_mounted("/sd-ext"))
             LOGI("Could not mount sd-ext. sd-ext backup may not be supported on this device. Skipping backup of sd-ext.\n");
         else if (0 != (ret = nandroid_backup_partition(backup_path, "/sd-ext")))
-            goto out;
+            return ret;
     }
 
     ui_print("Generating md5 sum...\n");
     sprintf(tmp, "nandroid-md5.sh %s", backup_path);
     if (0 != (ret = __system(tmp))) {
         ui_print("Error while generating md5 sum!\n");
-        goto out;
+        return ret;
     }
 
     sprintf(tmp, "cp /tmp/recovery.log %s/recovery.log", backup_path);
@@ -473,10 +473,7 @@ int nandroid_backup(const char* backup_path) {
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
     ui_print("\nBackup complete!\n");
-
-out:
-    set_perf_mode(0);
-    return ret;
+    return 0;
 }
 
 int nandroid_dump(const char* partition) {
@@ -538,9 +535,11 @@ static int unyaffs_wrapper(const char* backup_file_image, const char* backup_pat
 static int do_tar_extract(char* command, int callback) {
     char buf[PATH_MAX];
 
+    set_perf_mode(1);
     FILE *fp = __popen(command, "r");
     if (fp == NULL) {
         ui_print("Unable to execute tar command.\n");
+        set_perf_mode(0);
         return -1;
     }
 
@@ -550,6 +549,7 @@ static int do_tar_extract(char* command, int callback) {
             nandroid_callback(buf);
     }
 
+    set_perf_mode(0);
     return __pclose(fp);
 }
 
@@ -799,8 +799,6 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     char tmp[PATH_MAX];
 
-    set_perf_mode(1);
-
     ui_print("Checking MD5 sums...\n");
     sprintf(tmp, "cd %s && md5sum -c nandroid.md5", backup_path);
     if (0 != __system(tmp))
@@ -809,7 +807,7 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
     int ret;
 
     if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
-        goto out;
+        return ret;
 
     struct stat s;
     Volume *vol = volume_for_path("/wimax");
@@ -832,38 +830,35 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
                 return print_and_error("Error while formatting wimax!\n");
             ui_print("Restoring WiMAX image...\n");
             if (0 != (ret = restore_raw_partition(vol->fs_type, vol->blk_device, tmp)))
-                goto out;
+                return ret;
         }
     }
 
     if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "/system")))
-        goto out;
+        return ret;
 
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/data")))
-        goto out;
+        return ret;
 
     if (has_datadata()) {
         if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/datadata")))
-            goto out;
+            return ret;
     }
 
     if (restore_data && 0 != (ret = nandroid_restore_partition_extended(backup_path, get_android_secure_path(), 0)))
-        goto out;
+        return ret;
 
     if (restore_cache && 0 != (ret = nandroid_restore_partition_extended(backup_path, "/cache", 0)))
-        goto out;
+        return ret;
 
     if (restore_sdext && 0 != (ret = nandroid_restore_partition(backup_path, "/sd-ext")))
-        goto out;
+        return ret;
 
     sync();
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_reset_progress();
     ui_print("\nRestore complete!\n");
-
-out:
-    set_perf_mode(0);
-    return ret;
+    return 0;
 }
 
 int nandroid_undump(const char* partition) {
