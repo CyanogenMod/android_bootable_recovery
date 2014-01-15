@@ -160,7 +160,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
     char tmpbuf;
     char setpermmatch[9] = { 's','e','t','_','p','e','r','m','_' };
     char setmetamatch[13] = { 's','e','t','_','m','e','t','a','d','a','t','a','_' };
-    int pos=0;
+    int pos = 0;
     bool foundsetperm = false;
     bool foundsetmeta = false;
 
@@ -171,18 +171,24 @@ try_update_binary(const char *path, ZipArchive *zip) {
     fseek(updaterfile, 0, SEEK_SET);
     while (!feof(updaterfile)) {
         fread(&tmpbuf, 1, 1, updaterfile);
-        if (!foundsetperm && tmpbuf == setpermmatch[pos]) {
+        if (!foundsetperm && pos < sizeof(setpermmatch) && tmpbuf == setpermmatch[pos]) {
             pos++;
-            if (pos == 9) { foundsetperm = true; pos = 0; }
+            if (pos == sizeof(setpermmatch)) {
+                foundsetperm = true;
+                pos = 0;
+            }
             continue;
         }
         if (!foundsetmeta && tmpbuf == setmetamatch[pos]) {
             pos++;
-            if (pos == 13) { foundsetmeta = true; pos = 0; }
+            if (pos == sizeof(setmetamatch)) {
+                foundsetmeta = true;
+                pos = 0;
+            }
             continue;
         }
         /* None of the match loops got a continuation, reset the counter */
-        pos=0;
+        pos = 0;
     }
     fclose(updaterfile);
 
@@ -197,7 +203,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
            fread(&updbuf, 1, 1024, fallbackupdater);
            fwrite(&updbuf, 1, 1024, updaterfile);
         }
-        chmod(binary,0755);
+        chmod(binary, 0755);
         fclose(updaterfile);
         fclose(fallbackupdater);
     }
