@@ -173,12 +173,12 @@ try_update_binary(const char *path, ZipArchive *zip) {
         fread(&tmpbuf, 1, 1, updaterfile);
         if (!foundsetperm && tmpbuf == setpermmatch[pos]) {
             pos++;
-            if (pos == 9) foundsetperm = true;
+            if (pos == 9) { foundsetperm = true; pos = 0; }
             continue;
         }
         if (!foundsetmeta && tmpbuf == setmetamatch[pos]) {
             pos++;
-            if (pos == 13) foundsetmeta = true;
+            if (pos == 13) { foundsetmeta = true; pos = 0; }
             continue;
         }
         /* None of the match loops got a continuation, reset the counter */
