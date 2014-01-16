@@ -748,10 +748,6 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
     return 0;
 }
 
-//#define MOUNTABLE_COUNT 5
-//#define DEVICE_COUNT 4
-//#define MMC_COUNT 2
-
 typedef struct {
     char mount[255];
     char unmount[255];
@@ -764,20 +760,84 @@ typedef struct {
     char type[255];
 } FormatMenuEntry;
 
-int is_safe_to_format(char* name) {
-    char str[255];
-    char* partition;
-    property_get("ro.cwm.forbid_format", str, "/misc,/radio,/bootloader,/recovery,/efs,/wimax");
+typedef struct {
+    char *fs_type;
+    int can_mount;
+    int can_format;
+} FSTypeMatrix;
 
-    partition = strtok(str, ", ");
-    while (partition != NULL) {
-        if (strcmp(name, partition) == 0) {
-            return 0;
+typedef struct {
+    char *mount_point;
+    int can_mount;
+    int can_format;
+} MountPointMatrix;
+
+typedef struct {
+    int can_mount;
+    int can_format;
+} MountFormatMatrix;
+
+MountFormatMatrix mntfmt_matrix(char *vfs, char *vpath) {
+    MountFormatMatrix mfm = { 1 , 1 };
+
+    const int NUM_FS_TYPES = 5;
+    FSTypeMatrix *fs_matrix = malloc(NUM_FS_TYPES * sizeof(FSTypeMatrix));
+                                 //fs_type     mnt fmt
+    fs_matrix[0] = (FSTypeMatrix){ "bml",       0,  1 };
+    fs_matrix[1] = (FSTypeMatrix){ "datamedia", 0,  1 };
+    fs_matrix[2] = (FSTypeMatrix){ "emmc",      0,  1 };
+    fs_matrix[3] = (FSTypeMatrix){ "mtd",       0,  0 };
+    fs_matrix[4] = (FSTypeMatrix){ "ramdisk",   0,  0 };
+
+    const int NUM_MNT_PNTS = 6;
+    MountPointMatrix *mp_matrix = malloc(NUM_MNT_PNTS * sizeof(MountPointMatrix));
+                                     //mount_point   mnt fmt
+    mp_matrix[0] = (MountPointMatrix){ "/misc",       0,  0 };
+    mp_matrix[1] = (MountPointMatrix){ "/radio",      0,  0 };
+    mp_matrix[2] = (MountPointMatrix){ "/bootloader", 0,  0 };
+    mp_matrix[3] = (MountPointMatrix){ "/recovery",   0,  0 };
+    mp_matrix[4] = (MountPointMatrix){ "/efs",        0,  0 };
+    mp_matrix[5] = (MountPointMatrix){ "/wimax",      0,  0 };
+
+    int i;
+    for (i = 0; i < NUM_FS_TYPES; i++) {
+        if (strcmp(vfs, fs_matrix[i].fs_type) == 0) {
+            mfm.can_mount = fs_matrix[i].can_mount;
+            mfm.can_format = fs_matrix[i].can_format;
         }
-        partition = strtok(NULL, ", ");
+    }
+    for (i = 0; i < NUM_MNT_PNTS; i++) {
+        if (strcmp(vpath, mp_matrix[i].mount_point) == 0) {
+            mfm.can_mount = mp_matrix[i].can_mount;
+            mfm.can_format = mp_matrix[i].can_format;
+        }
     }
 
-    return 1;
+    char *custom_path;
+    int custom_forbidden_mount_num = 0;
+    int custom_forbidden_format_num = 0;
+    char custom_forbidden_mount_name[PROPERTY_VALUE_MAX];
+    char custom_forbidden_format_name[PROPERTY_VALUE_MAX];
+    property_get("ro.cwm.forbid_mount", custom_forbidden_mount_name, "");
+    property_get("ro.cwm.forbid_format", custom_forbidden_format_name, "");
+
+    custom_path = strtok(custom_forbidden_mount_name, ",");
+    while (custom_path != NULL) {
+        if (strcmp(vpath, custom_path) == 0) {
+            mfm.can_mount = 0;
+        }
+        custom_path = strtok(NULL, ",");
+    }
+
+    custom_path = strtok(custom_forbidden_format_name, ",");
+    while (custom_path != NULL) {
+        if (strcmp(vpath, custom_path) == 0) {
+            mfm.can_format = 0;
+        }
+        custom_path = strtok(NULL, ",");
+    }
+
+    return mfm;
 }
 
 int show_partition_menu() {
@@ -813,20 +873,15 @@ int show_partition_menu() {
             continue;
         }
 
-        if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) != 0 && strcmp("emmc", v->fs_type) != 0 && strcmp("bml", v->fs_type) != 0) {
-            if (strcmp("datamedia", v->fs_type) != 0) {
-                sprintf(mount_menu[mountable_volumes].mount, "mount %s", v->mount_point);
-                sprintf(mount_menu[mountable_volumes].unmount, "unmount %s", v->mount_point);
-                sprintf(mount_menu[mountable_volumes].path, "%s", v->mount_point);
-                ++mountable_volumes;
-            }
-            if (is_safe_to_format(v->mount_point)) {
-                sprintf(format_menu[formatable_volumes].txt, "format %s", v->mount_point);
-                sprintf(format_menu[formatable_volumes].path, "%s", v->mount_point);
-                sprintf(format_menu[formatable_volumes].type, "%s", v->fs_type);
-                ++formatable_volumes;
-            }
-        } else if (strcmp("ramdisk", v->fs_type) != 0 && strcmp("mtd", v->fs_type) == 0 && is_safe_to_format(v->mount_point)) {
+        MountFormatMatrix mfm = mntfmt_matrix(v->fs_type, v->mount_point);
+
+        if (mfm.can_mount) {
+            sprintf(mount_menu[mountable_volumes].mount, "mount %s", v->mount_point);
+            sprintf(mount_menu[mountable_volumes].unmount, "unmount %s", v->mount_point);
+            sprintf(mount_menu[mountable_volumes].path, "%s", v->mount_point);
+            ++mountable_volumes;
+        }
+        if (mfm.can_format) {
             sprintf(format_menu[formatable_volumes].txt, "format %s", v->mount_point);
             sprintf(format_menu[formatable_volumes].path, "%s", v->mount_point);
             sprintf(format_menu[formatable_volumes].type, "%s", v->fs_type);
