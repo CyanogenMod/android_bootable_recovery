@@ -490,7 +490,14 @@ int nandroid_dump(const char* partition) {
     default_backup_handler = tar_dump_wrapper;
 
     if (strcmp(partition, "boot") == 0) {
-        return __system("dump_image boot /proc/self/fd/1 | cat");
+        Volume *vol = volume_for_path("/boot");
+        // make sure the volume exists before attempting anything...
+        if (vol == NULL || vol->fs_type == NULL)
+            return 1;
+        char cmd[PATH_MAX];
+        sprintf(cmd, "cat %s", vol->blk_device);
+        return __system(cmd);
+        // return nandroid_backup_partition("-", "/boot");
     }
 
     if (strcmp(partition, "recovery") == 0) {
