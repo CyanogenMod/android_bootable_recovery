@@ -280,8 +280,10 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
     if (strlen(forced_backup_format) > 0)
         return default_backup_handler;
 
-    // cwr5, we prefer dedupe for everything except yaffs2
-    if (strcmp("yaffs2", mv->filesystem) == 0) {
+    // Disable tar backups of yaffs2 by default
+    char prefer_tar[PROPERTY_VALUE_MAX];
+    property_get("ro.cwm.prefer_tar", prefer_tar, "false");
+    if (strcmp("yaffs2", mv->filesystem) == 0 && strcmp("false", prefer_tar) == 0) {
         return mkyaffs2image_wrapper;
     }
 
@@ -616,15 +618,11 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     if (strcmp(backup_path, "/data") == 0 && is_data_media()) {
         return tar_extract_wrapper;
     }
-    // cwr 5, we prefer tar for everything unless it is yaffs2
-    char str[255];
-    char* partition;
-    property_get("ro.cwm.prefer_tar", str, "false");
-    if (strcmp("true", str) != 0) {
-        return unyaffs_wrapper;
-    }
 
-    if (strcmp("yaffs2", mv->filesystem) == 0) {
+    // Disable tar backups of yaffs2 by default
+    char prefer_tar[PROPERTY_VALUE_MAX];
+    property_get("ro.cwm.prefer_tar", prefer_tar, "false");
+    if (strcmp("yaffs2", mv->filesystem) == 0 && strcmp("false", prefer_tar) == 0) {
         return unyaffs_wrapper;
     }
 
