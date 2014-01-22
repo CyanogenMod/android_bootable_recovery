@@ -872,7 +872,14 @@ int nandroid_undump(const char* partition) {
     int ret;
 
     if (strcmp(partition, "boot") == 0) {
-        return __system("flash_image boot /proc/self/fd/0");
+        Volume *vol = volume_for_path("/boot");
+        // make sure the volume exists before attempting anything...
+        if (vol == NULL || vol->fs_type == NULL)
+            return 1;
+        char cmd[PATH_MAX];
+        sprintf(cmd, "cat /proc/self/fd/0 > %s", vol->blk_device);
+        return __system(cmd);
+        // return __system("flash_image boot /proc/self/fd/0");
     }
 
     if (strcmp(partition, "recovery") == 0) {
