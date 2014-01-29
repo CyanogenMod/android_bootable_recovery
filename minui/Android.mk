@@ -9,8 +9,9 @@ else
 endif
 
 LOCAL_C_INCLUDES +=\
-    external/libpng\
-    external/zlib
+    external/libpng \
+    external/zlib \
+    external/jpeg
 
 LOCAL_MODULE := libminui
 
