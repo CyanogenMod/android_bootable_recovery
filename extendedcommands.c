@@ -219,20 +219,20 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
         return NULL;
     }
 
-	// sort the result
-	if (files != NULL) {
-		for (i = 0; i < total; i++) {
-			int curMax = -1;
-			int j;
-			for (j = 0; j < total - i; j++) {
-				if (curMax == -1 || strcmp(files[curMax], files[j]) < 0)
-					curMax = j;
-			}
-			char* temp = files[curMax];
-			files[curMax] = files[total - i - 1];
-			files[total - i - 1] = temp;
-		}
-	}
+    // sort the result
+    if (files != NULL) {
+        for (i = 0; i < total; i++) {
+            int curMax = -1;
+            int j;
+            for (j = 0; j < total - i; j++) {
+                if (curMax == -1 || strcmp(files[curMax], files[j]) < 0)
+                    curMax = j;
+            }
+            char* temp = files[curMax];
+            files[curMax] = files[total - i - 1];
+            files[total - i - 1] = temp;
+        }
+    }
 
     return files;
 }
@@ -345,7 +345,7 @@ void show_nandroid_restore_menu()
         return;
 
     if (confirm_selection("Confirm restore?", "Yes - Restore"))
-        nandroid_restore(file, 1, 1, 1, 1, 1);
+        nandroid_restore(file, 1, 1, 1, 1, 1, 0);
 }
 
 void show_mount_usb_storage_menu()
@@ -669,9 +669,15 @@ void show_nandroid_advanced_restore_menu()
                             "Restore data",
                             "Restore cache",
                             "Restore sd-ext",
+                            "Restore wimax",
                             NULL
     };
-
+    
+    char tmp[PATH_MAX];
+    if (0 != get_partition_device("wimax", tmp)) {
+        // disable wimax restore option
+        list[5] = NULL;
+    }
 
     static char* confirm_restore  = "Confirm restore?";
 
@@ -680,23 +686,27 @@ void show_nandroid_advanced_restore_menu()
     {
         case 0:
             if (confirm_selection(confirm_restore, "Yes - Restore boot"))
-                nandroid_restore(file, 1, 0, 0, 0, 0);
+                nandroid_restore(file, 1, 0, 0, 0, 0, 0);
             break;
         case 1:
             if (confirm_selection(confirm_restore, "Yes - Restore system"))
-                nandroid_restore(file, 0, 1, 0, 0, 0);
+                nandroid_restore(file, 0, 1, 0, 0, 0, 0);
             break;
         case 2:
             if (confirm_selection(confirm_restore, "Yes - Restore data"))
-                nandroid_restore(file, 0, 0, 1, 0, 0);
+                nandroid_restore(file, 0, 0, 1, 0, 0, 0);
             break;
         case 3:
             if (confirm_selection(confirm_restore, "Yes - Restore cache"))
-                nandroid_restore(file, 0, 0, 0, 1, 0);
+                nandroid_restore(file, 0, 0, 0, 1, 0, 0);
             break;
         case 4:
             if (confirm_selection(confirm_restore, "Yes - Restore sd-ext"))
-                nandroid_restore(file, 0, 0, 0, 0, 1);
+                nandroid_restore(file, 0, 0, 0, 0, 1, 0);
+            break;
+        case 5:
+            if (confirm_selection(confirm_restore, "Yes - Restore wimax"))
+                nandroid_restore(file, 0, 0, 0, 0, 0, 1);
             break;
     }
 }
