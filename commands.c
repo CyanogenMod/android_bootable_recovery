@@ -832,7 +832,7 @@ cmd_restore_rom(const char *name, void *cookie, int argc, const char *argv[],
             restorecache = 0;
     }
 
-    return nandroid_restore(argv[0], restoreboot, restoresystem, restoredata, restorecache, restoresdext);
+    return nandroid_restore(argv[0], restoreboot, restoresystem, restoredata, restorecache, restoresdext, 0);
 }
 
 static int
