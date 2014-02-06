@@ -17,8 +17,10 @@ ifeq ($(call is-vendor-board-platform,QCOM),true)
   LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 endif
 
+ifneq ($(TARGET_USES_MSM_30_KERNEL),true)
 ifeq ($(TARGET_USES_QCOM_BSP), true)
     LOCAL_CFLAGS += -DMSM_BSP
+endif
 endif
 
 LOCAL_MODULE := libminui
