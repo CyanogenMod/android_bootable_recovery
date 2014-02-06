@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>     // for uintptr_t
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -46,7 +47,7 @@ void *service_bootstrap_func(void *x)
 static void sideload_service(int s, void *cookie)
 {
     unsigned char buf[4096];
-    unsigned count = (unsigned) cookie;
+    unsigned count = (unsigned)(uintptr_t)cookie;
     int fd;
 
     fprintf(stderr, "sideload_service invoked\n");
@@ -149,7 +150,7 @@ int service_to_fd(const char *name)
     int ret = -1;
 
     if (!strncmp(name, "sideload:", 9)) {
-        ret = create_service_thread(sideload_service, (void*) atoi(name + 9));
+        ret = create_service_thread(sideload_service, (void*)(uintptr_t)atoi(name + 9));
 #if 0
     } else if(!strncmp(name, "echo:", 5)){
         ret = create_service_thread(echo_service, 0);
