@@ -87,6 +87,7 @@ static bool isMDP5 = false;
 
 bool target_has_overlay(char *version)
 {
+#ifdef MSM_BSP
     int ret;
     int mdp_version;
 
@@ -104,7 +105,7 @@ bool target_has_overlay(char *version)
             isMDP5 = true;
         }
     }
-
+#endif
     return overlay_supported;
 }
 
