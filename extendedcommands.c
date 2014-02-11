@@ -98,7 +98,7 @@ void write_recovery_version() {
     char path[PATH_MAX];
     sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_VERSION_FILE);
     write_string_to_file(path, EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
-    // force unmount /data on /data/media devices as we call this on recovery start
+    // force unmount /data for /data/media devices as we call this on recovery exit
     ignore_data_media_workaround(1);
     ensure_path_unmounted(path);
     ignore_data_media_workaround(0);
@@ -345,10 +345,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
 
 // pass in NULL for fileExtensionOrDirectory and you will get a directory chooser
 char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory, const char* headers[]) {
-    static const char* fixed_headers[20];
-    char path[PATH_MAX] = "";
-    DIR *dir;
-    struct dirent *de;
+    const char* fixed_headers[20];
     int numFiles = 0;
     int numDirs = 0;
     int i;
@@ -358,7 +355,7 @@ char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory
 
     strcpy(directory, basedir);
 
-    // Append a traiing slash if necessary
+    // Append a trailing slash if necessary
     if (directory[dir_len - 1] != '/') {
         strcat(directory, "/");
         dir_len++;
@@ -366,14 +363,11 @@ char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory
 
     i = 0;
     while (headers[i]) {
-        i++;
-    }
-    i = 0;
-    while (headers[i]) {
         fixed_headers[i] = headers[i];
         i++;
     }
     fixed_headers[i] = directory;
+    int current_dir_pos = i;
     fixed_headers[i + 1] = "";
     fixed_headers[i + 2] = NULL;
 
@@ -401,19 +395,20 @@ char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory
             int chosen_item = get_menu_selection(fixed_headers, list, 0, 0);
             if (chosen_item == GO_BACK || chosen_item == REFRESH)
                 break;
-            char ret[PATH_MAX];
             if (chosen_item < numDirs) {
                 char* subret = choose_file_menu(dirs[chosen_item], fileExtensionOrDirectory, headers);
                 if (subret != NULL) {
-                    strcpy(ret, subret);
-                    return_value = strdup(ret);
+                    return_value = strdup(subret);
                     free(subret);
                     break;
+                } else {
+                    char current_dir[PATH_MAX];
+                    strcpy(current_dir, dirs[chosen_item]);
+                    fixed_headers[current_dir_pos] = dirname(current_dir);
+                    continue;
                 }
-                continue;
             }
-            strcpy(ret, files[chosen_item - numDirs]);
-            return_value = strdup(ret);
+            return_value = strdup(files[chosen_item - numDirs]);
             break;
         }
         free_string_array(list);
@@ -482,7 +477,6 @@ void show_nandroid_delete_menu(const char* path) {
         return;
 
     if (confirm_selection("Confirm delete?", "Yes - Delete")) {
-        // nandroid_restore(file, 1, 1, 1, 1, 1, 0);
         sprintf(tmp, "rm -rf %s", file);
         __system(tmp);
     }
