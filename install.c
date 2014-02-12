@@ -160,7 +160,7 @@ try_update_binary(const char *path, ZipArchive *zip) {
     char tmpbuf;
     char setpermmatch[9] = { 's','e','t','_','p','e','r','m','_' };
     char setmetamatch[13] = { 's','e','t','_','m','e','t','a','d','a','t','a','_' };
-    int pos = 0;
+    size_t pos = 0;
     bool foundsetperm = false;
     bool foundsetmeta = false;
 
