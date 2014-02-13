@@ -133,7 +133,7 @@ void toggle_signature_check() {
 #ifdef ENABLE_LOKI
 int loki_support_enabled = 1;
 void toggle_loki_support() {
-    loki_support_enabled = !loki_support_enabled;
+    loki_support_enabled ^= 1;
     ui_print("Loki Support: %s\n", loki_support_enabled ? "Enabled" : "Disabled");
 }
 #endif
@@ -1425,7 +1425,10 @@ int show_advanced_menu() {
     list[5] = "key test";
     list[6] = "show log";
 #ifdef ENABLE_LOKI
-    list[7] = "toggle loki support";
+    if (loki_support_enabled < 0)
+        list[7] = NULL;
+    else
+        list[7] = "toggle loki support";
 #endif
 
     char list_prefix[] = "partition ";

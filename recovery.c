@@ -1070,6 +1070,13 @@ main(int argc, char **argv) {
     LOGI("device_recovery_start()\n");
     device_recovery_start();
 
+#ifdef ENABLE_LOKI
+    char loki_enabled_prop[PROPERTY_VALUE_MAX];
+    property_get("ro.loki_enabled", loki_enabled_prop, "0");
+    if (strcmp(loki_enabled_prop, "1") != 0)
+        loki_support_enabled = -1;
+#endif
+
     printf("Command:");
     for (arg = 0; arg < argc; arg++) {
         printf(" \"%s\"", argv[arg]);
