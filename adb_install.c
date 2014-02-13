@@ -152,7 +152,7 @@ apply_from_adb() {
     }
 
 #ifdef ENABLE_LOKI
-    else if (loki_support_enabled) {
+    else if (loki_support_enabled() > 0) {
         ui_print("Checking if loki-fying is needed");
         install_status = loki_check();
         if (install_status != INSTALL_SUCCESS)
