@@ -152,8 +152,8 @@ apply_from_adb() {
     }
 
 #ifdef ENABLE_LOKI
-    else if (loki_support_enabled) {
-        ui_print("Checking if loki-fying is needed");
+    else if (loki_support_enabled() > 0) {
+        ui_print("Checking if loki-fying is needed\n");
         install_status = loki_check();
         if (install_status != INSTALL_SUCCESS)
             ui_set_background(BACKGROUND_ICON_ERROR);
@@ -164,5 +164,6 @@ apply_from_adb() {
         ui_set_background(BACKGROUND_ICON_NONE);
 
     remove(ADB_SIDELOAD_FILENAME);
+    ui_print("\nInstall from sideload complete.\n");
     return install_status;
 }
