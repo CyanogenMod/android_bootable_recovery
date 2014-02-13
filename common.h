@@ -48,7 +48,7 @@ int ui_get_text_cols();
 void ui_increment_frame();
 
 #ifdef ENABLE_LOKI
-extern int loki_support_enabled;
+int loki_support_enabled();
 int loki_check();
 #endif
 

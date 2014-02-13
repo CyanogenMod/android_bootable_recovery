@@ -130,10 +130,18 @@ void toggle_signature_check() {
 }
 
 #ifdef ENABLE_LOKI
-int loki_support_enabled = 1;
-void toggle_loki_support() {
-    loki_support_enabled = !loki_support_enabled;
-    ui_print("Loki Support: %s\n", loki_support_enabled ? "Enabled" : "Disabled");
+static int apply_loki_patch = 1;
+static void toggle_loki_support() {
+    apply_loki_patch ^= 1;
+    ui_print("Loki Support: %s\n", apply_loki_patch ? "Enabled" : "Disabled");
+}
+
+int loki_support_enabled() {
+    char device_supports_loki[PROPERTY_VALUE_MAX];
+    property_get("ro.loki_enabled", device_supports_loki, "0");
+    if (strcmp(device_supports_loki, "1") == 0)
+        return apply_loki_patch;
+    return -1;
 }
 #endif
 
@@ -151,7 +159,7 @@ int install_zip(const char* packagefilepath) {
         return 1;
     }
 #ifdef ENABLE_LOKI
-    if (loki_support_enabled) {
+    if (loki_support_enabled() > 0) {
         ui_print("Checking if loki-fying is needed\n");
         status = loki_check();
         if (status != INSTALL_SUCCESS) {
@@ -1422,7 +1430,10 @@ int show_advanced_menu() {
     list[5] = "key test";
     list[6] = "show log";
 #ifdef ENABLE_LOKI
-    list[7] = "toggle loki support";
+    if (loki_support_enabled() < 0)
+        list[7] = NULL;
+    else
+        list[7] = "toggle loki support";
 #endif
 
     char list_prefix[] = "partition ";
