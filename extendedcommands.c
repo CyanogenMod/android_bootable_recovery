@@ -47,7 +47,6 @@
 #include "adb_install.h"
 
 int signature_check_enabled = 1;
-int script_assert_enabled = 1;
 
 int get_filtered_menu_selection(const char** headers, char** items, int menu_only, int initial_selection, int items_count) {
     int index;
@@ -111,7 +110,7 @@ static void write_last_install_path(const char* install_path) {
 }
 
 const char* read_last_install_path() {
-    char path[PATH_MAX];
+    static char path[PATH_MAX];
     sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_LAST_INSTALL_FILE);
 
     ensure_path_mounted(path);
@@ -211,8 +210,7 @@ int show_install_update_menu() {
         } else if (chosen_item >= FIXED_TOP_INSTALL_ZIP_MENUS && chosen_item < FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
             show_choose_zip_menu(extra_paths[chosen_item - FIXED_TOP_INSTALL_ZIP_MENUS]);
         } else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
-            char *last_path_used;
-            last_path_used = read_last_install_path();
+            const char *last_path_used = read_last_install_path();
             if (last_path_used == NULL)
                 show_choose_zip_menu(primary_path);
             else
@@ -1228,7 +1226,7 @@ void format_sdcard(const char* volume) {
     if (!fs_mgr_is_voldmanaged(v) && !can_partition(volume))
         return;
 
-    char* headers[] = { "Format device:", volume, "", NULL };
+    const char* headers[] = { "Format device:", volume, "", NULL };
 
     static char* list[] = { "default",
                             "vfat",
@@ -1291,7 +1289,7 @@ void format_sdcard(const char* volume) {
         ui_print("Done formatting %s (%s)\n", volume, list[chosen_item]);
 }
 
-static void partition_sdcard(const char* volume) {
+void partition_sdcard(const char* volume) {
     if (!can_partition(volume)) {
         ui_print("Can't partition device: %s\n", volume);
         return;
