@@ -31,6 +31,7 @@ extern int device_recovery_start();
 // keys are already pressed.  Return true if the text display should
 // be toggled.
 extern int device_toggle_display(volatile char* key_pressed, int key_code);
+int get_allow_toggle_display();
 
 // Called in the input thread when a new key (key_code) is pressed.
 // *key_pressed is an array of KEY_MAX+1 bytes indicating which other

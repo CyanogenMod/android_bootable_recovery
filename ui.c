@@ -120,7 +120,7 @@ static int menu_top = 0, menu_items = 0, menu_sel = 0;
 static int menu_show_start = 0;             // this is line which menu display is starting at
 static int max_menu_rows;
 
-static int cur_rainbow_color = 0;
+static unsigned cur_rainbow_color = 0;
 static int gRainbowMode = 0;
 
 // Key event input queue
@@ -1101,7 +1101,7 @@ void ui_rainbow_mode() {
 
     gr_color(colors[cur_rainbow_color], colors[cur_rainbow_color+1], colors[cur_rainbow_color+2], 255);
     cur_rainbow_color += 3;
-    if (cur_rainbow_color >= sizeof(colors)/sizeof(colors[0])) cur_rainbow_color = 0;
+    if (cur_rainbow_color >= (sizeof(colors) / sizeof(colors[0]))) cur_rainbow_color = 0;
 }
 
 void ui_set_rainbow_mode(int rainbowMode) {
