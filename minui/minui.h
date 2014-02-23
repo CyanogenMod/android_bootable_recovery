@@ -41,6 +41,12 @@ void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy);
 unsigned int gr_get_width(gr_surface surface);
 unsigned int gr_get_height(gr_surface surface);
 
+// overlays
+int getFbXres(void);
+int getLeftSplit(void);
+void setDisplaySplit(void);
+bool isDisplaySplit(void);
+
 // input event structure, include <linux/input.h> for the definition.
 // see http://www.mjmwired.net/kernel/Documentation/input/ for info.
 struct input_event;

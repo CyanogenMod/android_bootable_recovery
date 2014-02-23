@@ -130,7 +130,7 @@ int res_create_surface(const char* name, gr_surface* pSurface) {
         alpha = 1;
     }
 
-    int y;
+    unsigned y;
     if (channels == 3 || (channels == 1 && !alpha)) {
         for (y = 0; y < height; ++y) {
             unsigned char* pRow = pData + y * stride;

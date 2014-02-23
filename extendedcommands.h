@@ -1,5 +1,4 @@
 extern int signature_check_enabled;
-extern int script_assert_enabled;
 
 void
 toggle_signature_check();
@@ -37,6 +36,10 @@ show_advanced_menu();
 int format_device(const char *device, const char *path, const char *fs_type);
 
 int format_unknown_device(const char *device, const char* path, const char *fs_type);
+
+void format_sdcard(const char* volume);
+
+void partition_sdcard(const char* volume);
 
 void create_fstab();
 
