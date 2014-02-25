@@ -63,7 +63,7 @@ int LoadFileContents(const char* filename, FileContents* file,
 
     if (stat(filename, &file->st) != 0) {
         printf("failed to stat \"%s\": %s\n", filename, strerror(errno));
-        return -1;
+        return (errno == ENOENT ? -ENOENT : -1);
     }
 
     file->size = file->st.st_size;
@@ -591,7 +591,12 @@ int applypatch_check(const char* filename,
     // LoadFileContents is successful.  (Useful for reading
     // partitions, where the filename encodes the sha1s; no need to
     // check them twice.)
-    if (LoadFileContents(filename, &file, RETOUCH_DO_MASK) != 0 ||
+    int filestate = LoadFileContents(filename, &file, RETOUCH_DO_MASK);
+    if (filestate == -ENOENT) {
+        return -ENOENT;
+    }
+
+    if (filestate != 0 ||
         (num_patches > 0 &&
          FindMatchingPatch(file.sha1, patch_sha1_str, num_patches) < 0)) {
         printf("file \"%s\" doesn't have any of expected "
