@@ -16,11 +16,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "loki.h"
-#include "../common.h"
 
-int loki_flash(char *partition)
+int loki_flash(const char* partition_label, const char* loki_image)
 {
-
 	int ifd, aboot_fd, ofd, recovery, offs, match;
 	void *orig, *aboot, *patch;
 	struct stat st;
@@ -28,38 +26,37 @@ int loki_flash(char *partition)
 	struct loki_hdr *loki_hdr;
 	char outfile[1024];
 
-
-	if (!strcmp(partition, "boot")) {
+	if (!strcmp(partition_label, "boot")) {
 		recovery = 0;
-	} else if (!strcmp(partition, "recovery")) {
+	} else if (!strcmp(partition_label, "recovery")) {
 		recovery = 1;
 	} else {
-		LOGE("[+] First argument must be \"boot\" or \"recovery\".\n");
+		printf("[+] First argument must be \"boot\" or \"recovery\".\n");
 		return 1;
 	}
 
 	/* Verify input file */
 	aboot_fd = open(ABOOT_PARTITION, O_RDONLY);
 	if (aboot_fd < 0) {
-		LOGE("[-] Failed to open aboot for reading.\n");
+		printf("[-] Failed to open aboot for reading.\n");
 		return 1;
 	}
 
-	ifd = open(LOKI_IMAGE, O_RDONLY);
+	ifd = open(loki_image, O_RDONLY);
 	if (ifd < 0) {
-		LOGE("[-] Failed to open %s for reading.\n", LOKI_IMAGE);
+		printf("[-] Failed to open %s for reading.\n", loki_image);
 		return 1;
 	}
 
 	/* Map the image to be flashed */
 	if (fstat(ifd, &st)) {
-		LOGE("[-] fstat() failed.\n");
+		printf("[-] fstat() failed.\n");
 		return 1;
 	}
 
 	orig = mmap(0, (st.st_size + 0x2000 + 0xfff) & ~0xfff, PROT_READ, MAP_PRIVATE, ifd, 0);
 	if (orig == MAP_FAILED) {
-		LOGE("[-] Failed to mmap Loki image.\n");
+		printf("[-] Failed to mmap Loki image.\n");
 		return 1;
 	}
 
@@ -68,20 +65,20 @@ int loki_flash(char *partition)
 
 	/* Verify this is a Loki image */
 	if (memcmp(loki_hdr->magic, "LOKI", 4)) {
-		LOGE("[-] Input file is not a Loki image.\n");
+		printf("[-] Input file is not a Loki image.\n");
 		return 1;
 	}
 
 	/* Verify this is the right type of image */
 	if (loki_hdr->recovery != recovery) {
-		LOGE("[-] Loki image is not a %s image.\n", recovery ? "recovery" : "boot");
+		printf("[-] Loki image is not a %s image.\n", recovery ? "recovery" : "boot");
 		return 1;
 	}
 
 	/* Verify the to-be-patched address matches the known code pattern */
 	aboot = mmap(0, 0x40000, PROT_READ, MAP_PRIVATE, aboot_fd, 0);
 	if (aboot == MAP_FAILED) {
-		LOGE("[-] Failed to mmap aboot.\n");
+		printf("[-] Failed to mmap aboot.\n");
 		return 1;
 	}
 
@@ -97,7 +94,7 @@ int loki_flash(char *partition)
 			patch = hdr->ramdisk_addr - ABOOT_BASE_LG + aboot + offs;
 
 		if (patch < aboot || patch > aboot + 0x40000 - 8) {
-			LOGE("[-] Invalid .lok file.\n");
+			printf("[-] Invalid .lok file.\n");
 			return 1;
 		}
 
@@ -114,11 +111,11 @@ int loki_flash(char *partition)
 	}
 
 	if (!match) {
-		LOGE("[-] Loki aboot version does not match device.\n");
+		printf("[-] Loki aboot version does not match device.\n");
 		return 1;
 	}
 
-	ui_print("[+] Loki validation passed, flashing image.\n");
+	printf("[+] Loki validation passed, flashing image.\n");
 
 	snprintf(outfile, sizeof(outfile),
 			 "%s",
@@ -126,16 +123,16 @@ int loki_flash(char *partition)
 
 	ofd = open(outfile, O_WRONLY);
 	if (ofd < 0) {
-		LOGE("[-] Failed to open output block device.\n");
+		printf("[-] Failed to open output block device.\n");
 		return 1;
 	}
 
 	if (write(ofd, orig, st.st_size) != st.st_size) {
-		LOGE("[-] Failed to write to block device.\n");
+		printf("[-] Failed to write to block device.\n");
 		return 1;
 	}
 
-	ui_print("[+] Loki flashing complete!\n");
+	printf("[+] Loki flashing complete!\n");
 
 	close(ifd);
 	close(aboot_fd);
