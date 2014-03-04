@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "loki.h"
-#include "../common.h"
 
 struct target {
 	char *vendor;
@@ -143,6 +142,22 @@ struct target targets[] = {
 		.lg = 1,
 	},
 	{
+		.vendor = "US Cellular",
+		.device = "LG Optimus F7",
+		.build = "US78011a",
+		.check_sigs = 0x88f112c8,
+		.hdr = 0x88f84518,
+		.lg = 1,
+	},
+	{
+		.vendor = "Sprint",
+		.device = "LG Optimus F7",
+		.build = "LG870ZV5_02",
+		.check_sigs = 0x88f11710,
+		.hdr = 0x88f842a8,
+		.lg = 1,
+	},
+	{
 		.vendor = "Virgin Mobile",
 		.device = "LG Optimus F3",
 		.build = "LS720ZV5",
@@ -255,6 +270,14 @@ struct target targets[] = {
 		.lg = 1,
 	},
 	{
+		.vendor = "KDDI",
+		.device = "LG G Flex",
+		.build = "LGL2310d",
+		.check_sigs = 0xf81261c,
+		.hdr = 0xf8b41c0,
+		.lg = 1,
+	},
+	{
 		.vendor = "International",
 		.device = "LG Optimus F5",
 		.build = "P87510e",
@@ -303,6 +326,14 @@ struct target targets[] = {
 		.lg = 1,
 	},
 	{
+		.vendor = "Open EU",
+		.device = "LG Optimus F6",
+		.build = "D50510a",
+		.check_sigs = 0x88f10284,
+		.hdr = 0x88f70aa4,
+		.lg = 1,
+	},
+	{
 		.vendor = "KDDI",
 		.device = "LG Isai",
 		.build = "LGL22",
@@ -316,6 +347,14 @@ struct target targets[] = {
 		.build = "F220K",
 		.check_sigs = 0x88f11034,
 		.hdr = 0x88f54418,
+		.lg = 1,
+	},
+	{
+		.vendor = "International",
+		.device = "LG Vu 3",
+		.build = "F300L",
+		.check_sigs = 0xf813170,
+		.hdr = 0xf8d2440,
 		.lg = 1,
 	},
 };
@@ -380,9 +419,8 @@ int patch_shellcode(unsigned int header, unsigned int ramdisk)
 	return -1;
 }
 
-int loki_patch(char *partition, char *partitionPath)
+int loki_patch(const char* partition_label, const char* aboot_image, const char* in_image, const char* out_image)
 {
-
 	int ifd, ofd, aboot_fd, pos, i, recovery, offset, fake_size;
 	unsigned int orig_ramdisk_size, orig_kernel_size, page_kernel_size, page_ramdisk_size, page_size, page_mask;
 	unsigned long target, aboot_base;
@@ -393,46 +431,43 @@ int loki_patch(char *partition, char *partitionPath)
 	struct loki_hdr *loki_hdr;
 	char *buf;
 
-	ui_print("[+] loki_patch v%s\n", VERSION);
-
-	if (!strcmp(partition, "boot")) {
+	if (!strcmp(partition_label, "boot")) {
 		recovery = 0;
-	} else if (!strcmp(partition, "recovery")) {
+	} else if (!strcmp(partition_label, "recovery")) {
 		recovery = 1;
 	} else {
-		LOGE("[+] First argument must be \"boot\" or \"recovery\".\n");
+		printf("[+] First argument must be \"boot\" or \"recovery\".\n");
 		return 1;
 	}
 
 	/* Open input files */
-	aboot_fd = open(ABOOT_PARTITION, O_RDONLY);
+	aboot_fd = open(aboot_image, O_RDONLY);
 	if (aboot_fd < 0) {
-		LOGE("[-] Failed to open %s for reading.\n", ABOOT_PARTITION);
+		printf("[-] Failed to open %s for reading.\n", aboot_image);
 		return 1;
 	}
 
-	ifd = open(partitionPath, O_RDONLY);
+	ifd = open(in_image, O_RDONLY);
 	if (ifd < 0) {
-		LOGE("[-] Failed to open %s for reading.\n", partitionPath);
+		printf("[-] Failed to open %s for reading.\n", in_image);
 		return 1;
 	}
 
-	ofd = open(LOKI_IMAGE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ofd = open(out_image, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	if (ofd < 0) {
-		LOGE("[-] Failed to open %s for writing.\n", LOKI_IMAGE);
+		printf("[-] Failed to open %s for writing.\n", out_image);
 		return 1;
 	}
 
 	/* Find the signature checking function via pattern matching */
 	if (fstat(aboot_fd, &st)) {
-		LOGE("[-] fstat() failed.\n");
+		printf("[-] fstat() failed.\n");
 		return 1;
 	}
 
-	/* Verify the to-be-patched address matches the known code pattern */
 	aboot = mmap(0, (st.st_size + 0xfff) & ~0xfff, PROT_READ, MAP_PRIVATE, aboot_fd, 0);
 	if (aboot == MAP_FAILED) {
-		LOGE("[-] Failed to mmap aboot.\n");
+		printf("[-] Failed to mmap aboot.\n");
 		return 1;
 	}
 
@@ -479,7 +514,7 @@ int loki_patch(char *partition, char *partitionPath)
 	}
 
 	if (!target) {
-		LOGE("[-] Failed to find function to patch.\n");
+		printf("[-] Failed to find function to patch.\n");
 		return 1;
 	}
 
@@ -493,21 +528,21 @@ int loki_patch(char *partition, char *partitionPath)
 	}
 
 	if (!tgt) {
-		LOGE("[-] Unsupported aboot image.\n");
+		printf("[-] Unsupported aboot image.\n");
 		return 1;
 	}
 
-	ui_print("[+] Detected target %s %s build %s\n", tgt->vendor, tgt->device, tgt->build);
+	printf("[+] Detected target %s %s build %s\n", tgt->vendor, tgt->device, tgt->build);
 
 	/* Map the original boot/recovery image */
 	if (fstat(ifd, &st)) {
-		LOGE("[-] fstat() failed.\n");
+		printf("[-] fstat() failed.\n");
 		return 1;
 	}
 
 	orig = mmap(0, (st.st_size + 0x2000 + 0xfff) & ~0xfff, PROT_READ|PROT_WRITE, MAP_PRIVATE, ifd, 0);
 	if (orig == MAP_FAILED) {
-		LOGE("[-] Failed to mmap input file.\n");
+		printf("[-] Failed to mmap input file.\n");
 		return 1;
 	}
 
@@ -515,15 +550,15 @@ int loki_patch(char *partition, char *partitionPath)
 	loki_hdr = orig + 0x400;
 
 	if (!memcmp(loki_hdr->magic, "LOKI", 4)) {
-		ui_print("[-] Input file is already a Loki image.\n");
+		printf("[-] Input file is already a Loki image.\n");
 
 		/* Copy the entire file to the output transparently */
 		if (write(ofd, orig, st.st_size) != st.st_size) {
-			LOGE("[-] Failed to copy Loki image.\n");
+			printf("[-] Failed to copy Loki image.\n");
 			return 1;
 		}
 
-		ui_print("[+] Copied Loki image to %s.\n", LOKI_IMAGE);
+		printf("[+] Copied Loki image to %s.\n", out_image);
 
 		return 0;
 	}
@@ -539,8 +574,8 @@ int loki_patch(char *partition, char *partitionPath)
 	orig_kernel_size = hdr->kernel_size;
 	orig_ramdisk_size = hdr->ramdisk_size;
 
-	ui_print("[+] Original kernel address: %.08x\n", hdr->kernel_addr);
-	ui_print("[+] Original ramdisk address: %.08x\n", hdr->ramdisk_addr);
+	printf("[+] Original kernel address: %.08x\n", hdr->kernel_addr);
+	printf("[+] Original ramdisk address: %.08x\n", hdr->ramdisk_addr);
 
 	/* Store the original values in unused fields of the header */
 	loki_hdr->orig_kernel_size = orig_kernel_size;
@@ -548,7 +583,7 @@ int loki_patch(char *partition, char *partitionPath)
 	loki_hdr->ramdisk_addr = hdr->kernel_addr + ((hdr->kernel_size + page_mask) & ~page_mask);
 
 	if (patch_shellcode(tgt->hdr, hdr->ramdisk_addr) < 0) {
-		LOGE("[-] Failed to patch shellcode.\n");
+		printf("[-] Failed to patch shellcode.\n");
 		return 1;
 	}
 
@@ -571,7 +606,7 @@ int loki_patch(char *partition, char *partitionPath)
 
 	/* Write the image header */
 	if (write(ofd, orig, page_size) != page_size) {
-		LOGE("[-] Failed to write header to output file.\n");
+		printf("[-] Failed to write header to output file.\n");
 		return 1;
 	}
 
@@ -579,7 +614,7 @@ int loki_patch(char *partition, char *partitionPath)
 
 	/* Write the kernel */
 	if (write(ofd, orig + page_size, page_kernel_size) != page_kernel_size) {
-		LOGE("[-] Failed to write kernel to output file.\n");
+		printf("[-] Failed to write kernel to output file.\n");
 		return 1;
 	}
 
@@ -587,14 +622,14 @@ int loki_patch(char *partition, char *partitionPath)
 
 	/* Write the ramdisk */
 	if (write(ofd, orig + page_size + page_kernel_size, page_ramdisk_size) != page_ramdisk_size) {
-		LOGE("[-] Failed to write ramdisk to output file.\n");
+		printf("[-] Failed to write ramdisk to output file.\n");
 		return 1;
 	}
 
 	/* Write fake_size bytes of original code to the output */
 	buf = malloc(fake_size);
 	if (!buf) {
-		LOGE("[-] Out of memory.\n");
+		printf("[-] Out of memory.\n");
 		return 1;
 	}
 
@@ -602,7 +637,7 @@ int loki_patch(char *partition, char *partitionPath)
 	read(aboot_fd, buf, fake_size);
 
 	if (write(ofd, buf, fake_size) != fake_size) {
-		LOGE("[-] Failed to write original aboot code to output file.\n");
+		printf("[-] Failed to write original aboot code to output file.\n");
 		return 1;
 	}
 
@@ -612,10 +647,10 @@ int loki_patch(char *partition, char *partitionPath)
 	/* Write the device tree if needed */
 	if (hdr->dt_size) {
 
-		ui_print("[+] Writing device tree.\n");
+		printf("[+] Writing device tree.\n");
 
 		if (write(ofd, orig + page_size + page_kernel_size + page_ramdisk_size, hdr->dt_size) != hdr->dt_size) {
-			LOGE("[-] Failed to write device tree to output file.\n");
+			printf("[-] Failed to write device tree to output file.\n");
 			return 1;
 		}
 	}
@@ -624,7 +659,7 @@ int loki_patch(char *partition, char *partitionPath)
 
 	/* Write the patch */
 	if (write(ofd, patch, sizeof(patch)) != sizeof(patch)) {
-		LOGE("[-] Failed to write patch to output file.\n");
+		printf("[-] Failed to write patch to output file.\n");
 		return 1;
 	}
 
@@ -632,7 +667,7 @@ int loki_patch(char *partition, char *partitionPath)
 	close(ofd);
 	close(aboot_fd);
 
-	ui_print("[+] Output file written to %s\n", LOKI_IMAGE);
+	printf("[+] Output file written to %s\n", out_image);
 
 	return 0;
 }

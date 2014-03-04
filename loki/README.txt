@@ -61,6 +61,7 @@ dan@pc:~$ adb push cwm.lok /data/local/tmp
 dan@pc:~$ adb push loki_flash /data/local/tmp
 dan@pc:~$ adb shell
 shell@android:/ $ su
+shell@android:/ # chmod 755 /data/local/tmp/loki_flash
 shell@android:/ # /data/local/tmp/loki_flash
 Usage: /data/local/tmp/loki_flash [boot|recovery] [in.lok]
 shell@android:/ # /data/local/tmp/loki_flash recovery /data/local/tmp/cwm.lok

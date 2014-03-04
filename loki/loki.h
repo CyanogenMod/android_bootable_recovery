@@ -7,7 +7,6 @@
 #define BOOT_NAME_SIZE 16
 #define BOOT_ARGS_SIZE 512
 
-#define LOKI_IMAGE          "/tmp/loki_image"
 #define BOOT_PARTITION      "/dev/block/platform/msm_sdcc.1/by-name/boot"
 #define RECOVERY_PARTITION  "/dev/block/platform/msm_sdcc.1/by-name/recovery"
 #define ABOOT_PARTITION     "/dev/block/platform/msm_sdcc.1/by-name/aboot"
@@ -50,7 +49,8 @@ struct loki_hdr {
     unsigned int ramdisk_addr;
 };
 
-int loki_patch(char *partition, char *partitionPath);
-int loki_flash(char *partition);
+int loki_patch(const char* partition_label, const char* aboot_image, const char* in_image, const char* out_image);
+int loki_flash(const char* partition_label, const char* loki_image);
+int loki_find(const char* aboot_image);
 
 #endif //__LOKI_H_
