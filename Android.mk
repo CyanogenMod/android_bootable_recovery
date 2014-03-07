@@ -24,7 +24,8 @@ LOCAL_SRC_FILES := \
     default_recovery_ui.c \
     adb_install.c \
     verifier.c \
-    ../../system/vold/vdc.c
+    ../../system/vold/vdc.c \
+    propsrvc/legacy_property_service.c
 
 ADDITIONAL_RECOVERY_FILES := $(shell echo $$ADDITIONAL_RECOVERY_FILES)
 LOCAL_SRC_FILES += $(ADDITIONAL_RECOVERY_FILES)
