@@ -21,7 +21,6 @@ LOCAL_SRC_FILES := \
     firmware.c \
     edifyscripting.c \
     prop.c \
-    default_recovery_ui.c \
     adb_install.c \
     verifier.c \
     ../../system/vold/vdc.c \
@@ -99,6 +98,12 @@ ifeq ($(BOARD_CUSTOM_RECOVERY_KEYMAPPING),)
   LOCAL_SRC_FILES += default_recovery_keys.c
 else
   LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_KEYMAPPING)
+endif
+
+ifeq ($(BOARD_CUSTOM_RECOVERY_UI),)
+  LOCAL_SRC_FILES += default_recovery_ui.c
+else
+  LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_UI)
 endif
 
 LOCAL_STATIC_LIBRARIES += libvoldclient libsdcard libminipigz libfsck_msdos
