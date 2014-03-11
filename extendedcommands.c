@@ -529,6 +529,12 @@ int confirm_selection(const char* title, const char* confirm) {
     if (0 == stat(path, &info))
         return 1;
 
+#ifdef BOARD_NATIVE_DUALBOOT
+    char buf[PATH_MAX];
+    device_build_selection_title(buf, title);
+    title = (char*)&buf;
+#endif
+
     int many_confirm;
     char* confirm_str = strdup(confirm);
     const char* confirm_headers[] = { title, "  THIS CAN NOT BE UNDONE.", "", NULL };
