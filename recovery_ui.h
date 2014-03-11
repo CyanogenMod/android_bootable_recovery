@@ -66,6 +66,19 @@ extern int device_perform_action(int which);
 // are erased after this returns (whether it returns success or not).
 int device_wipe_data();
 
+#ifdef BOARD_NATIVE_DUALBOOT
+// Called instead of 'verify_root_and_recovery' and should be used
+// to invoke 'verify_root_and_recovery' for every system.
+extern int device_verify_root_and_recovery(void);
+
+// Called from 'confirm_selection' to prepare the displayed title
+// 'buf' will be used as title after this function has been called
+// which means that you at least should write the title into this buffer.
+// This should be used to add a prefix to the title which tells the user
+// on which system the current action will be performed to.
+extern int device_build_selection_title(char* buf, const char* title);
+#endif
+
 // ui_wait_key() special return codes
 /*
 #define REBOOT              -1 // ui_wait_key() timeout to reboot
