@@ -1393,14 +1393,26 @@ int can_partition(const char* volume) {
 
 
 #ifdef ENABLE_LOKI
+
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+#define FIXED_ADVANCED_ENTRIES 9
+#else
+#define FIXED_ADVANCED_ENTRIES 8
+#endif
+
+#else
+
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
 #define FIXED_ADVANCED_ENTRIES 8
 #else
 #define FIXED_ADVANCED_ENTRIES 7
 #endif
 
+#endif
+
 int show_advanced_menu() {
     char buf[80];
-    int i = 0, j = 0, chosen_item = 0;
+    int i = 0, j = 0, chosen_item = 0, list_index = 0;
     /* Default number of entries if no compile-time extras are added */
     static char* list[MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1];
 
@@ -1412,23 +1424,30 @@ int show_advanced_menu() {
 
     memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1);
 
-    list[0] = "reboot recovery";
+    list[list_index++] = "reboot recovery";
 
     char bootloader_mode[PROPERTY_VALUE_MAX];
     property_get("ro.bootloader.mode", bootloader_mode, "");
     if (!strcmp(bootloader_mode, "download")) {
-        list[1] = "reboot to download mode";
+        list[list_index++] = "reboot to download mode";
     } else {
-        list[1] = "reboot to bootloader";
+        list[list_index++] = "reboot to bootloader";
     }
 
-    list[2] = "power off";
-    list[3] = "wipe dalvik cache";
-    list[4] = "report error";
-    list[5] = "key test";
-    list[6] = "show log";
+    list[list_index++] = "power off";
+    list[list_index++] = "wipe dalvik cache";
+    list[list_index++] = "report error";
+    list[list_index++] = "key test";
+    list[list_index++] = "show log";
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+    int index_tdb = list_index++;
+    char tdb_name[PATH_MAX];
+    device_get_truedualboot_entry(tdb_name);
+    list[index_tdb] = &tdb_name;
+#endif
 #ifdef ENABLE_LOKI
-    list[7] = "toggle loki support";
+    int index_loki = list_index++;
+    list[index_loki] = "toggle loki support";
 #endif
 
     char list_prefix[] = "partition ";
@@ -1507,14 +1526,21 @@ int show_advanced_menu() {
             case 6:
                 ui_printlogtail(12);
                 break;
+            default:
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+            if(chosen_item==index_tdb) {
+                device_toggle_truedualboot();
+                break;
+            }
+#endif
 #ifdef ENABLE_LOKI
-            case 7:
+            if(chosen_item==index_loki) {
                 toggle_loki_support();
                 break;
+            }
 #endif
-            default:
-                partition_sdcard(list[chosen_item] + strlen(list_prefix));
-                break;
+            partition_sdcard(list[chosen_item] + strlen(list_prefix));
+            break;
         }
     }
 
