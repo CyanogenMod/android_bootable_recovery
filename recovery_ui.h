@@ -81,7 +81,9 @@ extern int device_build_selection_title(char* buf, const char* title);
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
 extern void device_toggle_truedualboot(void);
+extern void device_choose_bootmode(void);
 extern int device_get_truedualboot_entry(char* tdb_name);
+extern int device_get_bootmode(char* bootmode_name);
 extern int device_truedualboot_mount(const char* path, const char* mount_point);
 extern int device_truedualboot_unmount(const char* path);
 extern int device_truedualboot_format(const char* volume);
