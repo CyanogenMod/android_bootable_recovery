@@ -18,6 +18,7 @@
 #define _RECOVERY_UI_H
 
 #include "common.h"
+#include "minzip/Zip.h"
 
 // Called before UI library is initialized.  Can change things like
 // how many frames are included in various animations, etc.
@@ -77,6 +78,16 @@ extern int device_verify_root_and_recovery(void);
 // This should be used to add a prefix to the title which tells the user
 // on which system the current action will be performed to.
 extern int device_build_selection_title(char* buf, const char* title);
+
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+extern void device_toggle_truedualboot(void);
+extern int device_get_truedualboot_entry(char* tdb_name);
+extern int device_truedualboot_mount(const char* path, const char* mount_point);
+extern int device_truedualboot_unmount(const char* path);
+extern int device_truedualboot_format(const char* volume);
+extern int device_truedualboot_before_update(const char *path, ZipArchive *zip);
+extern void device_truedualboot_after_load_volume_table();
+#endif
 #endif
 
 // ui_wait_key() special return codes
