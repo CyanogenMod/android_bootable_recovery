@@ -1395,7 +1395,7 @@ int can_partition(const char* volume) {
 #ifdef ENABLE_LOKI
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 9
+#define FIXED_ADVANCED_ENTRIES 10
 #else
 #define FIXED_ADVANCED_ENTRIES 8
 #endif
@@ -1403,7 +1403,7 @@ int can_partition(const char* volume) {
 #else
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 8
+#define FIXED_ADVANCED_ENTRIES 9
 #else
 #define FIXED_ADVANCED_ENTRIES 7
 #endif
@@ -1441,9 +1441,7 @@ int show_advanced_menu() {
     list[list_index++] = "show log";
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
     int index_tdb = list_index++;
-    char tdb_name[PATH_MAX];
-    device_get_truedualboot_entry(tdb_name);
-    list[index_tdb] = &tdb_name;
+    int index_bootmode = list_index++;
 #endif
 #ifdef ENABLE_LOKI
     int index_loki = list_index++;
@@ -1469,6 +1467,15 @@ int show_advanced_menu() {
     list[FIXED_ADVANCED_ENTRIES + j] = NULL;
 
     for (;;) {
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+        char tdb_name[PATH_MAX];
+        device_get_truedualboot_entry(tdb_name);
+        list[index_tdb] = &tdb_name;
+
+        char bootmode_name[PATH_MAX];
+        device_get_bootmode(bootmode_name);
+        list[index_bootmode] = &bootmode_name;
+#endif
         chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
         if (chosen_item == GO_BACK || chosen_item == REFRESH)
             break;
@@ -1530,6 +1537,10 @@ int show_advanced_menu() {
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
             if(chosen_item==index_tdb) {
                 device_toggle_truedualboot();
+                break;
+            }
+            if(chosen_item==index_bootmode) {
+                device_choose_bootmode();
                 break;
             }
 #endif
