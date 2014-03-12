@@ -89,13 +89,29 @@ static void nandroid_callback(const char* filename) {
 
 static void compute_directory_stats(const char* directory) {
     char tmp[PATH_MAX];
+    char count_text[100];
+
+    // reset file count if we ever return before setting it
+    nandroid_files_count = 0;
+    nandroid_files_total = 0;
+
     sprintf(tmp, "find %s | %s wc -l > /tmp/dircount", directory, strcmp(directory, "/data") == 0 && is_data_media() ? "grep -v /data/media |" : "");
     __system(tmp);
-    char count_text[100];
+
     FILE* f = fopen("/tmp/dircount", "r");
-    fread(count_text, 1, sizeof(count_text), f);
+    if (f == NULL)
+        return;
+
+    if (fgets(count_text, sizeof(count_text), f) == NULL) {
+        fclose(f);
+        return;
+    }
+
+    size_t len = strlen(count_text);
+    if (count_text[len - 1] == '\n')
+        count_text[len - 1] = '\0';
+
     fclose(f);
-    nandroid_files_count = 0;
     nandroid_files_total = atoi(count_text);
     ui_reset_progress();
     ui_show_progress(1, 0);
@@ -291,7 +307,6 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
 }
 
 int nandroid_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
-
     int ret = 0;
     char name[PATH_MAX];
     char tmp[PATH_MAX];
@@ -925,6 +940,7 @@ int bu_main(int argc, char** argv) {
             dup2(fd, STDOUT_FILENO);
             close(fd);
         }
+
         // fprintf(stderr, "%d %d %s\n", fd, STDOUT_FILENO, argv[3]);
         int ret = nandroid_dump(partition);
         sleep(10);
@@ -939,10 +955,23 @@ int bu_main(int argc, char** argv) {
             dup2(fd, STDIN_FILENO);
             close(fd);
         }
+
         char partition[100];
         FILE* f = fopen("/tmp/ro.bu.restore", "r");
-        fread(partition, 1, sizeof(partition), f);
-        fclose(f);
+        if (f == NULL) {
+            printf("cannot open ro.bu.restore\n");
+            return bu_usage();
+        }
+
+        if (fgets(partition, sizeof(partition), f) == NULL) {
+            fclose(f);
+            printf("nothing to restore!\n");
+            return bu_usage();
+        }
+
+        size_t len = strlen(partition);
+        if (partition[len - 1] == '\n')
+            partition[len - 1] = '\0';
 
         // fprintf(stderr, "%d %d %s\n", fd, STDIN_FILENO, argv[3]);
         return nandroid_undump(partition);

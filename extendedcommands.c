@@ -423,11 +423,10 @@ void show_choose_zip_menu(const char *mount_point) {
     char* file = choose_file_menu(mount_point, ".zip", headers);
     if (file == NULL)
         return;
-    static char* confirm_install = "Confirm install?";
-    static char confirm[PATH_MAX];
+    char confirm[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
 
-    if (confirm_selection(confirm_install, confirm)) {
+    if (confirm_selection("Confirm install?", confirm)) {
         install_zip(file);
         write_last_install_path(dirname(file));
     }
