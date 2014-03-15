@@ -576,6 +576,10 @@ extern void reset_ext4fs_info();
 
 extern struct selabel_handle *sehandle;
 int format_device(const char *device, const char *path, const char *fs_type) {
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+    if(device_truedualboot_format_device(device, path, fs_type) <= 0)
+        return 0;
+#endif
     if (is_data_media_volume_path(path)) {
         return format_unknown_device(NULL, path, NULL);
     }
