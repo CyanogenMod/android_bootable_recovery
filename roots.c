@@ -353,8 +353,8 @@ extern struct selabel_handle *sehandle;
 
 int format_volume(const char* volume) {
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-	if(device_truedualboot_format(volume) <= 0)
-		return 0;
+    if(device_truedualboot_format_volume(volume) <= 0)
+        return 0;
 #endif
 
     if (is_data_media_volume_path(volume)) {
