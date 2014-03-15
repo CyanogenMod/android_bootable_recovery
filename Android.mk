@@ -88,6 +88,10 @@ ifeq ($(ENABLE_LOKI_RECOVERY),true)
   LOCAL_STATIC_LIBRARIES += libloki_recovery
 endif
 
+ifeq ($(TARGET_RECOVERY_NO_RAINBOWS),true)
+  LOCAL_CFLAGS += -DNO_RAINBOWS
+endif
+
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
 # It gets copied there in config/Makefile.  LOCAL_MODULE_TAGS suppresses
 # a (redundant) copy of the binary in /system/bin for user builds.

@@ -607,6 +607,7 @@ get_menu_selection(const char** headers, char** items, int menu_only,
             chosen_item = action;
         }
 
+#ifndef NO_RAINBOWS
         if (abs(selected - old_selected) > 1) {
             wrap_count++;
             if (wrap_count == 5) {
@@ -621,6 +622,7 @@ get_menu_selection(const char** headers, char** items, int menu_only,
                 }
             }
         }
+#endif
     }
 
     ui_end_menu();
