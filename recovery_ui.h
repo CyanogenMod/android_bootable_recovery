@@ -86,7 +86,8 @@ extern int device_get_truedualboot_entry(char* tdb_name);
 extern int device_get_bootmode(char* bootmode_name);
 extern int device_truedualboot_mount(const char* path, const char* mount_point);
 extern int device_truedualboot_unmount(const char* path);
-extern int device_truedualboot_format(const char* volume);
+extern int device_truedualboot_format_volume(const char* volume);
+extern int device_truedualboot_format_device(const char *device, const char *path, const char *fs_type);
 extern int device_truedualboot_before_update(const char *path, ZipArchive *zip);
 extern void device_truedualboot_after_load_volume_table();
 #endif
