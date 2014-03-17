@@ -1245,6 +1245,9 @@ void format_sdcard(const char* volume) {
     static char* list[] = { "default",
                             "vfat",
                             "exfat",
+#ifdef USE_F2FS
+                            "f2fs",
+#endif
                             "ntfs",
                             "ext4",
                             "ext3",
@@ -1269,7 +1272,8 @@ void format_sdcard(const char* volume) {
         case 1:
         case 2:
         case 3:
-        case 4: {
+        case 4:
+        case 5: {
             if (fs_mgr_is_voldmanaged(v)) {
                 ret = vold_custom_format_volume(v->mount_point, list[chosen_item], 1) == CommandOkay ? 0 : -1;
             } else if (strcmp(list[chosen_item], "vfat") == 0) {
@@ -1278,6 +1282,11 @@ void format_sdcard(const char* volume) {
             } else if (strcmp(list[chosen_item], "exfat") == 0) {
                 sprintf(cmd, "/sbin/mkfs.exfat %s", v->blk_device);
                 ret = __system(cmd);
+#ifdef USE_F2FS
+            } else if (strcmp(list[chosen_item], "f2fs") == 0) {
+                sprintf(cmd, "/sbin/mkfs.f2fs %s", v->blk_device);
+                ret = __system(cmd);
+#endif
             } else if (strcmp(list[chosen_item], "ntfs") == 0) {
                 sprintf(cmd, "/sbin/mkntfs -f %s", v->blk_device);
                 ret = __system(cmd);
@@ -1286,8 +1295,8 @@ void format_sdcard(const char* volume) {
             }
             break;
         }
-        case 5:
-        case 6: {
+        case 6:
+        case 7: {
             // workaround for new vold managed volumes that cannot be recognized by prebuilt ext2/ext3 bins
             const char *device = v->blk_device2;
             if (device == NULL)
