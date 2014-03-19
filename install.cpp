@@ -23,6 +23,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/mount.h>
+#include <setjmp.h>
 
 #include "common.h"
 #include "install.h"
@@ -46,6 +47,12 @@ static const int VERIFICATION_PROGRESS_TIME = 60;
 static const float VERIFICATION_PROGRESS_FRACTION = 0.25;
 static const float DEFAULT_FILES_PROGRESS_FRACTION = 0.4;
 static const float DEFAULT_IMAGE_PROGRESS_FRACTION = 0.1;
+
+static jmp_buf jb;
+static void sig_bus(int sig)
+{
+    longjmp(jb, 1);
+}
 
 // If the package contains an update binary, extract it and run it.
 static int
@@ -285,7 +292,19 @@ really_install_package(const char *path, bool* wipe_cache, bool needs_mount)
     ui->Print("Verifying update package...\n");
 
     int err;
-    err = verify_file(map.addr, map.length, loadedKeys, numKeys);
+
+    // Because we mmap() the update file which is backed by FUSE, we get
+    // SIGBUS when the host aborts the transfer.  We handle this by using
+    // setjmp/longjmp.
+    signal(SIGBUS, sig_bus);
+    if (setjmp(jb) == 0) {
+        err = verify_file(map.addr, map.length, loadedKeys, numKeys);
+    }
+    else {
+        err = VERIFY_FAILURE;
+    }
+    signal(SIGBUS, SIG_DFL);
+
     free(loadedKeys);
     LOGI("verify_file returned %d\n", err);
     if (err != VERIFY_SUCCESS) {

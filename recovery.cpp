@@ -600,7 +600,7 @@ get_menu_selection(const char* const * headers, const char* const * items,
     int selected = initial_selection;
     int chosen_item = -1;
 
-    while (chosen_item < 0) {
+    while (chosen_item < 0 && chosen_item != Device::kGoBack && chosen_item != Device::kRefresh) {
         int key = ui->WaitKey();
         int visible = ui->IsTextVisible();
 
@@ -612,6 +612,11 @@ get_menu_selection(const char* const * headers, const char* const * items,
                 ui->EndMenu();
                 return 0; // XXX fixme
             }
+        } else if (key == -2) { // we are returning from ui_cancel_wait_key(): no action
+            return Device::kNoAction;
+        }
+        else if (key == -6) {
+            return Device::kRefresh;
         }
 
         int action = device->HandleMenuKey(key, visible);
@@ -628,6 +633,12 @@ get_menu_selection(const char* const * headers, const char* const * items,
                     chosen_item = selected;
                     break;
                 case Device::kNoAction:
+                    break;
+                case Device::kGoBack:
+                    chosen_item = Device::kGoBack;
+                    break;
+                case Device::kRefresh:
+                    chosen_item = Device::kRefresh;
                     break;
             }
         } else if (!menu_only) {
@@ -837,6 +848,38 @@ static void choose_recovery_file(Device* device) {
     }
 }
 
+static int enter_sideload_mode(RecoveryUI *ui_, bool* wipe_cache, Device* device) {
+
+    ensure_path_mounted(CACHE_ROOT);
+    start_sideload(ui_, wipe_cache, TEMPORARY_INSTALL_FILE);
+
+    static const char* headers[] = {  "ADB Sideload",
+                                "",
+                                NULL
+    };
+
+    static const char* list[] = { "Cancel sideload", NULL };
+
+    int status = INSTALL_NONE;
+    int item = get_menu_selection(headers, list, 0, 0, device);
+    if (item != Device::kNoAction) {
+        stop_sideload();
+    }
+    status = wait_sideload();
+
+    if (status >= 0 && status != INSTALL_NONE) {
+        if (status != INSTALL_SUCCESS) {
+            ui_->SetBackground(RecoveryUI::ERROR);
+            ui_->Print("Installation aborted.\n");
+        } else if (!ui->IsTextVisible()) {
+            return status;  // reboot if logs aren't visible
+        } else {
+            ui_->Print("\nInstall from ADB complete.\n");
+        }
+    }
+    return status;
+}
+
 static int apply_from_sdcard(Device* device, bool* wipe_cache) {
     modified_flash = true;
 
@@ -892,77 +935,83 @@ prompt_and_wait(Device* device, int status) {
         Device::BuiltinAction chosen_action = device->InvokeMenuItem(chosen_item);
 
         bool should_wipe_cache = false;
-        switch (chosen_action) {
-            case Device::NO_ACTION:
-                break;
+        for (;;) {
+            switch (chosen_action) {
+                case Device::NO_ACTION:
+                    break;
 
-            case Device::REBOOT:
-            case Device::SHUTDOWN:
-            case Device::REBOOT_BOOTLOADER:
-                return chosen_action;
+                case Device::REBOOT:
+                case Device::SHUTDOWN:
+                case Device::REBOOT_BOOTLOADER:
+                    return chosen_action;
 
-            case Device::WIPE_DATA:
-                wipe_data(ui->IsTextVisible(), device);
-                if (!ui->IsTextVisible()) return Device::NO_ACTION;
-                break;
+                case Device::WIPE_DATA:
+                    wipe_data(ui->IsTextVisible(), device);
+                    if (!ui->IsTextVisible()) return Device::NO_ACTION;
+                    break;
 
-            case Device::WIPE_CACHE:
-                wipe_cache(ui->IsTextVisible(), device);
-                if (!ui->IsTextVisible()) return Device::NO_ACTION;
-                break;
+                case Device::WIPE_CACHE:
+                    wipe_cache(ui->IsTextVisible(), device);
+                    if (!ui->IsTextVisible()) return Device::NO_ACTION;
+                    break;
 
-            case Device::APPLY_ADB_SIDELOAD:
-            case Device::APPLY_SDCARD:
-                {
-                    bool adb = (chosen_action == Device::APPLY_ADB_SIDELOAD);
-                    if (adb) {
-                        status = apply_from_adb(ui, &should_wipe_cache, TEMPORARY_INSTALL_FILE);
-                    } else {
-                        status = apply_from_sdcard(device, &should_wipe_cache);
-                    }
+                case Device::APPLY_ADB_SIDELOAD:
+                case Device::APPLY_SDCARD:
+                    {
+                        bool adb = (chosen_action == Device::APPLY_ADB_SIDELOAD);
+                        if (adb) {
+                            status = enter_sideload_mode(ui, &should_wipe_cache, device);
+                        } else {
+                            status = apply_from_sdcard(device, &should_wipe_cache);
+                        }
 
-                    if (status == INSTALL_SUCCESS && should_wipe_cache) {
-                        if (!wipe_cache(false, device)) {
-                            status = INSTALL_ERROR;
+                        if (status == INSTALL_SUCCESS && should_wipe_cache) {
+                            if (!wipe_cache(false, device)) {
+                                status = INSTALL_ERROR;
+                            }
+                        }
+
+                        if (status != INSTALL_SUCCESS) {
+                            ui->SetBackground(RecoveryUI::ERROR);
+                            ui->Print("Installation aborted.\n");
+                            copy_logs();
+                        } else if (!ui->IsTextVisible()) {
+                            return Device::NO_ACTION;  // reboot if logs aren't visible
+                        } else {
+                            ui->Print("\nInstall from %s complete.\n", adb ? "ADB" : "SD card");
                         }
                     }
+                    break;
 
-                    if (status != INSTALL_SUCCESS) {
-                        ui->SetBackground(RecoveryUI::ERROR);
-                        ui->Print("Installation aborted.\n");
-                        copy_logs();
-                    } else if (!ui->IsTextVisible()) {
-                        return Device::NO_ACTION;  // reboot if logs aren't visible
+                case Device::VIEW_RECOVERY_LOGS:
+                    choose_recovery_file(device);
+                    break;
+
+                case Device::MOUNT_SYSTEM:
+                    char system_root_image[PROPERTY_VALUE_MAX];
+                    property_get("ro.build.system_root_image", system_root_image, "");
+
+                    // For a system image built with the root directory (i.e.
+                    // system_root_image == "true"), we mount it to /system_root, and symlink /system
+                    // to /system_root/system to make adb shell work (the symlink is created through
+                    // the build system).
+                    // Bug: 22855115
+                    if (strcmp(system_root_image, "true") == 0) {
+                        if (ensure_path_mounted_at("/", "/system_root") != -1) {
+                            ui->Print("Mounted /system.\n");
+                        }
                     } else {
-                        ui->Print("\nInstall from %s complete.\n", adb ? "ADB" : "SD card");
+                        if (ensure_path_mounted("/system") != -1) {
+                            ui->Print("Mounted /system.\n");
+                        }
                     }
-                }
-                break;
-
-            case Device::VIEW_RECOVERY_LOGS:
-                choose_recovery_file(device);
-                break;
-
-            case Device::MOUNT_SYSTEM:
-                char system_root_image[PROPERTY_VALUE_MAX];
-                property_get("ro.build.system_root_image", system_root_image, "");
-
-                // For a system image built with the root directory (i.e.
-                // system_root_image == "true"), we mount it to /system_root, and symlink /system
-                // to /system_root/system to make adb shell work (the symlink is created through
-                // the build system).
-                // Bug: 22855115
-                if (strcmp(system_root_image, "true") == 0) {
-                    if (ensure_path_mounted_at("/", "/system_root") != -1) {
-                        ui->Print("Mounted /system.\n");
-                    }
-                } else {
-                    if (ensure_path_mounted("/system") != -1) {
-                        ui->Print("Mounted /system.\n");
-                    }
-                }
-
-                break;
+                    break;
+            }
+            if (status == Device::kRefresh) {
+                status = 0;
+                continue;
+            }
+            break;
         }
     }
 }
@@ -1239,7 +1288,7 @@ main(int argc, char **argv) {
         if (!sideload_auto_reboot) {
             ui->ShowText(true);
         }
-        status = apply_from_adb(ui, &should_wipe_cache, TEMPORARY_INSTALL_FILE);
+        status = enter_sideload_mode(ui, &should_wipe_cache, device);
         if (status == INSTALL_SUCCESS && should_wipe_cache) {
             if (!wipe_cache(false, device)) {
                 status = INSTALL_ERROR;
