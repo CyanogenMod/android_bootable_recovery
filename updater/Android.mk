@@ -81,15 +81,3 @@ LOCAL_MODULE := updater
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
 include $(BUILD_EXECUTABLE)
-
-## Explicitly a prebuilt. It'll normally pick up the one built
-## above, but if a device includes its own implementation that will
-## be used instead. That's the intended behavior
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := updater.fallback
-LOCAL_PREBUILT_MODULE_FILE := $(TARGET_OUT)/bin/updater
-LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/res
-LOCAL_MODULE_TAGS := optional
-include $(BUILD_PREBUILT)
