@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -36,7 +37,7 @@
 #include "firmware.h"
 
 #include "extendedcommands.h"
-
+#include "propsrvc/legacy_property_service.h"
 
 #define ASSUMED_UPDATE_BINARY_NAME  "META-INF/com/google/android/update-binary"
 #define ASSUMED_UPDATE_SCRIPT_NAME  "META-INF/com/google/android/update-script"
@@ -104,6 +105,33 @@ handle_firmware_update(char* type, char* filename, ZipArchive* zip) {
 }
 
 static const char *LAST_INSTALL_FILE = "/cache/recovery/last_install";
+const char *DEV_PROP_PATH = "/dev/__properties__";
+const char *DEV_PROP_BACKUP_PATH = "/dev/__properties_backup__";
+
+void set_legacy_props() {
+    char tmp[32];
+    int propfd, propsz;
+    legacy_properties_init();
+    legacy_get_property_workspace(&propfd, &propsz);
+    sprintf(tmp, "%d,%d", dup(propfd), propsz);
+    setenv("ANDROID_PROPERTY_WORKSPACE", tmp, 1);
+
+    if (rename(DEV_PROP_PATH, DEV_PROP_BACKUP_PATH) == -1) {
+        LOGE("Could not rename properties path: %s\n", DEV_PROP_PATH);
+        LOGE("Legacy properties may not be detected\n");
+    } else {
+        LOGW("Legacy property environment set\n");
+    }
+}
+
+void unset_legacy_props() {
+    if (rename(DEV_PROP_BACKUP_PATH, DEV_PROP_PATH) == -1) {
+        LOGE("Could not rename properties path: %s\n", DEV_PROP_BACKUP_PATH);
+        LOGE("Legacy properties may not be detected\n");
+    } else {
+        LOGW("Legacy property environment unset\n");
+    }
+}
 
 // If the package contains an update binary, extract it and run it.
 static int
@@ -145,14 +173,10 @@ try_update_binary(const char *path, ZipArchive *zip) {
     /* Make sure the update binary is compatible with this recovery
      *
      * We're building this against 4.4's (or above) bionic, which
-     * has a different property namespace structure. Old updaters
-     * don't know how to deal with it, so if we think we got one
-     * of those, force the use of a fallback compatible copy and
-     * hope for the best
-     *
-     * if "set_perm_" is found, it's probably a regular updater
-     * instead of a custom one. And if "set_metadata_" isn't there,
-     * it's pre-4.4, which makes it incompatible
+     * has a different property namespace structure. If "set_perm_"
+     * is found, it's probably a regular updater instead of a custom
+     * one. If "set_metadata_" isn't there, it's pre-4.4, which
+     * makes it incompatible.
      *
      * Also, I hate matching strings in binary blobs */
 
@@ -191,22 +215,6 @@ try_update_binary(const char *path, ZipArchive *zip) {
         pos = 0;
     }
     fclose(updaterfile);
-
-    /* Found set_perm and !set_metadata, overwrite the binary with the fallback */
-    if (foundsetperm && !foundsetmeta) {
-        FILE *fallbackupdater = fopen("/res/updater.fallback", "rb");
-        FILE *updaterfile = fopen(binary, "wb");
-        char updbuf[1024];
-
-        LOGW("Using fallback updater for downgrade...\n");
-        while (!feof(fallbackupdater)) {
-           fread(&updbuf, 1, 1024, fallbackupdater);
-           fwrite(&updbuf, 1, 1024, updaterfile);
-        }
-        chmod(binary, 0755);
-        fclose(updaterfile);
-        fclose(fallbackupdater);
-    }
 
     int pipefd[2];
     pipe(pipefd);
@@ -255,9 +263,14 @@ try_update_binary(const char *path, ZipArchive *zip) {
 
     pid_t pid = fork();
     if (pid == 0) {
+        /* Found set_perm and !set_metadata; use legacy properties */
+        if (foundsetperm && !foundsetmeta) {
+            LOGW("Using legacy property environment for update-binary...\n");
+            set_legacy_props();
+        }
         setenv("UPDATE_PACKAGE", path, 1);
         close(pipefd[0]);
-        execv(binary, args);
+        execve(binary, args, environ);
         fprintf(stdout, "E:Can't run %s (%s)\n", binary, strerror(errno));
         _exit(-1);
     }
@@ -312,6 +325,13 @@ try_update_binary(const char *path, ZipArchive *zip) {
 
     int status;
     waitpid(pid, &status, 0);
+
+    /* Found set_perm and !set_metadata; unset legacy properties */
+    if (foundsetperm && !foundsetmeta) {
+        LOGW("Unsetting legacy property environment...\n");
+        unset_legacy_props();
+    }
+
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
         LOGE("Error in %s\n(Status %d)\n", path, WEXITSTATUS(status));
         mzCloseZipArchive(zip);
