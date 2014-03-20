@@ -134,4 +134,23 @@ extern int ui_handle_key(int key, int visible);
 // call a clean reboot
 void reboot_main_system(int cmd, int flags, char *arg);
 
+#define CHAR_WIDTH BOARD_RECOVERY_CHAR_WIDTH
+#define CHAR_HEIGHT BOARD_RECOVERY_CHAR_HEIGHT
+
+#define MENU_MAX_COLS 64
+#define MENU_MAX_ROWS 250
+
+extern char menu[MENU_MAX_ROWS][MENU_MAX_COLS];
+extern int menu_top, menu_items, menu_sel;
+extern int menu_show_start;             // this is line which menu display is starting at
+extern int max_menu_rows;
+
+#ifdef BOARD_TOUCH_RECOVERY
+extern int get_max_menu_rows(int max_menu_rows);
+extern int draw_touch_menu(int menu_items, int menu_top, int menu_sel, int menu_show_start);
+extern int touch_handle_input(int fd, struct input_event *ev);
+extern void touch_init();
+extern int touch_handle_key(int key, int visible);
+#endif
+
 #endif
