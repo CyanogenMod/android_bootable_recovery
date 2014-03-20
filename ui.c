@@ -46,13 +46,7 @@ static int gShowBackButton = 0;
 #define MAX_COLS 96
 #define MAX_ROWS 32
 
-#define MENU_MAX_COLS 64
-#define MENU_MAX_ROWS 250
-
 #define MIN_LOG_ROWS 3
-
-#define CHAR_WIDTH BOARD_RECOVERY_CHAR_WIDTH
-#define CHAR_HEIGHT BOARD_RECOVERY_CHAR_HEIGHT
 
 #define UI_WAIT_KEY_TIMEOUT_SEC    3600
 #define UI_KEY_REPEAT_INTERVAL 80
@@ -114,11 +108,11 @@ static int text_col = 0, text_row = 0, text_top = 0;
 static int show_text = 0;
 static int show_text_ever = 0;   // has show_text ever been 1?
 
-static char menu[MENU_MAX_ROWS][MENU_MAX_COLS];
+char menu[MENU_MAX_ROWS][MENU_MAX_COLS];
 static int show_menu = 0;
-static int menu_top = 0, menu_items = 0, menu_sel = 0;
-static int menu_show_start = 0;             // this is line which menu display is starting at
-static int max_menu_rows;
+int menu_top = 0, menu_items = 0, menu_sel = 0;
+int menu_show_start = 0;             // this is line which menu display is starting at
+int max_menu_rows;
 
 static unsigned cur_rainbow_color = 0;
 static int gRainbowMode = 0;
@@ -131,14 +125,6 @@ static unsigned long key_last_repeat[KEY_MAX + 1], key_press_time[KEY_MAX + 1];
 static volatile char key_pressed[KEY_MAX + 1];
 
 static void update_screen_locked(void);
-
-#ifdef BOARD_TOUCH_RECOVERY
-#include "../../vendor/koush/recovery/touch.c"
-#else
-#ifdef BOARD_RECOVERY_SWIPE
-#include "swipe.c"
-#endif
-#endif
 
 // Return the current time as a double (including fractions of a second).
 static double now() {
@@ -303,7 +289,7 @@ static void draw_screen_locked(void)
             gr_fill(0, row*CHAR_HEIGHT+CHAR_HEIGHT/2-1,
                     gr_fb_width(), row*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
 #else
-            row = draw_touch_menu(menu, menu_items, menu_top, menu_sel, menu_show_start);
+            row = draw_touch_menu(menu_items, menu_top, menu_sel, menu_show_start);
 #endif
         }
 
@@ -409,12 +395,8 @@ static int input_callback(int fd, short revents, void *data)
         return -1;
 
 #ifdef BOARD_TOUCH_RECOVERY
-    if (touch_handle_input(fd, ev))
+    if (touch_handle_input(fd, &ev))
         return 0;
-#else
-#ifdef BOARD_RECOVERY_SWIPE
-    swipe_handle_input(fd, &ev);
-#endif
 #endif
 
     if (ev.type == EV_SYN) {
