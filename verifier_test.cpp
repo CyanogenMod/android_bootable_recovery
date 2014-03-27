@@ -148,17 +148,22 @@ class FakeUI : public RecoveryUI {
         va_end(ap);
     }
     void ShowFile(const char*) { }
+    void ClearText() {}
 
     virtual void DialogShowInfo(const char* text) {}
     virtual void DialogShowError(const char* text) {}
+    virtual void DialogShowErrorLog(const char* text) {}
     virtual int  DialogShowing() const { return 0; }
     bool DialogDismissable() const { return false; }
     virtual void DialogDismiss() {}
 
     void StartMenu(const char* const * headers, const char* const * items,
                            int initial_selection) { }
-    int SelectMenu(int sel) { return 0; }
+    int SelectMenu(int sel, bool abs = false) { return 0; }
     void EndMenu() { }
+
+    virtual int MenuItemStart() const { return 0; }
+    virtual int MenuItemHeight() const { return 0; }
 };
 
 void

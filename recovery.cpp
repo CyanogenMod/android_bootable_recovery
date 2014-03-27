@@ -644,6 +644,11 @@ get_menu_selection(const char* const * headers, const char* const * items,
     // accidentally trigger menu items.
     ui->FlushKeys();
 
+    // Count items to detect valid values for absolute selection
+    int item_count = 0;
+    while (items[item_count] != NULL)
+        ++item_count;
+
     ui->StartMenu(headers, items, initial_selection);
     int selected = initial_selection;
     int chosen_item = -1;
@@ -668,6 +673,20 @@ get_menu_selection(const char* const * headers, const char* const * items,
         }
 
         int action = device->HandleMenuKey(key, visible);
+
+        if (action >= 0) {
+            if ((action & ~KEY_FLAG_ABS) >= item_count) {
+                action = Device::kNoAction;
+            }
+            else {
+                // Absolute selection.  Update selected item and give some
+                // feedback in the UI by selecting the item for a short time.
+                selected = action & ~KEY_FLAG_ABS;
+                action = Device::kInvokeItem;
+                selected = ui->SelectMenu(selected, true);
+                usleep(50*1000);
+            }
+        }
 
         if (action < 0) {
             switch (action) {
@@ -851,8 +870,15 @@ static bool wipe_cache(bool should_confirm, Device* device) {
     modified_flash = true;
 
     ui->Print("\n-- Wiping cache...\n");
+    ui->DialogShowInfo("Wiping cache ...");
     bool success = erase_volume("/cache");
     ui->Print("Cache wipe %s.\n", success ? "complete" : "failed");
+    if (!should_confirm || success) {
+        ui->DialogDismiss();
+    }
+    else {
+        ui->DialogShowErrorLog("Cache wipe failed");
+    }
     return success;
 }
 
@@ -928,6 +954,9 @@ static int apply_from_storage(Device* device, const std::string& id, bool* wipe_
         return INSTALL_NONE;
     }
 
+    ui->ClearText();
+    ui->SetBackground(RecoveryUI::INSTALLING_UPDATE);
+
     ui->Print("\n-- Install %s ...\n", path);
     set_sdcard_update_bootloader_message();
     void* token = start_sdcard_fuse(path);
@@ -995,6 +1024,10 @@ refresh:
         status = apply_from_storage(device, id, &wipe_cache);
     }
 
+    if (status != INSTALL_SUCCESS && status != INSTALL_NONE) {
+        ui->DialogShowErrorLog("Install failed");
+    }
+
     return status;
 }
 
@@ -1016,7 +1049,7 @@ prompt_and_wait(Device* device, int status) {
 
             case INSTALL_ERROR:
             case INSTALL_CORRUPT:
-                ui->SetBackground(RecoveryUI::ERROR);
+                ui->SetBackground(RecoveryUI::D_ERROR);
                 break;
         }
         ui->SetProgressType(RecoveryUI::EMPTY);
@@ -1067,7 +1100,7 @@ prompt_and_wait(Device* device, int status) {
 
                         if (status >= 0 && status != INSTALL_NONE) {
                             if (status != INSTALL_SUCCESS) {
-                                ui->SetBackground(RecoveryUI::ERROR);
+                                ui->SetBackground(RecoveryUI::D_ERROR);
                                 ui->Print("Installation aborted.\n");
                                 copy_logs();
                             } else if (!ui->IsTextVisible()) {
@@ -1455,7 +1488,7 @@ main(int argc, char **argv) {
 
     if (!sideload_auto_reboot && (status == INSTALL_ERROR || status == INSTALL_CORRUPT)) {
         copy_logs();
-        ui->SetBackground(RecoveryUI::ERROR);
+        ui->SetBackground(RecoveryUI::D_ERROR);
     }
 
     Device::BuiltinAction after = shutdown_after ? Device::SHUTDOWN : Device::REBOOT;
