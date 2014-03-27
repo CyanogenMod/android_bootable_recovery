@@ -57,6 +57,10 @@ int Device::HandleMenuKey(int key, int visible) {
     return kNoAction;
   }
 
+  if (key & KEY_FLAG_ABS) {
+    return key;
+  }
+
   switch (key) {
     case KEY_RIGHTSHIFT:
     case KEY_DOWN:

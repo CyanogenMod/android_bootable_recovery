@@ -116,6 +116,13 @@ endif
 
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 
+# Handling for EV_REL is disabled by default because some accelerometers
+# send EV_REL events.  Actual EV_REL devices are rare on modern hardware
+# so it's cleaner just to disable it by default.
+ifneq ($(BOARD_RECOVERY_NEEDS_REL_INPUT),)
+    LOCAL_CFLAGS += -DBOARD_RECOVERY_NEEDS_REL_INPUT
+endif
+
 ifeq ($(TARGET_USE_MDTP), true)
     LOCAL_CFLAGS += -DUSE_MDTP
 endif

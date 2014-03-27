@@ -114,7 +114,7 @@ void WearRecoveryUI::draw_background_locked(Icon icon)
 // Should only be called with updateMutex locked.
 void WearRecoveryUI::draw_progress_locked()
 {
-    if (currentIcon == ERROR) return;
+    if (currentIcon == D_ERROR) return;
     if (progressBarType != DETERMINATE) return;
 
     int width = progress_bar_width;
@@ -298,8 +298,8 @@ void WearRecoveryUI::Init()
 
     LoadBitmap("icon_installing", &backgroundIcon[INSTALLING_UPDATE]);
     backgroundIcon[ERASING] = backgroundIcon[INSTALLING_UPDATE];
-    LoadBitmap("icon_error", &backgroundIcon[ERROR]);
-    backgroundIcon[NO_COMMAND] = backgroundIcon[ERROR];
+    LoadBitmap("icon_error", &backgroundIcon[D_ERROR]);
+    backgroundIcon[NO_COMMAND] = backgroundIcon[D_ERROR];
 
     introFrames = (GRSurface**)malloc(intro_frames * sizeof(GRSurface*));
     for (int i = 0; i < intro_frames; ++i) {
@@ -430,7 +430,7 @@ void WearRecoveryUI::StartMenu(const char* const * headers, const char* const * 
     pthread_mutex_unlock(&updateMutex);
 }
 
-int WearRecoveryUI::SelectMenu(int sel) {
+int WearRecoveryUI::SelectMenu(int sel, bool abs /* = false */) {
     int old_sel;
     pthread_mutex_lock(&updateMutex);
     if (show_menu > 0) {
