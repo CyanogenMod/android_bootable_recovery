@@ -48,7 +48,7 @@ class WearRecoveryUI : public ScreenRecoveryUI {
     // menu display
     void StartMenu(const char* const * headers, const char* const * items,
                            int initial_selection);
-    int SelectMenu(int sel);
+    int SelectMenu(int sel, bool abs = false);
     void EndMenu();
 
     void Redraw();
