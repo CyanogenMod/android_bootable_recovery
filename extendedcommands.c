@@ -765,7 +765,7 @@ typedef struct {
 MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     MFMatrix mfm = { mount_point, 1, 1 };
 
-    const int NUM_FS_TYPES = 5;
+    const int NUM_FS_TYPES = 6;
     MFMatrix *fs_matrix = malloc(NUM_FS_TYPES * sizeof(MFMatrix));
     // Defined capabilities:   fs_type     mnt fmt
     fs_matrix[0] = (MFMatrix){ "bml",       0,  1 };
@@ -773,6 +773,7 @@ MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     fs_matrix[2] = (MFMatrix){ "emmc",      0,  1 };
     fs_matrix[3] = (MFMatrix){ "mtd",       0,  0 };
     fs_matrix[4] = (MFMatrix){ "ramdisk",   0,  0 };
+    fs_matrix[5] = (MFMatrix){ "swap",      0,  0 };
 
     const int NUM_MNT_PNTS = 6;
     MFMatrix *mp_matrix = malloc(NUM_MNT_PNTS * sizeof(MFMatrix));
