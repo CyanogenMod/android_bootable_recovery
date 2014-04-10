@@ -152,6 +152,9 @@ ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_SYMLINKS)
 # Now let's do recovery symlinks
 BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
 exclude := tune2fs mke2fs
+ifneq ($(TWHAVE_SELINUX),)
+	exclude += ls
+endif
 RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
 $(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
 $(RECOVERY_BUSYBOX_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
