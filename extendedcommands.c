@@ -124,6 +124,299 @@ const char* read_last_install_path() {
     return NULL;
 }
 
+#ifdef BOARD_NATIVE_DUALBOOT
+
+int  device_verify_root_and_recovery(void) {
+
+	//for /system1
+    if (ensure_path_mounted("/system") != 0)
+        return 0;
+
+    // none of these options should get a "Go Back" option
+    int old_val = ui_get_showing_back_button();
+    ui_set_showing_back_button(0);
+
+    int ret = 0;
+    struct stat st;
+    // check to see if install-recovery.sh is going to clobber recovery
+    // install-recovery.sh is also used to run the su daemon on stock rom for 4.3+
+    // so verify that doesn't exist...
+    if (0 != lstat("/system/etc/.installed_su_daemon", &st)) {
+        // check install-recovery.sh exists and is executable
+        if (0 == lstat("/system/etc/install-recovery.sh", &st)) {
+            if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("ROM may flash stock recovery on boot. Fix?", "Yes - Disable recovery flash")) {
+                    __system("chmod -x /system/etc/install-recovery.sh");
+                }
+            }
+        }
+    }
+
+
+    int exists = 0;
+    if (0 == lstat("/system/bin/su", &st)) {
+        exists = 1;
+        if (S_ISREG(st.st_mode)) {
+            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system/bin/su)")) {
+                    __system("chmod 6755 /system/bin/su");
+                }
+            }
+        }
+    }
+
+    if (0 == lstat("/system/xbin/su", &st)) {
+        exists = 1;
+        if (S_ISREG(st.st_mode)) {
+            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system/xbin/su)")) {
+                    __system("chmod 6755 /system/xbin/su");
+                }
+            }
+        }
+    }
+
+    if (!exists) {
+        ui_show_text(1);
+        ret = 1;
+        if (confirm_selection("Root access is missing. Root device?", "Yes - Root device (/system/xbin/su)")) {
+            __system("/sbin/install-su.sh");
+        }
+    }
+
+    ensure_path_unmounted("/system");
+
+    //for system1
+    if (ensure_path_mounted("/system1") != 0)
+        return 0;
+
+    // none of these options should get a "Go Back" option
+    int old_val = ui_get_showing_back_button();
+    ui_set_showing_back_button(0);
+
+    int ret = 0;
+    struct stat st;
+    // check to see if install-recovery.sh is going to clobber recovery
+    // install-recovery.sh is also used to run the su daemon on stock rom for 4.3+
+    // so verify that doesn't exist...
+    if (0 != lstat("/system1/etc/.installed_su_daemon", &st)) {
+        // check install-recovery.sh exists and is executable
+        if (0 == lstat("/system1/etc/install-recovery.sh", &st)) {
+            if (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("ROM may flash stock recovery on boot. Fix?", "Yes - Disable recovery flash")) {
+                    __system("chmod -x /system1/etc/install-recovery.sh");
+                }
+            }
+        }
+    }
+
+
+    int exists = 0;
+    if (0 == lstat("/system1/bin/su", &st)) {
+        exists = 1;
+        if (S_ISREG(st.st_mode)) {
+            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system1/bin/su)")) {
+                    __system("chmod 6755 /system1/bin/su");
+                }
+            }
+        }
+    }
+
+    if (0 == lstat("/system/xbin/su", &st)) {
+        exists = 1;
+        if (S_ISREG(st.st_mode)) {
+            if ((st.st_mode & (S_ISUID | S_ISGID)) != (S_ISUID | S_ISGID)) {
+                ui_show_text(1);
+                ret = 1;
+                if (confirm_selection("Root access possibly lost. Fix?", "Yes - Fix root (/system/xbin/su)")) {
+                    __system("chmod 6755 /system1/xbin/su");
+                }
+            }
+        }
+    }
+
+    if (!exists) {
+        ui_show_text(1);
+        ret = 1;
+        if (confirm_selection("Root access is missing. Root device?", "Yes - Root device (/system1/xbin/su)")) {
+            __system("/sbin/install-su.sh");
+        }
+    }
+
+    ensure_path_unmounted("/system1");
+    ui_set_showing_back_button(old_val);
+
+   
+}
+
+
+int device_build_selection_title(char* buf, const char* title) {
+
+}
+
+
+
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+
+int device_get_bootmode(char* bootmode) {
+   // open misc-partition
+   FILE* misc = fopen("/dev/block/platform/msm_sdcc.1/by-name/misc", "rb");
+   if (misc == NULL) {
+      printf("open misc partition failed.\n");
+      return -1;
+   }
+
+   // write bootmode
+   fseek(misc, 0x1000, SEEK_SET);
+   if(fgets(bootmode, 13, misc)==NULL) {
+      printf("Read dualboot bootmode failed.\n");
+      return -1;
+   }
+
+   // close
+   fclose(misc);
+   return 0;
+}
+
+int setBootmode(char* bootmode) {
+   // open misc-partition
+   FILE* misc = fopen("/dev/block/platform/msm_sdcc.1/by-name/misc", "wb");
+   if (misc == NULL) {
+      printf("open misc partition failed.\n");
+      return -1;
+   }
+
+   // write bootmode
+   fseek(misc, 0x1000, SEEK_SET);
+   if(fputs(bootmode, misc)<0) {
+      printf("Write dualboot bootmode failed.\n");
+      return -1;
+   }
+
+   // close
+   fclose(misc);
+   return 0;
+}
+
+
+int isTrueDualbootEnabled() {
+    struct stat st;
+    int ret;
+    if (ensure_path_mounted_at_mount_point("/data", DUALBOOT_PATH_DATAROOT)!=0) {
+        LOGE("TrueDualBoot: failed mounting data\n");
+        return -1;
+    }
+    ret = lstat(DUALBOOT_FILE_TRUEDUALBOOT, &st);
+    return (ret==0);
+}
+
+int  device_get_truedualboot_entry(char* tdb_name) {
+	int enable = !isTrueDualbootEnabled();
+	if (enable== 1) {
+		tdb_name = strdup("Close dualboot support");
+	} else {
+		tdb_name = strdup("Open dualboot support");
+	}
+	return 0;
+}
+
+void device_toggle_truedualboot() {
+
+    struct stat st;
+    int enable;
+    if (ensure_path_mounted_at_mount_point("/data", DUALBOOT_PATH_DATAROOT)!=0) {
+        LOGE("TrueDualBoot: failed mounting data\n");
+        return -1;
+    }
+    enable = !lstat(DUALBOOT_FILE_TRUEDUALBOOT, &st);
+    char confirm[PATH_MAX];
+    ui_setMenuTextColor(MENU_TEXT_COLOR_RED);
+    sprintf(confirm, "Yes - %s dualboot exists", enable?"Open":"Close");
+
+    if (confirm_selection("wipe all the user data", confirm)) {
+        // unmount /data
+        if(ensure_path_unmounted("/data")!=0) {
+            LOGE("Error unmounting /data!\n");
+            return -1;
+        }
+
+        // format /data
+        ui_set_background(BACKGROUND_ICON_INSTALLING);
+        ui_show_indeterminate_progress();
+        ui_print("Formatting /data...\n");
+        handle_truedualsystem_format(1);
+        if(format_volume("/data")!=0) {
+            ui_print("Foarmating /data failed!\n");
+            ui_reset_progress();
+            return -1;
+        }
+        ui_reset_progress();
+        handle_truedualsystem_format(0);
+        ui_print("Finish.\n");
+
+        // mount data at /data_root
+        if(ensure_path_mounted_at_mount_point("/data", DUALBOOT_PATH_DATAROOT)!=0) {
+            LOGE("failed mounting data at %s!\n", DUALBOOT_PATH_DATAROOT);
+                return -1;
+        }
+
+        if(enable) {
+            FILE * pFile = fopen(DUALBOOT_FILE_TRUEDUALBOOT,"w");
+            if(pFile==NULL) {
+                LOGE("TrueDualBoot: failed creating file");
+            }
+            fclose(pFile);
+        }
+        else
+            remove(DUALBOOT_FILE_TRUEDUALBOOT);
+    }
+
+    ui_setMenuTextColor(MENU_TEXT_COLOR);
+
+    return 0;
+}
+
+void device_choose_bootmode(void)
+{
+    char* headers[] = { "Select system to boot", "", NULL };
+    char* items[] = { "System[1]", //0
+                      "System[2]", //1
+                      NULL };
+    int chosen_item = get_menu_selection(headers, items, 0, 0);
+    if (chosen_item == GO_BACK) 
+	    return 0;
+    switch(chosen_item) {
+	    case 0: //boot-sysetm0
+		    {
+	                    setBootmode("boot-system0");
+                            break;		
+		    }
+
+	    case 1: //boot-system1
+		    {
+			    setBootmode("boot-system1");
+			    break;
+		    }
+    }
+
+    return 0;
+}
+#endif
+#endif
+
+
+
 void toggle_signature_check() {
     signature_check_enabled = !signature_check_enabled;
     ui_print("Signature Check: %s\n", signature_check_enabled ? "Enabled" : "Disabled");

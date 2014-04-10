@@ -90,6 +90,13 @@ extern int device_truedualboot_format_volume(const char* volume);
 extern int device_truedualboot_format_device(const char *device, const char *path, const char *fs_type);
 extern int device_truedualboot_before_update(const char *path, ZipArchive *zip);
 extern void device_truedualboot_after_load_volume_table();
+
+#define DUALBOOT_ITEM_INTERCHANGED    -2
+#define DUALBOOT_ITEM_ABORT           -1
+#define DUALBOOT_ITEM_BOTH             0
+#define DUALBOOT_ITEM_SYSTEM0          1
+#define DUALBOOT_ITEM_SYSTEM1          2
+
 #endif
 #endif
 
