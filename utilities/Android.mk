@@ -48,3 +48,22 @@ LOCAL_MODULE := libmake_ext4fs
 LOCAL_CFLAGS := -Dmain=make_ext4fs_main
 LOCAL_SRC_FILES := ../../../system/extras/ext4_utils/make_ext4fs_main.c
 include $(BUILD_STATIC_LIBRARY)
+
+ifneq ($(BOARD_NATIVE_DUALBOOT),)	
+include $(CLEAR_VARS)
+LOCAL_MODULE := mount_ext4_default.sh
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/res/dualboot
+LOCAL_SRC_FILES := $(LOCAL_MODULE)
+include $(BUILD_PREBUILT)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := mount_ext4_tdb.sh
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/res/dualboot
+LOCAL_SRC_FILES := $(LOCAL_MODULE)
+include $(BUILD_PREBUILT)
+
+endif

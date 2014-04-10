@@ -81,12 +81,6 @@ LOCAL_C_INCLUDES += system/vold
 
 LOCAL_STATIC_LIBRARIES += libext4_utils_static libz libsparse_static
 
-ifeq ($(BOARD_NATIVE_DUALBOOT),true)	
-ifeq ($( BOARD_NATIVE_DUALBOOT_SINGLEDATA),true)
-	LOCAL_CFLAGS += -DBOARD_NATIVE_DUALBOOT \
-			-DBOARD_NATIVE_DUALBOOT_SINGLEDATA
-endif
-endif
 
 
 ifeq ($(ENABLE_LOKI_RECOVERY),true)
@@ -108,9 +102,15 @@ else
   LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_KEYMAPPING)
 endif
 
-ifeq ($(BOARD_CUSTOM_RECOVERY_UI),)
+ifneq ($(BOARD_NATIVE_DUALBOOT),)
+LOCAL_CFLAGS += -DBOARD_NATIVE_DUALBOOT \
+	        -DBOARD_NATIVE_DUALBOOT_SINGLEDATA
+LOCAL_SRC_FILES += \
+		   dualboot/dualboot.c \
+		   dualboot/recovery_ui.c 
+else ifeq ($(BOARD_CUSTOM_RECOVERY_UI),)
   LOCAL_SRC_FILES += default_recovery_ui.c
-else
+else 
   LOCAL_SRC_FILES += $(BOARD_CUSTOM_RECOVERY_UI)
 endif
 
@@ -227,6 +227,7 @@ include $(commands_recovery_local_path)/libtar/Android.mk
 include $(commands_recovery_local_path)/openaes/Android.mk
 include $(commands_recovery_local_path)/twrpTarMain/Android.mk
 include $(commands_recovery_local_path)/toolbox/Android.mk
+
 commands_recovery_local_path :=
 
 endif
