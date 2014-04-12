@@ -1720,10 +1720,6 @@ int verify_root_and_recovery() {
     if (ensure_path_mounted("/system") != 0)
         return 0;
 
-    // none of these options should get a "Go Back" option
-    int old_val = ui_get_showing_back_button();
-    ui_set_showing_back_button(0);
-
     int ret = 0;
     struct stat st;
     // check to see if install-recovery.sh is going to clobber recovery
@@ -1779,6 +1775,5 @@ int verify_root_and_recovery() {
     }
 
     ensure_path_unmounted("/system");
-    ui_set_showing_back_button(old_val);
     return ret;
 }
