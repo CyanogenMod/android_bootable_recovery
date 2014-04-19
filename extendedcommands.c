@@ -1723,6 +1723,7 @@ int verify_root_and_recovery() {
     // none of these options should get a "Go Back" option
     int old_val = ui_get_showing_back_button();
     ui_set_showing_back_button(0);
+    ui_set_force_selection(1);
 
     int ret = 0;
     struct stat st;
@@ -1779,6 +1780,7 @@ int verify_root_and_recovery() {
     }
 
     ensure_path_unmounted("/system");
+    ui_set_force_selection(0);
     ui_set_showing_back_button(old_val);
     return ret;
 }
