@@ -474,14 +474,6 @@ static int input_callback(int fd, short revents, void *data)
     }
     pthread_mutex_unlock(&key_queue_mutex);
 
-    if (ev.value > 0 && device_toggle_display(key_pressed, ev.code)) {
-        pthread_mutex_lock(&gUpdateMutex);
-        show_text = !show_text;
-        if (show_text) show_text_ever = 1;
-        update_screen_locked();
-        pthread_mutex_unlock(&gUpdateMutex);
-    }
-
     if (ev.value > 0 && device_reboot_now(key_pressed, ev.code)) {
         reboot_main_system(ANDROID_RB_RESTART, 0, 0);
     }
@@ -1056,10 +1048,6 @@ void ui_set_show_text(int value) {
 
 void ui_set_showing_back_button(int showBackButton) {
     gShowBackButton = showBackButton;
-}
-
-int ui_get_showing_back_button() {
-    return gShowBackButton;
 }
 
 int ui_is_showing_back_button() {

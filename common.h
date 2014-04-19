@@ -72,8 +72,10 @@ int ui_menu_select(int sel);
 // statements will be displayed.
 void ui_end_menu();
 
-int ui_get_showing_back_button();
+int ui_get_selected_item();
+
 void ui_set_showing_back_button(int showBackButton);
+int ui_is_showing_back_button();
 
 void ui_set_log_stdout(int enabled);
 int ui_should_log_stdout();
@@ -156,9 +158,6 @@ typedef struct {
 
 // fopen a file, mounting volumes and making parent dirs as necessary.
 FILE* fopen_path(const char *path, const char *mode);
-
-int ui_get_selected_item();
-int ui_is_showing_back_button();
 
 void set_perf_mode(int on);
 
