@@ -75,6 +75,11 @@ void ui_end_menu();
 int ui_get_showing_back_button();
 void ui_set_showing_back_button(int showBackButton);
 
+// For menus that explicitly remove Back as a selection, requiring
+// a choice from the user
+void ui_set_force_selection(int forceSelection);
+int ui_force_selection();
+
 void ui_set_log_stdout(int enabled);
 int ui_should_log_stdout();
 

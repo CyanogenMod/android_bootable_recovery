@@ -42,6 +42,7 @@ static int gShowBackButton = 1;
 #else
 static int gShowBackButton = 0;
 #endif
+static int gForceSelection = 0;
 
 #define MAX_COLS 96
 #define MAX_ROWS 32
@@ -1060,6 +1061,14 @@ void ui_set_showing_back_button(int showBackButton) {
 
 int ui_get_showing_back_button() {
     return gShowBackButton;
+}
+
+void ui_set_force_selection(int forceSelection) {
+    gForceSelection = forceSelection;
+}
+
+int ui_force_selection() {
+    return gForceSelection;
 }
 
 int ui_is_showing_back_button() {
