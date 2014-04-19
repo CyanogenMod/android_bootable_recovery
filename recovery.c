@@ -78,7 +78,6 @@ static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
 static const char *TEMPORARY_INSTALL_FILE = "/tmp/last_install";
 static const char *SIDELOAD_TEMP_DIR = "/tmp/sideload";
 
-static int allow_display_toggle = 0;
 extern UIParameters ui_parameters;    // from ui.c
 
 /*
@@ -798,11 +797,9 @@ prompt_and_wait() {
         ui_root_menu = 1;
         // ui_menu_level is a legacy variable that i am keeping around to prevent build breakage.
         ui_menu_level = 0;
-        // allow_display_toggle = 1;
         int chosen_item = get_menu_selection(headers, MENU_ITEMS, 0, 0);
         ui_menu_level = 1;
         ui_root_menu = 0;
-        // allow_display_toggle = 0;
 
         // device-specific code may take some action here.  It may
         // return one of the core actions handled in the switch
@@ -1186,11 +1183,6 @@ main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-int get_allow_toggle_display() {
-    return allow_display_toggle;
-}
-
 void set_perf_mode(int on) {
     property_set("recovery.perf.mode", on ? "1" : "0");
 }
-

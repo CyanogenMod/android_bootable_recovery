@@ -538,6 +538,8 @@ int confirm_selection(const char* title, const char* confirm) {
     int many_confirm;
     char* confirm_str = strdup(confirm);
     const char* confirm_headers[] = { title, "  THIS CAN NOT BE UNDONE.", "", NULL };
+    int old_val = ui_is_showing_back_button();
+    ui_set_showing_back_button(0);
 
     sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_MANY_CONFIRM_FILE);
     ensure_path_mounted(path);
@@ -565,7 +567,9 @@ int confirm_selection(const char* title, const char* confirm) {
         int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
         ret = (chosen_item == 1);
     }
+
     free(confirm_str);
+    ui_set_showing_back_button(old_val);
     return ret;
 }
 
@@ -1721,10 +1725,6 @@ int verify_root_and_recovery() {
     if (ensure_path_mounted("/system") != 0)
         return 0;
 
-    // none of these options should get a "Go Back" option
-    int old_val = ui_get_showing_back_button();
-    ui_set_showing_back_button(0);
-
     int ret = 0;
     struct stat st;
     // check to see if install-recovery.sh is going to clobber recovery
@@ -1780,6 +1780,5 @@ int verify_root_and_recovery() {
     }
 
     ensure_path_unmounted("/system");
-    ui_set_showing_back_button(old_val);
     return ret;
 }
