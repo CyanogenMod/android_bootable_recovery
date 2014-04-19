@@ -38,6 +38,7 @@ int device_recovery_start() {
     return 0;
 }
 
+// add here any key combo check to reboot device
 int device_reboot_now(volatile char* key_pressed, int key_code) {
     return 0;
 }
