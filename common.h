@@ -72,7 +72,7 @@ int ui_menu_select(int sel);
 // statements will be displayed.
 void ui_end_menu();
 
-int ui_get_showing_back_button();
+int ui_shows_back_button();
 void ui_set_showing_back_button(int showBackButton);
 
 void ui_set_log_stdout(int enabled);
