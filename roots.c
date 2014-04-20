@@ -32,6 +32,7 @@
 #include <libgen.h>
 #include "flashutils/flashutils.h"
 #include "extendedcommands.h"
+#include "recovery_ui.h"
 
 #include "voldclient/voldclient.h"
 
@@ -75,6 +76,10 @@ void load_volume_table() {
             v->mount_point = strdup(mount);
         }
     }
+
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+    device_truedualboot_after_load_volume_table();
+#endif
 
     fprintf(stderr, "recovery filesystem table\n");
     fprintf(stderr, "=========================\n");
@@ -218,6 +223,11 @@ int ensure_path_mounted(const char* path) {
 }
 
 int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point) {
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+	if(device_truedualboot_mount(path, mount_point) <= 0)
+		return 0;
+#endif
+
     if (is_data_media_volume_path(path)) {
         if (ui_should_log_stdout()) {
             LOGI("using /data/media for %s.\n", path);
@@ -295,6 +305,11 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
 static int ignore_data_media = 0;
 
 int ensure_path_unmounted(const char* path) {
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+	if(device_truedualboot_unmount(path) <= 0)
+		return 0;
+#endif
+
     // if we are using /data/media, do not ever unmount volumes /data or /sdcard
     if (is_data_media_volume_path(path)) {
         return ensure_path_unmounted("/data");
@@ -337,6 +352,11 @@ int ensure_path_unmounted(const char* path) {
 extern struct selabel_handle *sehandle;
 
 int format_volume(const char* volume) {
+#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
+    if(device_truedualboot_format_volume(volume) <= 0)
+        return 0;
+#endif
+
     if (is_data_media_volume_path(volume)) {
         return format_unknown_device(NULL, volume, NULL);
     }

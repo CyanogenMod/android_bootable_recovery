@@ -35,4 +35,7 @@ int unmount_mounted_volume(const MountedVolume *volume);
 
 int remount_read_only(const MountedVolume* volume);
 
+const MountedVolume *
+find_mounted_volume_by_real_node(const char *node);
+
 #endif  // MTDUTILS_MOUNTS_H_

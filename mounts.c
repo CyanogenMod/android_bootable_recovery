@@ -213,3 +213,27 @@ remount_read_only(const MountedVolume* volume)
                  MS_NOATIME | MS_NODEV | MS_NODIRATIME |
                  MS_RDONLY | MS_REMOUNT, 0);
 }
+
+const MountedVolume *
+find_mounted_volume_by_real_node(const char *node)
+{
+    if (g_mounts_state.volumes != NULL) {
+        int i;
+        for (i = 0; i < g_mounts_state.volume_count; i++) {
+            MountedVolume *v = &g_mounts_state.volumes[i];
+            /* May be null if it was unmounted and we haven't rescanned.
+             */
+            if (v->device != NULL) {
+                ssize_t len;
+                char path_resolved[PATH_MAX];
+                if((len = readlink(v->device, path_resolved, sizeof(path_resolved)-1)) != -1)
+                    path_resolved[len] = '\0';
+
+                if (strcmp(path_resolved, node) == 0) {
+                    return v;
+                }
+            }
+        }
+    }
+    return NULL;
+}
