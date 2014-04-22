@@ -11,7 +11,7 @@ $(foreach board_define,$(BOARD_RECOVERY_DEFINES), \
   )
 
 LOCAL_STATIC_LIBRARIES := libcrecovery
-LOCAL_C_INCLUDES := bootable/recovery/libcrecovery
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../libcrecovery
 
 LOCAL_SRC_FILES := bmlutils.c
 LOCAL_MODULE := libbmlutils
