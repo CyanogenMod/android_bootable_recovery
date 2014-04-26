@@ -538,6 +538,8 @@ int confirm_selection(const char* title, const char* confirm) {
     int many_confirm;
     char* confirm_str = strdup(confirm);
     const char* confirm_headers[] = { title, "  THIS CAN NOT BE UNDONE.", "", NULL };
+    int old_val = ui_is_showing_back_button();
+    ui_set_showing_back_button(0);
 
     sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_MANY_CONFIRM_FILE);
     ensure_path_mounted(path);
@@ -565,7 +567,9 @@ int confirm_selection(const char* title, const char* confirm) {
         int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
         ret = (chosen_item == 1);
     }
+
     free(confirm_str);
+    ui_set_showing_back_button(old_val);
     return ret;
 }
 
@@ -765,7 +769,7 @@ typedef struct {
 MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     MFMatrix mfm = { mount_point, 1, 1 };
 
-    const int NUM_FS_TYPES = 5;
+    const int NUM_FS_TYPES = 6;
     MFMatrix *fs_matrix = malloc(NUM_FS_TYPES * sizeof(MFMatrix));
     // Defined capabilities:   fs_type     mnt fmt
     fs_matrix[0] = (MFMatrix){ "bml",       0,  1 };
@@ -773,6 +777,7 @@ MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     fs_matrix[2] = (MFMatrix){ "emmc",      0,  1 };
     fs_matrix[3] = (MFMatrix){ "mtd",       0,  0 };
     fs_matrix[4] = (MFMatrix){ "ramdisk",   0,  0 };
+    fs_matrix[5] = (MFMatrix){ "swap",      0,  0 };
 
     const int NUM_MNT_PNTS = 6;
     MFMatrix *mp_matrix = malloc(NUM_MNT_PNTS * sizeof(MFMatrix));
@@ -1720,10 +1725,6 @@ int verify_root_and_recovery() {
     if (ensure_path_mounted("/system") != 0)
         return 0;
 
-    // none of these options should get a "Go Back" option
-    int old_val = ui_get_showing_back_button();
-    ui_set_showing_back_button(0);
-
     int ret = 0;
     struct stat st;
     // check to see if install-recovery.sh is going to clobber recovery
@@ -1779,6 +1780,5 @@ int verify_root_and_recovery() {
     }
 
     ensure_path_unmounted("/system");
-    ui_set_showing_back_button(old_val);
     return ret;
 }
