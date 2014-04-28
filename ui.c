@@ -859,6 +859,7 @@ static int usb_connected() {
 
 int ui_wait_key()
 {
+	ui_print("", key_queue[0]);
     if (boardEnableKeyRepeat) return ui_wait_key_with_repeat();
     pthread_mutex_lock(&key_queue_mutex);
 
