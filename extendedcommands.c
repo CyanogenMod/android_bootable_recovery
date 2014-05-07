@@ -1540,7 +1540,13 @@ int show_advanced_menu() {
                 break;
             }
             case 6:
-                ui_printlogtail(12);
+                ui_printlogtail(30);
+                int key;
+                int action;
+                do {
+                    key = ui_wait_key();
+                    action = device_handle_key(key, 1);
+                } while (action == NULL);
                 break;
             default:
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
