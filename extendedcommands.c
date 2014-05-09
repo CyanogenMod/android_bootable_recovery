@@ -920,6 +920,10 @@ int show_partition_menu() {
                 else
                     ui_print("Done.\n");
                 ignore_data_media_workaround(0);
+
+                // recreate /data/media with proper permissions
+                ensure_path_mounted("/data");
+                setup_data_media();
             }
         } else if (is_data_media() && chosen_item == (mountable_volumes + formatable_volumes + 1)) {
             show_mount_usb_storage_menu();
