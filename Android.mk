@@ -1,6 +1,13 @@
-ifneq ($(WITH_SIMPLE_RECOVERY),true)
-
 LOCAL_PATH := $(call my-dir)
+
+ifeq ($(RECOVERY_VARIANT),)
+ifeq ($(LOCAL_PATH),bootable/recovery)
+RECOVERY_VARIANT := cwm
+endif
+endif
+
+ifeq ($(RECOVERY_VARIANT),cwm)
+
 include $(CLEAR_VARS)
 
 commands_recovery_local_path := $(LOCAL_PATH)

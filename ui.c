@@ -746,6 +746,7 @@ void ui_printlogtail(int nb_lines) {
         }
         fclose(f);
     }
+    ui_print("Return to menu with any key.\n");
     ui_log_stdout=1;
 }
 
