@@ -1404,17 +1404,17 @@ int can_partition(const char* volume) {
 #ifdef ENABLE_LOKI
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 10
+#define FIXED_ADVANCED_ENTRIES 11
 #else
-#define FIXED_ADVANCED_ENTRIES 8
+#define FIXED_ADVANCED_ENTRIES 9
 #endif
 
 #else
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 9
+#define FIXED_ADVANCED_ENTRIES 10
 #else
-#define FIXED_ADVANCED_ENTRIES 7
+#define FIXED_ADVANCED_ENTRIES 8
 #endif
 
 #endif
@@ -1448,6 +1448,7 @@ int show_advanced_menu() {
     list[list_index++] = "report error";
     list[list_index++] = "key test";
     list[list_index++] = "show log";
+    list[list_index++] = "brightness";
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
     int index_tdb = list_index++;
     int index_bootmode = list_index++;
@@ -1539,6 +1540,10 @@ int show_advanced_menu() {
                 } while (action != GO_BACK);
                 break;
             }
+            case 7: {
+                show_brightness_menu();
+                break;
+            }
             case 6:
                 ui_printlogtail(24);
                 ui_wait_key();
@@ -1563,6 +1568,104 @@ int show_advanced_menu() {
 #endif
             partition_sdcard(list[chosen_item] + strlen(list_prefix));
             break;
+        }
+    }
+
+    for (; j > 0; --j) {
+        free(list[FIXED_ADVANCED_ENTRIES + j - 1]);
+    }
+    return chosen_item;
+}
+
+int show_brightness_menu() {
+    char buf[80];
+    int i = 0, j = 0, chosen_item = 0, list_index = 0;
+    /* Default number of entries if no compile-time extras are added */
+    static char* list[MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1];
+
+    char* primary_path = get_primary_storage_path();
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+
+    static const char* headers[] = { "Brightness Menu", "", NULL };
+
+    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1);
+
+    list[list_index++] = "10";
+    list[list_index++] = "20";
+    list[list_index++] = "30";
+    list[list_index++] = "40";
+    list[list_index++] = "50";
+    list[list_index++] = "60";
+    list[list_index++] = "70";
+    list[list_index++] = "80";
+    list[list_index++] = "90";
+    list[list_index++] = "100";
+    list[FIXED_ADVANCED_ENTRIES + j] = NULL;
+
+    for (;;) {
+        chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
+        if (chosen_item == GO_BACK || chosen_item == REFRESH)
+            break;
+        switch (chosen_item) {
+            case 0: {
+                 __system("echo 26 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 26 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 26 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
+            case 1: {
+                 __system("echo 51 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 51 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 51 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
+            case 2: {
+                 __system("echo 77 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 77 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 77 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
+            case 3: {
+                 __system("echo 102 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 102 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 102 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
+            case 4:
+                 __system("echo 128 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 128 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 128 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            case 5: {
+                 __system("echo 153 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 153 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 153 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
+            case 6:
+                 __system("echo 179 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 179 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 179 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            case 7: {
+                 __system("echo 204 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 204 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 204 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
+            case 8: {
+                 __system("echo 230 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 230 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 230 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
+            case 9: {
+                 __system("echo 255 > /sys/class/leds/lcd-backlight/brightness");
+                 __system("echo 255 > /sys/class/leds/lm3533-lcd-bl-1/brightness");
+                 __system("echo 255 > /sys/class/leds/lm3533-lcd-bl-2/brightness");
+                break;
+            }
         }
     }
 
