@@ -1408,17 +1408,17 @@ int can_partition(const char* volume) {
 #ifdef ENABLE_LOKI
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 10
+#define FIXED_ADVANCED_ENTRIES 11
 #else
-#define FIXED_ADVANCED_ENTRIES 8
+#define FIXED_ADVANCED_ENTRIES 9
 #endif
 
 #else
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 9
+#define FIXED_ADVANCED_ENTRIES 10
 #else
-#define FIXED_ADVANCED_ENTRIES 7
+#define FIXED_ADVANCED_ENTRIES 8
 #endif
 
 #endif
@@ -1452,6 +1452,7 @@ int show_advanced_menu() {
     list[list_index++] = "report error";
     list[list_index++] = "key test";
     list[list_index++] = "show log";
+    list[list_index++] = "brightness";
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
     int index_tdb = list_index++;
     int index_bootmode = list_index++;
@@ -1543,6 +1544,10 @@ int show_advanced_menu() {
                 } while (action != GO_BACK);
                 break;
             }
+            case 7: {
+                show_brightness_menu();
+                break;
+            }
             case 6:
                 ui_printlogtail(24);
                 ui_wait_key();
@@ -1574,6 +1579,103 @@ int show_advanced_menu() {
         free(list[FIXED_ADVANCED_ENTRIES + j - 1]);
     }
     return chosen_item;
+}
+
+int show_brightness_menu() {
+    char buf[80];
+    int i = 0, j = 0, chosen_item = 0, list_index = 0;
+    /* Default number of entries if no compile-time extras are added */
+    static char* list[MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1];
+
+    char* primary_path = get_primary_storage_path();
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+
+    static const char* headers[] = { "Brightness Menu", "", NULL };
+
+    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1);
+
+    list[list_index++] = "10%";
+    list[list_index++] = "20%";
+    list[list_index++] = "30%";
+    list[list_index++] = "40%";
+    list[list_index++] = "50%";
+    list[list_index++] = "60%";
+    list[list_index++] = "70%";
+    list[list_index++] = "80%";
+    list[list_index++] = "90%";
+    list[list_index++] = "100%";
+    list[FIXED_ADVANCED_ENTRIES + j] = NULL;
+
+    for (;;) {
+        chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
+        if (chosen_item == GO_BACK || chosen_item == REFRESH)
+            break;
+        switch (chosen_item) {
+            case 0: {
+                set_brightness("26");
+                break;
+            }
+            case 1: {
+                set_brightness("51");
+                break;
+            }
+            case 2: {
+                set_brightness("77");
+                break;
+            }
+            case 3: {
+                set_brightness("102");
+                break;
+            }
+            case 4:
+                set_brightness("128");
+                break;
+            case 5: {
+                set_brightness("153");
+                break;
+            }
+            case 6:
+                set_brightness("179");
+                break;
+            case 7: {
+                set_brightness("204");
+                break;
+            }
+            case 8: {
+                set_brightness("230");
+                break;
+            }
+            case 9: {
+                set_brightness("255");
+                break;
+            }
+        }
+    }
+
+    for (; j > 0; --j) {
+        free(list[FIXED_ADVANCED_ENTRIES + j - 1]);
+    }
+    return chosen_item;
+}
+
+void set_brightness(const char* brightness)
+{
+    write_string_to_file_less_checks("/sys/class/leds/lcd-backlight/brightness", brightness);
+    write_string_to_file_less_checks("/sys/class/leds/lm3533-lcd-bl-1/brightness", brightness);
+    write_string_to_file_less_checks("/sys/class/leds/lm3533-lcd-bl-2/brightness", brightness);
+
+#ifdef TW_BRIGHTNESS_PATH
+    write_string_to_file_less_checks(EXPAND(TW_BRIGHTNESS_PATH), brightness);
+#endif
+}
+
+void write_string_to_file_less_checks(const char* filename, const char* string) {
+    FILE *file = fopen(filename, "w");
+    if (file != NULL) {
+        fprintf(file, "%s", string);
+        fclose(file);
+    }
 }
 
 void write_fstab_root(char *path, FILE *file) {

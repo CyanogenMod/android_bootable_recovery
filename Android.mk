@@ -46,6 +46,9 @@ ifdef I_AM_KOUSH
 RECOVERY_NAME := ClockworkMod Recovery
 LOCAL_CFLAGS += -DI_AM_KOUSH
 else
+ifneq ($(TW_BRIGHTNESS_PATH),)
+	LOCAL_CFLAGS += -DTW_BRIGHTNESS_PATH=$(TW_BRIGHTNESS_PATH)
+endif
 ifndef RECOVERY_NAME
 RECOVERY_NAME := CWM-based Recovery
 endif
