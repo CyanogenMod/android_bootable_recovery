@@ -201,8 +201,10 @@ void setup_data_media() {
             break;
         }
     }
+
+    // recreate /data/media with proper permissions
     rmdir(mount_point);
-    mkdir("/data/media", 0755);
+    mkdir("/data/media", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
     symlink("/data/media", mount_point);
 }
 
