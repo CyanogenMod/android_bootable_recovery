@@ -705,6 +705,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
             printf("Found new backup image: %s\n", tmp);
         }
     }
+
     // If the fs_type of this volume is "auto" or mount_point is /data
     // and is_data_media, let's revert
     // to using a rm -rf, rather than trying to do a
@@ -719,6 +720,15 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         backup_filesystem = NULL;
     else if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
         backup_filesystem = NULL;
+#ifdef USE_F2FS
+    // allow restoring ext4 backup to f2fs filesystem, vice versa
+    // if backup image and target partition have different fstype and both are either f2fs or ext4, preserve target partition fstype
+    // this makes it possible to migrate your backups from one system to another by manually formatting target partition to a different fstype
+    else if (backup_filesystem != NULL && strcmp(vol->fs_type, backup_filesystem) != 0 &&
+                (strcmp(vol->fs_type, "ext4") == 0 || strcmp(vol->fs_type, "f2fs") == 0) &&
+                (strcmp(backup_filesystem, "ext4") == 0 || strcmp(backup_filesystem, "f2fs") == 0))
+        backup_filesystem = NULL;
+#endif
 
     ensure_directory(mount_point);
 
