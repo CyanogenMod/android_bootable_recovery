@@ -582,7 +582,7 @@ int format_device(const char *device, const char *path, const char *fs_type) {
     if (is_data_media_volume_path(path)) {
         return format_unknown_device(NULL, path, NULL);
     }
-    if (strstr(path, "/data") == path && is_data_media()) {
+    if (strstr(path, "/data") == path && is_data_media() && is_data_media_preserved()) {
         return format_unknown_device(NULL, path, NULL);
     }
 
@@ -827,6 +827,59 @@ MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     return mfm;
 }
 
+#ifdef USE_F2FS
+static void format_ext4_or_f2fs(const char* volume) {
+    if (is_data_media_volume_path(volume))
+        return;
+
+    Volume* v = volume_for_path(volume);
+    if (v == NULL)
+        return;
+
+    const char* headers[] = { "Format device:", v->mount_point, "", NULL };
+
+    char* list[] = {
+        "default",
+        "ext4",
+        "f2fs",
+        NULL
+    };
+
+    char cmd[PATH_MAX];
+    char confirm[128];
+    int ret = -1;
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+
+    if (chosen_item < 0) // REFRESH or GO_BACK
+        return;
+
+    sprintf(confirm, "Format %s (%s) ?", v->mount_point, list[chosen_item]);
+    if (!confirm_selection(confirm, "Yes - Format device"))
+        return;
+
+    if (ensure_path_unmounted(v->mount_point) != 0)
+        return;
+
+    switch (chosen_item) {
+        case 0:
+            ret = format_volume(v->mount_point);
+            break;
+        case 1:
+        case 2:
+            ret = format_device(v->blk_device, v->mount_point, list[chosen_item]);
+            break;
+    }
+
+    // refresh volume table fstype and recreate the /etc/fstab file for proper system mount command function
+    load_volume_table();
+    process_volumes();
+    if (ret)
+        LOGE("Could not format %s (%s)\n", volume, list[chosen_item]);
+    else
+        ui_print("Done formatting %s (%s)\n", volume, list[chosen_item]);
+}
+#endif
+
 int show_partition_menu() {
     static const char* headers[] = { "Mounts and Storage Menu", "", NULL };
 
@@ -876,6 +929,9 @@ int show_partition_menu() {
         }
     }
 
+#ifdef USE_F2FS
+    int enable_f2fs_ext4_conversion = 0;
+#endif
     for (;;) {
         for (i = 0; i < mountable_volumes; i++) {
             MountMenuEntry* e = &mount_menu[i];
@@ -892,11 +948,19 @@ int show_partition_menu() {
 
         if (!is_data_media()) {
             list[mountable_volumes + formatable_volumes] = "mount USB storage";
-            list[mountable_volumes + formatable_volumes + 1] = '\0';
+            list[mountable_volumes + formatable_volumes + 1] = NULL;
+#ifdef USE_F2FS
+            list[mountable_volumes + formatable_volumes + 1] = "toggle f2fs <-> ext4 migration";
+            list[mountable_volumes + formatable_volumes + 2] = NULL;
+#endif
         } else {
             list[mountable_volumes + formatable_volumes] = "format /data and /data/media (/sdcard)";
             list[mountable_volumes + formatable_volumes + 1] = "mount USB storage";
-            list[mountable_volumes + formatable_volumes + 2] = '\0';
+            list[mountable_volumes + formatable_volumes + 2] = NULL;
+#ifdef USE_F2FS
+            list[mountable_volumes + formatable_volumes + 2] = "toggle f2fs <-> ext4 migration";
+            list[mountable_volumes + formatable_volumes + 3] = NULL;
+#endif
         }
 
         chosen_item = get_menu_selection(headers, list, 0, 0);
@@ -908,12 +972,20 @@ int show_partition_menu() {
             } else {
                 if (!confirm_selection("format /data and /data/media (/sdcard)", confirm))
                     continue;
+
                 preserve_data_media(0);
-                ui_print("Formatting /data...\n");
-                if (0 != format_volume("/data"))
-                    ui_print("Error formatting /data!\n");
-                else
-                    ui_print("Done.\n");
+#ifdef USE_F2FS
+                if (enable_f2fs_ext4_conversion) {
+                    format_ext4_or_f2fs("/data");
+                } else
+#endif
+                {
+                    ui_print("Formatting /data...\n");
+                    if (0 != format_volume("/data"))
+                        ui_print("Error formatting /data!\n");
+                    else
+                        ui_print("Done.\n");
+                }
                 preserve_data_media(1);
 
                 // recreate /data/media with proper permissions
@@ -947,14 +1019,33 @@ int show_partition_menu() {
                 continue;
             }
 
-            if (!confirm_selection(confirm_string, confirm))
-                continue;
-            ui_print("Formatting %s...\n", e->path);
-            if (0 != format_volume(e->path))
-                ui_print("Error formatting %s!\n", e->path);
-            else
-                ui_print("Done.\n");
+#ifdef USE_F2FS
+            if (enable_f2fs_ext4_conversion && !(is_data_media() && strcmp(e->path, "/data") == 0)) {
+                if (strcmp(e->type, "ext4") == 0 || strcmp(e->type, "f2fs") == 0) {
+                    format_ext4_or_f2fs(e->path);
+                    continue;
+                } else {
+                    ui_print("unsupported file system (%s)\n", e->type);
+                }
+            } else
+#endif
+            {
+                if (!confirm_selection(confirm_string, confirm))
+                    continue;
+                ui_print("Formatting %s...\n", e->path);
+                if (0 != format_volume(e->path))
+                    ui_print("Error formatting %s!\n", e->path);
+                else
+                    ui_print("Done.\n");
+            }
         }
+#ifdef USE_F2FS
+        else if ((is_data_media() && chosen_item == (mountable_volumes + formatable_volumes + 2)) ||
+                    (!is_data_media() && chosen_item == (mountable_volumes + formatable_volumes + 1))) {
+            enable_f2fs_ext4_conversion ^= 1;
+            ui_print("ext4 <-> f2fs conversion %s\n", enable_f2fs_ext4_conversion ? "enabled" : "disabled");
+        }
+#endif
     }
 
     free(mount_menu);
