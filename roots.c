@@ -445,10 +445,11 @@ int format_volume(const char* volume) {
 
 #ifdef USE_F2FS
     if (strcmp(v->fs_type, "f2fs") == 0) {
-        const char* args[] = { "mkfs.f2fs", v->blk_device };
-        int result = make_f2fs_main(2, (char**)args);
+        char cmd[PATH_MAX];
+        sprintf(cmd, "mkfs.f2fs %s", v->blk_device);
+        int result = __system(cmd);
         if (result != 0) {
-            LOGE("format_volume: mkfs.f2fs failed on %s\n", v->blk_device);
+            LOGE("format_volume: mkfs.f2fs failed on %s (%s)\n", v->blk_device, strerror(errno));
             return -1;
         }
         return 0;
