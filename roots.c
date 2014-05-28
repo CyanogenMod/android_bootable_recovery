@@ -35,6 +35,34 @@
 #include "recovery_ui.h"
 
 #include "voldclient/voldclient.h"
+#include "libcrecovery/common.h" // __popen / __pclose
+
+// get actual fstype from device (modified code from @kumajaya)
+// device argument is the v->blk_device
+char* get_real_fstype(const char* device) {
+    char cmd[PATH_MAX];
+    char line[1024];
+    static char fstype[128];
+    char* real_device_fstype = NULL;
+
+    sprintf(cmd, "/sbin/blkid -c /dev/null %s", device);
+    FILE *fp = __popen(cmd, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "Unable to execute blkid.\n");
+        return NULL;
+    }
+
+    if (fgets(line, sizeof(line), fp) != NULL) {
+        char* ptr = strstr(line, "TYPE=");
+        if (ptr != NULL && sscanf(ptr + 5, "\"%127[^\"]\"", fstype) == 1)
+            real_device_fstype = fstype;
+    }
+    __pclose(fp);
+    if (real_device_fstype == NULL)
+        fprintf(stderr, "blkid: unknown filesystem on '%s'\n", device);
+
+    return real_device_fstype;
+}
 
 static struct fstab *fstab = NULL;
 
@@ -50,6 +78,7 @@ void load_volume_table() {
     int i;
     int ret;
 
+    fs_mgr_free_fstab(fstab);
     fstab = fs_mgr_read_fstab("/etc/recovery.fstab");
     if (!fstab) {
         LOGE("failed to read /etc/recovery.fstab\n");
@@ -64,9 +93,10 @@ void load_volume_table() {
         return;
     }
 
-    // Process vold-managed volumes with mount point "auto"
     for (i = 0; i < fstab->num_entries; ++i) {
         Volume* v = &fstab->recs[i];
+
+        // Process vold-managed volumes with mount point "auto"
         if (fs_mgr_is_voldmanaged(v) && strcmp(v->mount_point, "auto") == 0) {
             char mount[PATH_MAX];
 
@@ -75,6 +105,36 @@ void load_volume_table() {
             free(v->mount_point);
             v->mount_point = strdup(mount);
         }
+#ifdef USE_F2FS
+        // allow switching between f2fs/ext4 depending on actual real format
+        // if fstab entry matches the real device fs_type, do nothing
+        // also skip vold managed devices as vold relies on the defined flags. These should be set to auto fstype for free formatting
+        else if (strcmp(v->fs_type, "ext4") == 0 || strcmp(v->fs_type, "f2fs") == 0) {
+            char* real_fstype = get_real_fstype(v->blk_device);
+            if (real_fstype == NULL || strcmp(real_fstype, v->fs_type) == 0 || fs_mgr_is_voldmanaged(v))
+                continue;
+
+            if (strcmp(real_fstype, "ext4") == 0 || strcmp(real_fstype, "f2fs") == 0) {
+                // drop to bare minimal default fs_options
+                char fstab_fstype[10];
+                strcpy(fstab_fstype, v->fs_type);
+                free(v->fs_type);
+                v->fs_type = strdup(real_fstype);
+
+                if (v->fs_options != NULL)
+                    free(v->fs_options);
+
+                if (strcmp(v->fs_type, "f2fs") == 0) {
+                    v->fs_options = strdup("rw,noatime,nodev,nodiratime,inline_xattr");
+                } else {
+                    // ext4: default options will be set in try_mount()
+                    v->fs_options = NULL;
+                }
+
+                fprintf(stderr, "%s: %s -> %s\n", v->mount_point, fstab_fstype, v->fs_type);
+            }
+        }
+#endif
     }
 
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
@@ -285,6 +345,9 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
         return mtd_mount_partition(partition, mount_point, v->fs_type, 0);
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
                strcmp(v->fs_type, "ext3") == 0 ||
+#ifdef USE_F2FS
+               strcmp(v->fs_type, "f2fs") == 0 ||
+#endif
                strcmp(v->fs_type, "rfs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
         if ((result = try_mount(v->blk_device, mount_point, v->fs_type, v->fs_options)) == 0)
