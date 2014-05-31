@@ -1655,42 +1655,6 @@ void process_volumes() {
     }
 
     return;
-
-    // dead code.
-    if (device_flash_type() != BML)
-        return;
-
-    ui_print("Checking for ext4 partitions...\n");
-    int ret = 0;
-    ret = bml_check_volume("/system");
-    ret |= bml_check_volume("/data");
-    if (has_datadata())
-        ret |= bml_check_volume("/datadata");
-    ret |= bml_check_volume("/cache");
-
-    if (ret == 0) {
-        ui_print("Done!\n");
-        return;
-    }
-
-    char backup_path[PATH_MAX];
-    time_t t = time(NULL);
-    char backup_name[PATH_MAX];
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    sprintf(backup_name, "before-ext4-convert-%ld", tp.tv_sec);
-    sprintf(backup_path, "%s/clockworkmod/backup/%s", get_primary_storage_path(), backup_name);
-
-    ui_set_show_text(1);
-    ui_print("Filesystems need to be converted to ext4.\n");
-    ui_print("A backup and restore will now take place.\n");
-    ui_print("If anything goes wrong, your backup will be\n");
-    ui_print("named %s. Try restoring it\n", backup_name);
-    ui_print("in case of error.\n");
-
-    nandroid_backup(backup_path);
-    nandroid_restore(backup_path, 1, 1, 1, 1, 1, 0);
-    ui_set_show_text(0);
 }
 
 void handle_failure(int ret) {
