@@ -51,7 +51,8 @@ Volume* get_device_volumes();
 int is_data_media();
 void setup_data_media();
 int is_data_media_volume_path(const char* path);
-void ignore_data_media_workaround(int ignore);
+void preserve_data_media(int val);
+int is_data_media_preserved();
 
 #define MAX_NUM_MANAGED_VOLUMES 10
 
