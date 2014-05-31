@@ -1241,14 +1241,19 @@ void format_sdcard(const char* volume) {
 
     const char* headers[] = { "Format device:", volume, "", NULL };
 
-    static char* list[] = { "default",
-                            "vfat",
-                            "exfat",
-                            "ntfs",
-                            "ext4",
-                            "ext3",
-                            "ext2",
-                            NULL };
+    static char* list[] = {
+        "default",
+        "ext2",
+        "ext3",
+        "ext4",
+        "vfat",
+        "exfat",
+        "ntfs",
+#ifdef USE_F2FS
+        "f2fs",
+#endif
+        NULL
+    };
 
     int ret = -1;
     char cmd[PATH_MAX];
@@ -1262,13 +1267,27 @@ void format_sdcard(const char* volume) {
         return;
 
     switch (chosen_item) {
-        case 0:
+        case 0: {
             ret = format_volume(v->mount_point);
             break;
+        }
         case 1:
-        case 2:
+        case 2: {
+            // workaround for new vold managed volumes that cannot be recognized by pre-built ext2/ext3 bins
+            const char *device = v->blk_device2;
+            if (device == NULL)
+                device = v->blk_device;
+            ret = format_unknown_device(device, v->mount_point, list[chosen_item]);
+            break;
+        }
         case 3:
-        case 4: {
+        case 4:
+        case 5:
+        case 6:
+#ifdef USE_F2FS
+        case 7:
+#endif
+        {
             if (fs_mgr_is_voldmanaged(v)) {
                 ret = vold_custom_format_volume(v->mount_point, list[chosen_item], 1) == CommandOkay ? 0 : -1;
             } else if (strcmp(list[chosen_item], "vfat") == 0) {
@@ -1290,15 +1309,11 @@ void format_sdcard(const char* volume) {
                     freecon(secontext);
                 }
             }
-            break;
-        }
-        case 5:
-        case 6: {
-            // workaround for new vold managed volumes that cannot be recognized by prebuilt ext2/ext3 bins
-            const char *device = v->blk_device2;
-            if (device == NULL)
-                device = v->blk_device;
-            ret = format_unknown_device(device, v->mount_point, list[chosen_item]);
+#ifdef USE_F2FS
+            else if (strcmp(list[chosen_item], "f2fs") == 0) {
+                ret = format_device(v->blk_device, v->mount_point, "f2fs");;
+            }
+#endif
             break;
         }
     }
