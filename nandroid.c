@@ -717,7 +717,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     // Or of volume does not exist (.android_secure), just rm -rf.
     if (vol == NULL || 0 == strcmp(vol->fs_type, "auto"))
         backup_filesystem = NULL;
-    if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
+    else if (0 == strcmp(vol->mount_point, "/data") && is_data_media())
         backup_filesystem = NULL;
 
     ensure_directory(mount_point);
