@@ -39,7 +39,7 @@ static int set_bootloader_message_block(const bootloader_message* in, const Volu
 int get_bootloader_message(bootloader_message* out) {
     Volume* v = volume_for_path("/misc");
     if (v == nullptr) {
-        LOGE("Cannot load volume /misc!\n");
+        LOGI("Cannot load volume /misc.\n");
         return -1;
     }
     if (strcmp(v->fs_type, "mtd") == 0) {
@@ -54,7 +54,7 @@ int get_bootloader_message(bootloader_message* out) {
 int set_bootloader_message(const bootloader_message* in) {
     Volume* v = volume_for_path("/misc");
     if (v == nullptr) {
-        LOGE("Cannot load volume /misc!\n");
+        LOGI("Cannot load volume /misc.\n");
         return -1;
     }
     if (strcmp(v->fs_type, "mtd") == 0) {
