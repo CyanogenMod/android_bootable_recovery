@@ -1,3 +1,6 @@
+#ifndef __EXTENDEDCOMMANDS_H
+#define __EXTENDEDCOMMANDS_H
+
 extern int signature_check_enabled;
 
 void
@@ -69,7 +72,15 @@ static int is_path_mounted(const char* path);
 
 int volume_main(int argc, char **argv);
 
+#ifdef USE_F2FS
+extern int make_f2fs_main(int argc, char **argv);
+extern int fsck_f2fs_main(int argc, char **argv);
+extern int fibmap_main(int argc, char **argv);
+#endif
+
 #ifdef RECOVERY_EXTEND_NANDROID_MENU
 void extend_nandroid_menu(char** items, int item_count, int max_items);
 void handle_nandroid_menu(int item_count, int selected);
 #endif
+
+#endif  // __EXTENDEDCOMMANDS_H
