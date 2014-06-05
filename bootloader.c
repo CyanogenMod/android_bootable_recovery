@@ -32,31 +32,31 @@ static int set_bootloader_message_block(const struct bootloader_message *in, con
 
 int get_bootloader_message(struct bootloader_message *out) {
     Volume* v = volume_for_path("/misc");
-    if(v)
-    {
-        if (strcmp(v->fs_type, "mtd") == 0) {
-                return get_bootloader_message_mtd(out, v);
-        } else if (strcmp(v->fs_type, "emmc") == 0) {
-                return get_bootloader_message_block(out, v);
-        }
-        LOGE("unknown misc partition fs_type \"%s\"\n", v->fs_type);
+    if (v == NULL) {
+        LOGI("Cannot load volume /misc.\n");
         return -1;
     }
+    if (strcmp(v->fs_type, "mtd") == 0) {
+        return get_bootloader_message_mtd(out, v);
+    } else if (strcmp(v->fs_type, "emmc") == 0) {
+        return get_bootloader_message_block(out, v);
+    }
+    LOGE("unknown misc partition fs_type \"%s\"\n", v->fs_type);
     return -1;
 }
 
 int set_bootloader_message(const struct bootloader_message *in) {
     Volume* v = volume_for_path("/misc");
-    if(v)
-    {
-        if (strcmp(v->fs_type, "mtd") == 0) {
-            return set_bootloader_message_mtd(in, v);
-        } else if (strcmp(v->fs_type, "emmc") == 0) {
-            return set_bootloader_message_block(in, v);
-        }
-        LOGE("unknown misc partition fs_type \"%s\"\n", v->fs_type);
+    if (v == NULL) {
+        LOGI("Cannot load volume /misc.\n");
         return -1;
     }
+    if (strcmp(v->fs_type, "mtd") == 0) {
+        return set_bootloader_message_mtd(in, v);
+    } else if (strcmp(v->fs_type, "emmc") == 0) {
+        return set_bootloader_message_block(in, v);
+    }
+    LOGE("unknown misc partition fs_type \"%s\"\n", v->fs_type);
     return -1;
 }
 

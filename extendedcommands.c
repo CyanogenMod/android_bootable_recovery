@@ -98,9 +98,9 @@ void write_recovery_version() {
     sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_VERSION_FILE);
     write_string_to_file(path, EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
     // force unmount /data for /data/media devices as we call this on recovery exit
-    ignore_data_media_workaround(1);
+    preserve_data_media(0);
     ensure_path_unmounted(path);
-    ignore_data_media_workaround(0);
+    preserve_data_media(1);
 }
 
 static void write_last_install_path(const char* install_path) {
@@ -573,11 +573,6 @@ int confirm_selection(const char* title, const char* confirm) {
     return ret;
 }
 
-#define MKE2FS_BIN      "/sbin/mke2fs"
-#define TUNE2FS_BIN     "/sbin/tune2fs"
-#define E2FSCK_BIN      "/sbin/e2fsck"
-extern void reset_ext4fs_info();
-
 extern struct selabel_handle *sehandle;
 int format_device(const char *device, const char *path, const char *fs_type) {
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
@@ -655,7 +650,7 @@ int format_device(const char *device, const char *path, const char *fs_type) {
             // Our desired filesystem matches the one in fstab, respect v->length
             length = v->length;
         }
-        reset_ext4fs_info();
+
         int result = make_ext4fs(device, length, v->mount_point, sehandle);
         if (result != 0) {
             LOGE("format_volume: make_ext4fs failed on %s\n", device);
@@ -665,9 +660,9 @@ int format_device(const char *device, const char *path, const char *fs_type) {
     }
 #ifdef USE_F2FS
     if (strcmp(fs_type, "f2fs") == 0) {
-        int result = make_f2fs_main(device, v->mount_point);
-        if (result != 0) {
-            LOGE("format_volume: mkfs.f2f2 failed on %s\n", device);
+        char* args[] = { "mkfs.f2fs", v->blk_device };
+        if (make_f2fs_main(2, args) != 0) {
+            LOGE("format_volume: mkfs.f2fs failed on %s\n", v->blk_device);
             return -1;
         }
         return 0;
@@ -913,13 +908,13 @@ int show_partition_menu() {
             } else {
                 if (!confirm_selection("format /data and /data/media (/sdcard)", confirm))
                     continue;
-                ignore_data_media_workaround(1);
+                preserve_data_media(0);
                 ui_print("Formatting /data...\n");
                 if (0 != format_volume("/data"))
                     ui_print("Error formatting /data!\n");
                 else
                     ui_print("Done.\n");
-                ignore_data_media_workaround(0);
+                preserve_data_media(1);
 
                 // recreate /data/media with proper permissions
                 ensure_path_mounted("/data");
@@ -931,10 +926,10 @@ int show_partition_menu() {
             MountMenuEntry* e = &mount_menu[chosen_item];
 
             if (is_path_mounted(e->path)) {
-                ignore_data_media_workaround(1);
+                preserve_data_media(0);
                 if (0 != ensure_path_unmounted(e->path))
                     ui_print("Error unmounting %s!\n", e->path);
-                ignore_data_media_workaround(0);
+                preserve_data_media(1);
             } else {
                 if (0 != ensure_path_mounted(e->path))
                     ui_print("Error mounting %s!\n", e->path);
@@ -1655,42 +1650,6 @@ void process_volumes() {
     }
 
     return;
-
-    // dead code.
-    if (device_flash_type() != BML)
-        return;
-
-    ui_print("Checking for ext4 partitions...\n");
-    int ret = 0;
-    ret = bml_check_volume("/system");
-    ret |= bml_check_volume("/data");
-    if (has_datadata())
-        ret |= bml_check_volume("/datadata");
-    ret |= bml_check_volume("/cache");
-
-    if (ret == 0) {
-        ui_print("Done!\n");
-        return;
-    }
-
-    char backup_path[PATH_MAX];
-    time_t t = time(NULL);
-    char backup_name[PATH_MAX];
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    sprintf(backup_name, "before-ext4-convert-%ld", tp.tv_sec);
-    sprintf(backup_path, "%s/clockworkmod/backup/%s", get_primary_storage_path(), backup_name);
-
-    ui_set_show_text(1);
-    ui_print("Filesystems need to be converted to ext4.\n");
-    ui_print("A backup and restore will now take place.\n");
-    ui_print("If anything goes wrong, your backup will be\n");
-    ui_print("named %s. Try restoring it\n", backup_name);
-    ui_print("in case of error.\n");
-
-    nandroid_backup(backup_path);
-    nandroid_restore(backup_path, 1, 1, 1, 1, 1, 0);
-    ui_set_show_text(0);
 }
 
 void handle_failure(int ret) {
