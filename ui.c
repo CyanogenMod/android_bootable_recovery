@@ -675,7 +675,7 @@ static int ui_niced = 0;
 void ui_set_nice(int enabled) {
     ui_nice = enabled;
 }
-#define NICE_INTERVAL 100
+#define NICE_INTERVAL 300
 int ui_was_niced() {
     return ui_niced;
 }
