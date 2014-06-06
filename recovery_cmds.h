@@ -41,11 +41,6 @@ extern int newfs_msdos_main(int argc, char **argv);
 extern int vdc_main(int argc, char **argv);
 extern int pigz_main(int argc, char **argv);
 extern int sdcard_main(int argc, char **argv);
-#ifdef USE_F2FS
-extern int make_f2fs_main(int argc, char **argv);
-extern int fsck_f2fs_main(int argc, char **argv);
-extern int fibmap_main(int argc, char **argv);
-#endif
 
 extern int busybox_driver(int argc, char **argv);
 
