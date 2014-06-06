@@ -80,7 +80,12 @@ static void nandroid_callback(const char* filename) {
     tmp[ui_get_text_cols() - 1] = '\0';
     nandroid_files_count++;
     ui_increment_frame();
+
+    // disable writing file names to log
+    ui_set_log_stdout(0);
     ui_nice_print("%s\n", tmp);
+    ui_set_log_stdout(1);
+
     if (!ui_was_niced() && nandroid_files_total != 0)
         ui_set_progress((float)nandroid_files_count / (float)nandroid_files_total);
     if (!ui_was_niced())
