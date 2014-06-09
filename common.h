@@ -50,6 +50,7 @@ void ui_set_show_text(int value);
 int ui_get_text_cols();
 void ui_increment_frame();
 void ui_setMenuTextColor(int r, int g, int b, int a);
+int check_ui_initialized();
 
 #ifdef ENABLE_LOKI
 extern int loki_support_enabled;
