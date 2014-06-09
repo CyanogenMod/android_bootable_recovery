@@ -10,9 +10,13 @@ int nandroid_undump(const char* partition);
 void nandroid_dedupe_gc(const char* blob_dir);
 void nandroid_force_backup_format(const char* fmt);
 unsigned nandroid_get_default_backup_format();
+static unsigned int round_to_percent(double r);
 
 #define NANDROID_BACKUP_FORMAT_TAR 0
 #define NANDROID_BACKUP_FORMAT_DUP 1
 #define NANDROID_BACKUP_FORMAT_TGZ 2
+
+#define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
+#define NANDROID_PROGRESS_BAR_UI_PERCENT_UPDATES 2
 
 #endif
