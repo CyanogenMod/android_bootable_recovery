@@ -67,24 +67,24 @@ static int print_and_error(const char* message) {
 
 static int nandroid_backup_bitfield = 0;
 #define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
-static int nandroid_files_total = 0;
-static int nandroid_files_count = 0;
+static unsigned int nandroid_files_total = 0;
+static unsigned int nandroid_files_count = 0;
 static void nandroid_callback(const char* filename) {
     if (filename == NULL)
         return;
-    const char* justfile = basename(filename);
+
     char tmp[PATH_MAX];
-    strcpy(tmp, justfile);
+    strcpy(tmp, filename);
     if (tmp[strlen(tmp) - 1] == '\n')
         tmp[strlen(tmp) - 1] = '\0';
-    tmp[ui_get_text_cols() - 1] = '\0';
-    nandroid_files_count++;
-    ui_increment_frame();
-    ui_nice_print("%s\n", tmp);
-    if (!ui_was_niced() && nandroid_files_total != 0)
-        ui_set_progress((float)nandroid_files_count / (float)nandroid_files_total);
-    if (!ui_was_niced())
-        ui_delete_line();
+    LOGI("%s\n", tmp);
+
+    if (nandroid_files_total != 0) {
+        nandroid_files_count++;
+        float progress_decimal = (float)((double)nandroid_files_count /
+                                         (double)nandroid_files_total);
+        ui_set_progress(progress_decimal);
+    }
 }
 
 static void compute_directory_stats(const char* directory) {

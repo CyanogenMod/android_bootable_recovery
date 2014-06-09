@@ -693,16 +693,6 @@ void ui_reset_progress()
     pthread_mutex_unlock(&gUpdateMutex);
 }
 
-static struct timeval lastupdate = (struct timeval) {0};
-static int ui_nice = 0;
-static int ui_niced = 0;
-void ui_set_nice(int enabled) {
-    ui_nice = enabled;
-}
-#define NICE_INTERVAL 100
-int ui_was_niced() {
-    return ui_niced;
-}
 int ui_get_text_cols() {
     return text_cols;
 }
@@ -718,22 +708,8 @@ void ui_print(const char *fmt, ...)
     if (ui_log_stdout)
         fputs(buf, stdout);
 
-    // if we are running 'ui nice' mode, we do not want to force a screen update
-    // for this line if not necessary.
-    ui_niced = 0;
-    if (ui_nice) {
-        struct timeval curtime;
-        gettimeofday(&curtime, NULL);
-        long ms = delta_milliseconds(lastupdate, curtime);
-        if (ms < NICE_INTERVAL && ms >= 0) {
-            ui_niced = 1;
-            return;
-        }
-    }
-
     // This can get called before ui_init(), so be careful.
     pthread_mutex_lock(&gUpdateMutex);
-    gettimeofday(&lastupdate, NULL);
     if (text_rows > 0 && text_cols > 0) {
         char *ptr;
         for (ptr = buf; *ptr != '\0'; ++ptr) {
