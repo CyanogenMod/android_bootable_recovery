@@ -673,6 +673,10 @@ int ui_get_text_cols() {
     return text_cols;
 }
 
+int check_ui_initialized() {
+    return ui_has_initialized;
+}
+
 void ui_print(const char *fmt, ...)
 {
     char buf[256];

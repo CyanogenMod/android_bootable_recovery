@@ -87,6 +87,9 @@ static void nandroid_callback(const char* filename) {
     if (nandroid_files_total == 0)
         return;
 
+    if (!check_ui_initialized())
+        return;
+
     nandroid_files_count++;
     float progress_decimal = (float)nandroid_files_count / (float)nandroid_files_total;
     unsigned int progress = round_to_percent(progress_decimal);
