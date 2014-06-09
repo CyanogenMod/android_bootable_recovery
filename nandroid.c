@@ -42,6 +42,11 @@
 #include "flashutils/flashutils.h"
 #include <libgen.h>
 
+static int nandroid_backup_bitfield = 0;
+static unsigned int nandroid_files_total = 0;
+static unsigned int nandroid_files_count = 0;
+static unsigned int nandroid_progress_bar_threshold = 0;
+
 void nandroid_generate_timestamp_path(char* backup_path) {
     time_t t = time(NULL);
     struct tm *tmp = localtime(&t);
@@ -65,26 +70,33 @@ static int print_and_error(const char* message) {
     return 1;
 }
 
-static int nandroid_backup_bitfield = 0;
-#define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
-static int nandroid_files_total = 0;
-static int nandroid_files_count = 0;
+static unsigned int round_to_percent(double r) {
+    return (r > 0.0) ? (100.0 * r + 0.5) : 0;
+}
+
 static void nandroid_callback(const char* filename) {
     if (filename == NULL)
         return;
-    const char* justfile = basename(filename);
+
     char tmp[PATH_MAX];
-    strcpy(tmp, justfile);
+    strcpy(tmp, filename);
     if (tmp[strlen(tmp) - 1] == '\n')
         tmp[strlen(tmp) - 1] = '\0';
-    tmp[ui_get_text_cols() - 1] = '\0';
+    LOGI("%s\n", tmp);
+
+    if (nandroid_files_total == 0)
+        return;
+
     nandroid_files_count++;
-    ui_increment_frame();
-    ui_nice_print("%s\n", tmp);
-    if (!ui_was_niced() && nandroid_files_total != 0)
-        ui_set_progress((float)nandroid_files_count / (float)nandroid_files_total);
-    if (!ui_was_niced())
-        ui_delete_line();
+    double progress_decimal = (double)nandroid_files_count / (double)nandroid_files_total;
+    unsigned int progress = round_to_percent(progress_decimal);
+
+    if (progress > nandroid_progress_bar_threshold && progress <= 100) {
+        ui_increment_frame();
+        ui_set_progress((float)progress_decimal);
+        while (progress >= nandroid_progress_bar_threshold)
+            nandroid_progress_bar_threshold += NANDROID_PROGRESS_BAR_UI_PERCENT_UPDATES;
+    }
 }
 
 static void compute_directory_stats(const char* directory) {
@@ -94,6 +106,7 @@ static void compute_directory_stats(const char* directory) {
     // reset file count if we ever return before setting it
     nandroid_files_count = 0;
     nandroid_files_total = 0;
+    nandroid_progress_bar_threshold = 0;
 
     sprintf(tmp, "find %s | %s wc -l > /tmp/dircount", directory, strcmp(directory, "/data") == 0 && is_data_media() ? "grep -v /data/media |" : "");
     __system(tmp);
