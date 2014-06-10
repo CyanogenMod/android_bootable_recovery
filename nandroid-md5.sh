@@ -1,12 +1,12 @@
 #!/sbin/sh
 cd $1
 rm -f /tmp/nandroid.md5
-md5sum * .* > /tmp/nandroid.md5
+for i in * .*; do
+  if [ -f "$i" ]; then
+    md5sum "$i" >> /tmp/nandroid.md5
+    if [ $? -ne 0 ]; then
+      exit 1
+    fi
+  fi
+done
 cp /tmp/nandroid.md5 .
-# need this because wildcard seems to cause md5sum to return 1
-if [ -f nandroid.md5 ]
-then
-  return 0
-else
-  return 1
-fi
