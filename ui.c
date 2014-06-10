@@ -727,25 +727,31 @@ void ui_print(const char *fmt, ...)
     pthread_mutex_unlock(&gUpdateMutex);
 }
 
-void ui_printlogtail(int nb_lines) {
-    char * log_data;
+void ui_printlogtail() {
+    if (text_rows  <= 0)
+        return;
+
+    char *log_data;
     char tmp[PATH_MAX];
-    FILE * f;
-    int line=0;
+    int i;
+    int log_rows = text_rows-menu_items-1;
+
     //don't log output to recovery.log
     ui_log_stdout=0;
-    sprintf(tmp, "tail -n %d /tmp/recovery.log > /tmp/tail.log", nb_lines);
+
+    sprintf(tmp, "tail -n %d /tmp/recovery.log > /tmp/tail.log", log_rows);
     __system(tmp);
-    f = fopen("/tmp/tail.log", "rb");
-    if (f != NULL) {
-        while (line < nb_lines) {
-            log_data = fgets(tmp, PATH_MAX, f);
-            if (log_data == NULL) break;
-            ui_print("%s", tmp);
-            line++;
-        }
-        fclose(f);
+    FILE *f = fopen("/tmp/tail.log", "rb");
+    if (f == NULL) {
+        ui_print("Could not generate log tail.\n");
+        return;
     }
+    for (i = 0; i < log_rows; i++) {
+        log_data = fgets(tmp, PATH_MAX, f);
+        if (log_data == NULL) break;
+        ui_print("%s", tmp);
+    }
+    fclose(f);
     ui_print("Return to menu with any key.\n");
     ui_log_stdout=1;
 }

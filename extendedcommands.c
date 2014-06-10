@@ -1546,7 +1546,7 @@ int show_advanced_menu() {
                 break;
             }
             case 6:
-                ui_printlogtail(24);
+                ui_printlogtail();
                 ui_wait_key();
                 ui_clear_key_queue();
                 break;
