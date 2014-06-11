@@ -199,9 +199,14 @@ static void draw_background_locked(int icon)
 
 // Draw the progress bar (if any) on the screen.  Does not flip pages.
 // Should only be called with gUpdateMutex locked.
+// never called if !ui_has_initialized
+double t_last_progress_update = 0;
 static void draw_progress_locked()
 {
     if (gCurrentIcon == BACKGROUND_ICON_INSTALLING) {
+        // update the installation animation, if active
+        if (ui_parameters.installing_frames > 0)
+            ui_increment_frame();
         draw_install_overlay_locked(gInstallingFrame);
     }
 
@@ -235,6 +240,8 @@ static void draw_progress_locked()
             frame = (frame + 1) % ui_parameters.indeterminate_frames;
         }
     }
+
+    t_last_progress_update = timenow_msec();
 }
 
 static void draw_text_line(int row, const char* t) {
@@ -339,6 +346,12 @@ static void update_screen_locked(void)
 static void update_progress_locked(void)
 {
     if (!ui_has_initialized) return;
+
+    // minimum of 300 msec delay between progress updates if we have a text overlay
+    // exception: gProgressScopeDuration != 0: to keep zip installer refresh behaviour
+    if (show_text && t_last_progress_update > 0 && gProgressScopeDuration == 0 && timenow_msec() - t_last_progress_update < 300)
+        return;
+
     if (show_text || !gPagesIdentical) {
         draw_screen_locked();    // Must redraw the whole screen
         gPagesIdentical = 1;
@@ -358,30 +371,24 @@ static void *progress_thread(void *cookie)
 
         int redraw = 0;
 
-        // update the installation animation, if active
-        // skip this if we have a text overlay (too expensive to update)
-        if (gCurrentIcon == BACKGROUND_ICON_INSTALLING &&
-            ui_parameters.installing_frames > 0 &&
-            !show_text) {
-            gInstallingFrame =
-                (gInstallingFrame + 1) % ui_parameters.installing_frames;
-            redraw = 1;
-        }
-
         // update the progress bar animation, if active
         // skip this if we have a text overlay (too expensive to update)
-        if (gProgressBarType == PROGRESSBAR_TYPE_INDETERMINATE && !show_text) {
+        if (gProgressBarType == PROGRESSBAR_TYPE_INDETERMINATE) {
             redraw = 1;
         }
 
         // move the progress bar forward on timed intervals, if configured
         int duration = gProgressScopeDuration;
-        if (gProgressBarType == PROGRESSBAR_TYPE_NORMAL && duration > 0) {
-            double elapsed = now() - gProgressScopeTime;
-            float progress = 1.0 * elapsed / duration;
-            if (progress > 1.0) progress = 1.0;
-            if (progress > gProgress) {
-                gProgress = progress;
+        if (gProgressBarType == PROGRESSBAR_TYPE_NORMAL) {
+            if (duration > 0) {
+                double elapsed = now() - gProgressScopeTime;
+                float progress = 1.0 * elapsed / duration;
+                if (progress > 1.0) progress = 1.0;
+                if (progress > gProgress) {
+                    gProgress = progress;
+                    redraw = 1;
+                }
+            } else if (gCurrentIcon == BACKGROUND_ICON_INSTALLING) {
                 redraw = 1;
             }
         }
@@ -617,6 +624,7 @@ void ui_set_background(int icon)
 void ui_show_indeterminate_progress()
 {
     if (!ui_has_initialized) return;
+
     pthread_mutex_lock(&gUpdateMutex);
     if (gProgressBarType != PROGRESSBAR_TYPE_INDETERMINATE) {
         gProgressBarType = PROGRESSBAR_TYPE_INDETERMINATE;
@@ -628,6 +636,7 @@ void ui_show_indeterminate_progress()
 void ui_show_progress(float portion, int seconds)
 {
     if (!ui_has_initialized) return;
+
     pthread_mutex_lock(&gUpdateMutex);
     gProgressBarType = PROGRESSBAR_TYPE_NORMAL;
     gProgressScopeStart += gProgressScopeSize;
@@ -642,6 +651,7 @@ void ui_show_progress(float portion, int seconds)
 void ui_set_progress(float fraction)
 {
     if (!ui_has_initialized) return;
+
     pthread_mutex_lock(&gUpdateMutex);
     if (fraction < 0.0) fraction = 0.0;
     if (fraction > 1.0) fraction = 1.0;
@@ -660,10 +670,13 @@ void ui_set_progress(float fraction)
 void ui_reset_progress()
 {
     if (!ui_has_initialized) return;
+
     pthread_mutex_lock(&gUpdateMutex);
     gProgressBarType = PROGRESSBAR_TYPE_NONE;
-    gProgressScopeStart = gProgressScopeSize = 0;
-    gProgressScopeTime = gProgressScopeDuration = 0;
+    gProgressScopeStart = 0;
+    gProgressScopeSize = 0;
+    gProgressScopeTime = 0;
+    gProgressScopeDuration = 0;
     gProgress = 0;
     update_screen_locked();
     pthread_mutex_unlock(&gUpdateMutex);
