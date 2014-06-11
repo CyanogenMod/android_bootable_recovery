@@ -32,6 +32,7 @@
 #include "recovery_ui.h"
 
 #include "extendedcommands.h"
+#include "advanced_functions.h"
 #include "recovery_settings.h"
 #include "nandroid.h"
 #include "mounts.h"

@@ -35,6 +35,8 @@
 #include "recovery_ui.h"
 #include "voldclient/voldclient.h"
 
+#include "advanced_functions.h"
+
 extern int __system(const char *command);
 
 #if defined(BOARD_HAS_NO_SELECT_BUTTON) || defined(BOARD_TOUCH_RECOVERY)

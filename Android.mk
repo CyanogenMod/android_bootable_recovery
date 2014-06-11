@@ -21,6 +21,7 @@ LOCAL_SRC_FILES := \
     ui.c \
     mounts.c \
     extendedcommands.c \
+    advanced_functions.c \
     nandroid.c \
     reboot.c \
     ../../system/core/toolbox/dynarray.c \
