@@ -57,6 +57,7 @@ static int gShowBackButton = 0;
 #define UI_WAIT_KEY_TIMEOUT_SEC    3600
 #define UI_KEY_REPEAT_INTERVAL 80
 #define UI_KEY_WAIT_REPEAT 400
+#define UI_MIN_PROG_DELTA_MS 200
 
 UIParameters ui_parameters = {
     6,       // indeterminate progress bar frames
@@ -195,11 +196,28 @@ static void draw_background_locked(int icon)
     }
 }
 
+void ui_increment_frame() {
+    if (!ui_has_initialized) return;
+    gInstallingFrame =
+        (gInstallingFrame + 1) % ui_parameters.installing_frames;
+}
+
+static long delta_milliseconds(struct timeval from, struct timeval to) {
+    long delta_sec = (to.tv_sec - from.tv_sec)*1000;
+    long delta_usec = (to.tv_usec - from.tv_usec)/1000;
+    return (delta_sec + delta_usec);
+}
+
+static struct timeval lastprogupd = (struct timeval) {0};
+
 // Draw the progress bar (if any) on the screen.  Does not flip pages.
-// Should only be called with gUpdateMutex locked.
+// Should only be called with gUpdateMutex locked and if ui_has_initialized is true
 static void draw_progress_locked()
 {
     if (gCurrentIcon == BACKGROUND_ICON_INSTALLING) {
+        // update the installation animation, if active
+        if (ui_parameters.installing_frames > 0)
+            ui_increment_frame();
         draw_install_overlay_locked(gInstallingFrame);
     }
 
@@ -233,6 +251,8 @@ static void draw_progress_locked()
             frame = (frame + 1) % ui_parameters.indeterminate_frames;
         }
     }
+
+    gettimeofday(&lastprogupd, NULL);
 }
 
 static void draw_text_line(int row, const char* t) {
@@ -337,6 +357,17 @@ static void update_screen_locked(void)
 static void update_progress_locked(void)
 {
     if (!ui_has_initialized) return;
+
+    // set minimum delay between progress updates if we have a text overlay
+    // exception: gProgressScopeDuration != 0: to keep zip installer refresh behavior
+    struct timeval curtime;
+    gettimeofday(&curtime, NULL);
+    long delta_ms = delta_milliseconds(lastprogupd, curtime);
+    if (show_text && gProgressScopeDuration == 0 && lastprogupd.tv_sec > 0
+            && delta_ms < UI_MIN_PROG_DELTA_MS) {
+        return;
+    }
+
     if (show_text || !gPagesIdentical) {
         draw_screen_locked();    // Must redraw the whole screen
         gPagesIdentical = 1;
@@ -356,30 +387,25 @@ static void *progress_thread(void *cookie)
 
         int redraw = 0;
 
-        // update the installation animation, if active
-        // skip this if we have a text overlay (too expensive to update)
-        if (gCurrentIcon == BACKGROUND_ICON_INSTALLING &&
-            ui_parameters.installing_frames > 0 &&
-            !show_text) {
-            gInstallingFrame =
-                (gInstallingFrame + 1) % ui_parameters.installing_frames;
-            redraw = 1;
-        }
-
         // update the progress bar animation, if active
-        // skip this if we have a text overlay (too expensive to update)
-        if (gProgressBarType == PROGRESSBAR_TYPE_INDETERMINATE && !show_text) {
+        // update the spinning cube animation, even if no progress bar
+        if (gProgressBarType == PROGRESSBAR_TYPE_INDETERMINATE ||
+                gProgressBarType == PROGRESSBAR_TYPE_NONE) {
             redraw = 1;
         }
 
         // move the progress bar forward on timed intervals, if configured
         int duration = gProgressScopeDuration;
-        if (gProgressBarType == PROGRESSBAR_TYPE_NORMAL && duration > 0) {
-            double elapsed = now() - gProgressScopeTime;
-            float progress = 1.0 * elapsed / duration;
-            if (progress > 1.0) progress = 1.0;
-            if (progress > gProgress) {
-                gProgress = progress;
+        if (gProgressBarType == PROGRESSBAR_TYPE_NORMAL) {
+            if (duration > 0) {
+                double elapsed = now() - gProgressScopeTime;
+                float progress = 1.0 * elapsed / duration;
+                if (progress > 1.0) progress = 1.0;
+                if (progress > gProgress) {
+                    gProgress = progress;
+                    redraw = 1;
+                }
+            } else if (gCurrentIcon == BACKGROUND_ICON_INSTALLING) {
                 redraw = 1;
             }
         }
@@ -665,12 +691,6 @@ void ui_reset_progress()
     gProgress = 0;
     update_screen_locked();
     pthread_mutex_unlock(&gUpdateMutex);
-}
-
-static long delta_milliseconds(struct timeval from, struct timeval to) {
-    long delta_sec = (to.tv_sec - from.tv_sec)*1000;
-    long delta_usec = (to.tv_usec - from.tv_usec)/1000;
-    return (delta_sec + delta_usec);
 }
 
 static struct timeval lastupdate = (struct timeval) {0};
@@ -1077,12 +1097,6 @@ void ui_delete_line() {
     text_row = (text_row - 1 + text_rows) % text_rows;
     text_col = 0;
     pthread_mutex_unlock(&gUpdateMutex);
-}
-
-void ui_increment_frame() {
-    if (!ui_has_initialized) return;
-    gInstallingFrame =
-        (gInstallingFrame + 1) % ui_parameters.installing_frames;
 }
 
 int ui_get_rainbow_mode() {
