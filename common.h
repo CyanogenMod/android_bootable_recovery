@@ -156,5 +156,6 @@ typedef struct {
 FILE* fopen_path(const char *path, const char *mode);
 
 void set_perf_mode(int on);
+void vold_init();
 
 #endif  // RECOVERY_COMMON_H

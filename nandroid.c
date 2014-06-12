@@ -48,9 +48,11 @@ void nandroid_generate_timestamp_path(char* backup_path) {
     if (tmp == NULL) {
         struct timeval tp;
         gettimeofday(&tp, NULL);
-        sprintf(backup_path, "/sdcard/clockworkmod/backup/%ld", tp.tv_sec);
+        snprintf(backup_path, PATH_MAX, "%s/clockworkmod/backup/%ld", get_primary_storage_path(), tp.tv_sec);
     } else {
-        strftime(backup_path, PATH_MAX, "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+        char str[PATH_MAX];
+        strftime(str, PATH_MAX, "clockworkmod/backup/%F.%H.%M.%S", tmp);
+        snprintf(backup_path, PATH_MAX, "%s/%s", get_primary_storage_path(), str);
     }
 }
 
@@ -985,6 +987,7 @@ int bu_main(int argc, char** argv) {
 
 int nandroid_main(int argc, char** argv) {
     load_volume_table();
+    vold_init();
     char backup_path[PATH_MAX];
 
     if (argc > 3 || argc < 2)
