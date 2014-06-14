@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (C) 2014 The CyanogenMod Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +30,8 @@
 #include <unistd.h>
 
 #include "common.h"
-#include <cutils/android_reboot.h>
-#include <cutils/properties.h>
+#include "cutils/android_reboot.h"
+#include "cutils/properties.h"
 #include "minui/minui.h"
 #include "recovery_ui.h"
 #include "voldclient/voldclient.h"
@@ -84,16 +85,16 @@ static int boardEnableKeyRepeat = 0;
 static int boardRepeatableKeys[64], boardNumRepeatableKeys = 0;
 
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
-    { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING], "icon_installing" },
-    { &gBackgroundIcon[BACKGROUND_ICON_ERROR],      "icon_error" },
-    { &gBackgroundIcon[BACKGROUND_ICON_CLOCKWORK],  "icon_clockwork" },
-    { &gBackgroundIcon[BACKGROUND_ICON_CID],  "icon_cid" },
+    { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING],          "icon_installing" },
+    { &gBackgroundIcon[BACKGROUND_ICON_ERROR],               "icon_error" },
+    { &gBackgroundIcon[BACKGROUND_ICON_CLOCKWORK],           "icon_clockwork" },
+    { &gBackgroundIcon[BACKGROUND_ICON_CID],                 "icon_cid" },
     { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_INSTALLING], "icon_firmware_install" },
-    { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_ERROR], "icon_firmware_error" },
-    { &gProgressBarEmpty,               "progress_empty" },
-    { &gProgressBarFill,                "progress_fill" },
-    { &gBackground,                "stitch" },
-    { NULL,                             NULL },
+    { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_ERROR],      "icon_firmware_error" },
+    { &gProgressBarEmpty,                                    "progress_empty" },
+    { &gProgressBarFill,                                     "progress_fill" },
+    { &gBackground,                                          "stitch" },
+    { NULL,                                                  NULL },
 };
 
 static int gCurrentIcon = 0;
@@ -106,7 +107,9 @@ static enum ProgressBarType {
 } gProgressBarType = PROGRESSBAR_TYPE_NONE;
 
 // Progress bar scope of current operation
-static float gProgressScopeStart = 0, gProgressScopeSize = 0, gProgress = 0;
+static float gProgressScopeStart = 0.0;
+static float gProgressScopeSize = 0.0;
+static float gProgress = 0.0;
 static double gProgressScopeTime, gProgressScopeDuration;
 
 // Set to 1 when both graphics pages are the same (except for the progress bar)
@@ -114,15 +117,20 @@ static int gPagesIdentical = 0;
 
 // Log text overlay, displayed when a magic key is pressed
 static char text[MAX_ROWS][MAX_COLS];
-static int text_cols = 0, text_rows = 0;
-static int text_col = 0, text_row = 0, text_top = 0;
+static int text_cols = 0;
+static int text_rows = 0;
+static int text_col = 0;
+static int text_row = 0;
+static int text_top = 0;
 static int show_text = 0;
-static int show_text_ever = 0;   // has show_text ever been 1?
+static int show_text_ever = 0; // i.e. has show_text ever been 1?
 
 static char menu[MENU_MAX_ROWS][MENU_MAX_COLS];
 static int show_menu = 0;
-static int menu_top = 0, menu_items = 0, menu_sel = 0;
-static int menu_show_start = 0;             // this is line which menu display is starting at
+static int menu_top = 0;
+static int menu_items = 0;
+static int menu_sel = 0;
+static int menu_show_start = 0; // line at which menu display starts
 static int max_menu_rows;
 
 static unsigned cur_rainbow_color = 0;
@@ -168,8 +176,6 @@ static void draw_install_overlay_locked(int frame) {
 static void draw_background_locked(int icon)
 {
     gPagesIdentical = 0;
-    // gr_color(0, 0, 0, 255);
-    // gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
     {
         int bw = gr_get_width(gBackground);
@@ -210,7 +216,7 @@ static long delta_milliseconds(struct timeval from, struct timeval to) {
 
 static struct timeval lastprogupd = (struct timeval) {0};
 
-// Draw the progress bar (if any) on the screen.  Does not flip pages.
+// Draw the progress bar (if any) on the screen; does not flip pages
 // Should only be called with gUpdateMutex locked and if ui_has_initialized is true
 static void draw_progress_locked()
 {
@@ -280,14 +286,10 @@ static void draw_screen_locked(void)
     draw_progress_locked();
 
     if (show_text) {
-        // don't "disable" the background anymore with this...
-        // gr_color(0, 0, 0, 160);
-        // gr_fill(0, 0, gr_fb_width(), gr_fb_height());
-
         int total_rows = gr_fb_height() / CHAR_HEIGHT;
         int i = 0;
         int j = 0;
-        int row = 0;            // current row that we are drawing on
+        int row = 0; // current row that we are drawing on
         if (show_menu) {
 #ifndef BOARD_TOUCH_RECOVERY
             gr_color(menuTextColor[0], menuTextColor[1], menuTextColor[2], menuTextColor[3]);
@@ -682,8 +684,10 @@ void ui_reset_progress()
     if (!ui_has_initialized) return;
     pthread_mutex_lock(&gUpdateMutex);
     gProgressBarType = PROGRESSBAR_TYPE_NONE;
-    gProgressScopeStart = gProgressScopeSize = 0;
-    gProgressScopeTime = gProgressScopeDuration = 0;
+    gProgressScopeStart = 0;
+    gProgressScopeSize = 0;
+    gProgressScopeTime = 0;
+    gProgressScopeDuration = 0;
     gProgress = 0;
     update_screen_locked();
     pthread_mutex_unlock(&gUpdateMutex);
