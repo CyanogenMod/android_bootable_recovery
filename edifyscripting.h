@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef _ADB_INSTALL_H
-#define _ADB_INSTALL_H
+#ifndef __EDIFYSCRIPTING_H
+#define __EDIFYSCRIPTING_H
 
-int apply_from_adb();
+int edify_main(int argc, char** argv);
+int extendedcommand_file_exists();
+int run_and_remove_extendedcommand();
 
-#endif
+#endif // __EDIFYSCRIPTING_H
