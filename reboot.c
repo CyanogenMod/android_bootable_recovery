@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include <cutils/properties.h>
+#include <cutils/android_reboot.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cutils/properties.h>
-#include <cutils/android_reboot.h>
 #include <unistd.h>
 
 int reboot_main(int argc, char *argv[])

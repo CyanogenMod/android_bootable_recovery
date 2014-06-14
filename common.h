@@ -20,9 +20,7 @@
 #include <stdio.h>
 #include <fs_mgr.h>
 
-//#define MENU_TEXT_COLOR 255, 160, 49, 255
 #define MENU_TEXT_COLOR 0, 191, 255, 255
-#define MENU_TEXT_COLOR_RED 255, 0, 0, 255
 #define NORMAL_TEXT_COLOR 200, 200, 200, 255
 #define HEADER_TEXT_COLOR NORMAL_TEXT_COLOR
 
@@ -120,14 +118,6 @@ void ui_reset_progress();
 #define LOGW(...) fprintf(stdout, "W:" __VA_ARGS__)
 #define LOGI(...) fprintf(stdout, "I:" __VA_ARGS__)
 
-#if 0
-#define LOGV(...) fprintf(stdout, "V:" __VA_ARGS__)
-#define LOGD(...) fprintf(stdout, "D:" __VA_ARGS__)
-#else
-#define LOGV(...) do {} while (0)
-#define LOGD(...) do {} while (0)
-#endif
-
 #define STRINGIFY(x) #x
 #define EXPAND(x) STRINGIFY(x)
 
@@ -155,7 +145,19 @@ typedef struct {
 // fopen a file, mounting volumes and making parent dirs as necessary.
 FILE* fopen_path(const char *path, const char *mode);
 
+/*
+ * Set performance mode on/off before/after tar compress and extract.
+ * Device must have properly configured init.rc or
+ * init.recovery.{ro.hardware}.rc that enables and disables cores, or
+ * sets other cpu performance settings, when recovery.perf.mode
+ * changes
+ */
 void set_perf_mode(int on);
+
+/*
+ * Initialize mini vold so that recovery can mount, unmount, and format
+ * vold managed storage.
+ */
 void vold_init();
 
 #endif  // RECOVERY_COMMON_H

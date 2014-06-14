@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
  * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+ * Copyright (C) 2014 The CyanogenMod Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@
  */
 
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -28,8 +30,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <dirent.h>
-#include <sys/stat.h>
 
 #include "bootloader.h"
 #include "common.h"
@@ -40,17 +40,15 @@
 #include "minzip/DirUtil.h"
 #include "roots.h"
 #include "recovery_ui.h"
-
 #include "adb_install.h"
 #include "minadbd/adb.h"
 
+#include "dedupe/dedupe.h"
 #include "firmware.h"
 #include "extendedcommands.h"
 #include "flashutils/flashutils.h"
-#include "dedupe/dedupe.h"
-#include "voldclient/voldclient.h"
-
 #include "recovery_cmds.h"
+#include "voldclient/voldclient.h"
 
 struct selabel_handle *sehandle = NULL;
 
