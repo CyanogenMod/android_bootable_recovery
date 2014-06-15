@@ -48,9 +48,11 @@ void nandroid_generate_timestamp_path(char* backup_path) {
     if (tmp == NULL) {
         struct timeval tp;
         gettimeofday(&tp, NULL);
-        sprintf(backup_path, "/sdcard/clockworkmod/backup/%ld", tp.tv_sec);
+        snprintf(backup_path, PATH_MAX, "%s/clockworkmod/backup/%ld", get_primary_storage_path(), tp.tv_sec);
     } else {
-        strftime(backup_path, PATH_MAX, "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
+        char str[PATH_MAX];
+        strftime(str, PATH_MAX, "clockworkmod/backup/%F.%H.%M.%S", tmp);
+        snprintf(backup_path, PATH_MAX, "%s/%s", get_primary_storage_path(), str);
     }
 }
 
@@ -67,24 +69,24 @@ static int print_and_error(const char* message) {
 
 static int nandroid_backup_bitfield = 0;
 #define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
-static int nandroid_files_total = 0;
-static int nandroid_files_count = 0;
+static unsigned int nandroid_files_total = 0;
+static unsigned int nandroid_files_count = 0;
 static void nandroid_callback(const char* filename) {
     if (filename == NULL)
         return;
-    const char* justfile = basename(filename);
+
     char tmp[PATH_MAX];
-    strcpy(tmp, justfile);
+    strcpy(tmp, filename);
     if (tmp[strlen(tmp) - 1] == '\n')
         tmp[strlen(tmp) - 1] = '\0';
-    tmp[ui_get_text_cols() - 1] = '\0';
-    nandroid_files_count++;
-    ui_increment_frame();
-    ui_nice_print("%s\n", tmp);
-    if (!ui_was_niced() && nandroid_files_total != 0)
-        ui_set_progress((float)nandroid_files_count / (float)nandroid_files_total);
-    if (!ui_was_niced())
-        ui_delete_line();
+    LOGI("%s\n", tmp);
+
+    if (nandroid_files_total != 0) {
+        nandroid_files_count++;
+        float progress_decimal = (float)((double)nandroid_files_count /
+                                         (double)nandroid_files_total);
+        ui_set_progress(progress_decimal);
+    }
 }
 
 static void compute_directory_stats(const char* directory) {
@@ -985,6 +987,7 @@ int bu_main(int argc, char** argv) {
 
 int nandroid_main(int argc, char** argv) {
     load_volume_table();
+    vold_init();
     char backup_path[PATH_MAX];
 
     if (argc > 3 || argc < 2)
