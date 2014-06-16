@@ -390,7 +390,7 @@ static void *progress_thread(void *cookie)
         // update the progress bar animation, if active
         // update the spinning cube animation, even if no progress bar
         if (gProgressBarType == PROGRESSBAR_TYPE_INDETERMINATE ||
-                gProgressBarType == PROGRESSBAR_TYPE_NONE) {
+                gCurrentIcon == BACKGROUND_ICON_INSTALLING) {
             redraw = 1;
         }
 
@@ -405,8 +405,6 @@ static void *progress_thread(void *cookie)
                     gProgress = progress;
                     redraw = 1;
                 }
-            } else if (gCurrentIcon == BACKGROUND_ICON_INSTALLING) {
-                redraw = 1;
             }
         }
 
