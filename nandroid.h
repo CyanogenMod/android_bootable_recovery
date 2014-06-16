@@ -15,4 +15,6 @@ unsigned nandroid_get_default_backup_format();
 #define NANDROID_BACKUP_FORMAT_DUP 1
 #define NANDROID_BACKUP_FORMAT_TGZ 2
 
+#define NANDROID_ERROR_GENERAL 1
+
 #endif
