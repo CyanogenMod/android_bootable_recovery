@@ -422,6 +422,7 @@ erase_volume(const char *volume) {
         copy_logs();
     }
 
+    ui_set_background(BACKGROUND_ICON_CLOCKWORK);
     return result;
 }
 
