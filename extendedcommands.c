@@ -143,6 +143,8 @@ int install_zip(const char* packagefilepath) {
         set_sdcard_update_bootloader_message();
     }
 
+    // will ensure_path_mounted(packagefilepath)
+    // will also set background icon to installing and indeterminate progress bar
     int status = install_package(packagefilepath);
     ui_reset_progress();
     if (status != INSTALL_SUCCESS) {
