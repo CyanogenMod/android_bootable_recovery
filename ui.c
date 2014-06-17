@@ -36,6 +36,10 @@
 #include "recovery_ui.h"
 #include "voldclient/voldclient.h"
 
+#ifdef BOARD_RECOVERY_SWIPE
+#include "input/touch.h"
+#endif
+
 extern int __system(const char *command);
 extern int volumes_changed();
 
@@ -157,10 +161,6 @@ static void ui_rainbow_mode();
 
 #ifdef BOARD_TOUCH_RECOVERY
 #include "../../vendor/koush/recovery/touch.c"
-#else
-#ifdef BOARD_RECOVERY_SWIPE
-#include "swipe.c"
-#endif
 #endif
 
 // Current time
@@ -442,10 +442,8 @@ static int input_callback(int fd, short revents, void *data) {
 #ifdef BOARD_TOUCH_RECOVERY
     if (touch_handle_input(fd, ev))
         return 0;
-#else
-#ifdef BOARD_RECOVERY_SWIPE
-    swipe_handle_input(fd, &ev);
-#endif
+#elif defined(BOARD_RECOVERY_SWIPE)
+    touch_handle_input(fd, &ev);
 #endif
 
     if (ev.type == EV_SYN) {
