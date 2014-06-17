@@ -1,0 +1,1 @@
+int touch_handle_input(int fd, struct input_event *ev);
