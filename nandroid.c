@@ -502,9 +502,6 @@ int nandroid_backup(const char* backup_path) {
 }
 
 int nandroid_dump(const char* partition) {
-    // silence our ui_print statements and other logging
-    ui_set_log_stdout(0);
-
     nandroid_backup_bitfield = 0;
     refresh_default_backup_handler();
 
@@ -949,9 +946,12 @@ int bu_main(int argc, char** argv) {
             close(fd);
         }
 
+        ui_set_log_stdout(0);
         // fprintf(stderr, "%d %d %s\n", fd, STDOUT_FILENO, argv[3]);
         int ret = nandroid_dump(partition);
         sleep(10);
+        ui_set_log_stdout(1);
+
         return ret;
     } else if (strcmp(argv[2], "restore") == 0) {
         if (argc != 3) {
@@ -1013,7 +1013,12 @@ int nandroid_main(int argc, char** argv) {
     if (strcmp("dump", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
-        return nandroid_dump(argv[2]);
+
+        ui_set_log_stdout(0);
+        int ret = nandroid_dump(argv[2]);
+        ui_set_log_stdout(1);
+
+        return ret;
     }
 
     if (strcmp("undump", argv[1]) == 0) {
