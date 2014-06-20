@@ -20,9 +20,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "dedupe/dedupe.h"
+#include "edifyscripting.h"
 #include "extendedcommands.h"
 #include "nandroid.h"
-#include "dedupe/dedupe.h"
 
 extern int minizip_main(int argc, char **argv);
 extern int flash_image_main(int argc, char **argv);
@@ -89,4 +90,5 @@ inline struct recovery_cmd get_command(char* command) {
 
     return recovery_cmds[i];
 }
-#endif
+
+#endif // _RECOVERY_CMDS_H

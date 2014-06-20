@@ -16,9 +16,9 @@
 
 #include <linux/input.h>
 
-#include "recovery_ui.h"
 #include "common.h"
 #include "extendedcommands.h"
+#include "recovery_ui.h"
 
 char* MENU_HEADERS[] = { NULL };
 

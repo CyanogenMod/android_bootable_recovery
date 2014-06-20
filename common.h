@@ -20,9 +20,7 @@
 #include <stdio.h>
 #include <fs_mgr.h>
 
-//#define MENU_TEXT_COLOR 255, 160, 49, 255
 #define MENU_TEXT_COLOR 0, 191, 255, 255
-#define MENU_TEXT_COLOR_RED 255, 0, 0, 255
 #define NORMAL_TEXT_COLOR 200, 200, 200, 255
 #define HEADER_TEXT_COLOR NORMAL_TEXT_COLOR
 
@@ -32,7 +30,6 @@ void ui_init();
 // Use KEY_* codes from <linux/input.h> or KEY_DREAM_* from "minui/minui.h".
 void ui_cancel_wait_key();
 int ui_wait_key();            // waits for a key/button press, returns the code
-int ui_wait_key_with_repeat();
 int ui_key_pressed(int key);  // returns >0 if the code is currently pressed
 int ui_text_visible();        // returns >0 if text log is currently visible
 int ui_text_ever_visible();   // returns >0 if text log was ever visible
@@ -47,7 +44,6 @@ void ui_printlogtail(int nb_lines);
 
 void ui_delete_line();
 void ui_set_show_text(int value);
-int ui_get_text_cols();
 void ui_setMenuTextColor(int r, int g, int b, int a);
 
 #ifdef ENABLE_LOKI
@@ -77,7 +73,6 @@ void ui_set_log_stdout(int enabled);
 int ui_should_log_stdout();
 
 int ui_get_rainbow_mode();
-void ui_rainbow_mode();
 void ui_set_rainbow_mode(int rainbowMode);
 
 // Set the icon (normally the only thing visible besides the progress bar).
@@ -120,14 +115,6 @@ void ui_reset_progress();
 #define LOGW(...) fprintf(stdout, "W:" __VA_ARGS__)
 #define LOGI(...) fprintf(stdout, "I:" __VA_ARGS__)
 
-#if 0
-#define LOGV(...) fprintf(stdout, "V:" __VA_ARGS__)
-#define LOGD(...) fprintf(stdout, "D:" __VA_ARGS__)
-#else
-#define LOGV(...) do {} while (0)
-#define LOGD(...) do {} while (0)
-#endif
-
 #define STRINGIFY(x) #x
 #define EXPAND(x) STRINGIFY(x)
 
@@ -155,7 +142,19 @@ typedef struct {
 // fopen a file, mounting volumes and making parent dirs as necessary.
 FILE* fopen_path(const char *path, const char *mode);
 
+/*
+ * Set performance mode on/off before/after tar compress and extract.
+ * Device must have properly configured init.rc or
+ * init.recovery.{ro.hardware}.rc that enables and disables cores, or
+ * sets other cpu performance settings, when recovery.perf.mode
+ * changes
+ */
 void set_perf_mode(int on);
+
+/*
+ * Initialize mini vold so that recovery can mount, unmount, and format
+ * vold managed storage.
+ */
 void vold_init();
 
 #endif  // RECOVERY_COMMON_H
