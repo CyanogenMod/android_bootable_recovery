@@ -28,6 +28,7 @@ int show_install_update_menu();
 int confirm_selection(const char* title, const char* confirm);
 int install_zip(const char* packagefilepath);
 
+int empty_nandroid_bitmask(unsigned char flags);
 int has_datadata();
 void process_volumes();
 int volume_main(int argc, char **argv);
