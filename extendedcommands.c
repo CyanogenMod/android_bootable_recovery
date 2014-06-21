@@ -500,8 +500,11 @@ static void show_nandroid_restore_menu(const char* path) {
     if (file == NULL)
         return;
 
-    if (confirm_selection("Confirm restore?", "Yes - Restore"))
-        nandroid_restore(file, 1, 1, 1, 1, 1, 0);
+    if (confirm_selection("Confirm restore?", "Yes - Restore")) {
+        unsigned char flags = NANDROID_BOOT | NANDROID_SYSTEM | NANDROID_DATA
+                              | NANDROID_CACHE | NANDROID_SDEXT;
+        nandroid_restore(file, flags);
+    }
 
     free(file);
 }
@@ -995,6 +998,50 @@ int show_partition_menu() {
     return chosen_item;
 }
 
+static void nandroid_adv_update_selections(char *str[], int listnum, unsigned char *flags) {
+    int len = strlen(str[listnum]);
+    if (str[listnum][len-2] == ' ') {
+        str[listnum][len-1] = ')';
+        str[listnum][len-2] = '+';
+        str[listnum][len-3] = '(';
+    } else {
+        str[listnum][len-1] = ' ';
+        str[listnum][len-2] = ' ';
+        str[listnum][len-3] = ' ';
+    }
+    switch(listnum) {
+        case 0:
+            *flags ^= NANDROID_BOOT;
+            break;
+        case 1:
+            *flags ^= NANDROID_SYSTEM;
+            break;
+        case 2:
+            *flags ^= NANDROID_DATA;
+            break;
+        case 3:
+            *flags ^= NANDROID_CACHE;
+            break;
+        case 4:
+            *flags ^= NANDROID_SDEXT;
+            break;
+        case 5:
+            *flags ^= NANDROID_WIMAX;
+            break;
+    }
+}
+
+static int empty_nandroid_bitmask(unsigned char flags) {
+    int ret = !(((flags & NANDROID_BOOT) == NANDROID_BOOT) ||
+                ((flags & NANDROID_SYSTEM) == NANDROID_SYSTEM) ||
+                ((flags & NANDROID_DATA) == NANDROID_DATA) ||
+                ((flags & NANDROID_CACHE) == NANDROID_CACHE) ||
+                ((flags & NANDROID_SDEXT) == NANDROID_SDEXT) ||
+                ((flags & NANDROID_WIMAX) == NANDROID_WIMAX));
+
+    return ret;
+}
+
 static void show_nandroid_advanced_restore_menu(const char* path) {
     if (ensure_path_mounted(path) != 0) {
         LOGE("Can't mount sdcard\n");
@@ -1015,58 +1062,63 @@ static void show_nandroid_advanced_restore_menu(const char* path) {
     if (file == NULL)
         return;
 
-    static const char* headers[] = { "Advanced Restore", "", NULL };
+    static const char* headers[] = { "Advanced Restore",
+                                     "",
+                                     "Select image(s) to restore:",
+                                     NULL };
 
-    static char* list[] = { "Restore boot",
-                            "Restore system",
-                            "Restore data",
-                            "Restore cache",
-                            "Restore sd-ext",
-                            "Restore wimax",
-                            NULL };
+    int disable_wimax = 0;
+    if (0 != get_partition_device("wimax", tmp))
+        disable_wimax = 1;
 
-    if (0 != get_partition_device("wimax", tmp)) {
-        // disable wimax restore option
-        list[5] = NULL;
-    }
+    char *list[9 - disable_wimax];
+    // Dynamically allocated entries will have (+) added/removed to end
+    // Leave space at end of string  so terminator doesn't need to move
+    list[0] = malloc(sizeof("Restore boot    "));
+    list[1] = malloc(sizeof("Restore system    "));
+    list[2] = malloc(sizeof("Restore data    "));
+    list[3] = malloc(sizeof("Restore cache    "));
+    list[4] = malloc(sizeof("Restore sd-ext    "));
+    if (!disable_wimax)
+        list[5] = malloc(sizeof("Restore wimax    "));
+    list[6 - disable_wimax] = "Start restore";
+    list[7 - disable_wimax] = NULL;
 
-    static char* confirm_restore = "Confirm restore?";
+    sprintf(list[0], "Restore boot    ");
+    sprintf(list[1], "Restore system    ");
+    sprintf(list[2], "Restore data    ");
+    sprintf(list[3], "Restore cache    ");
+    sprintf(list[4], "Restore sd-ext    ");
+    if (!disable_wimax)
+        sprintf(list[5], "Restore wimax    ");
 
-    int chosen_item = get_menu_selection(headers, list, 0, 0);
-    switch (chosen_item) {
-        case 0: {
-            if (confirm_selection(confirm_restore, "Yes - Restore boot"))
-                nandroid_restore(file, 1, 0, 0, 0, 0, 0);
+    unsigned char flags = NANDROID_NONE;
+    int reload_menu;
+    int start_restore = 6-disable_wimax;
+    int chosen_item;
+
+    do {
+        reload_menu = 0;
+        chosen_item = get_menu_selection(headers, list, 0, 0);
+        if (chosen_item < 0 || chosen_item > start_restore)
             break;
+
+        if (chosen_item < start_restore) {
+            nandroid_adv_update_selections(list, chosen_item, &flags);
+        } else if ((chosen_item == start_restore) && empty_nandroid_bitmask(flags)) {
+            ui_print("No image(s) selected!\n");
+            reload_menu = 1;
         }
-        case 1: {
-            if (confirm_selection(confirm_restore, "Yes - Restore system"))
-                nandroid_restore(file, 0, 1, 0, 0, 0, 0);
-            break;
-        }
-        case 2: {
-            if (confirm_selection(confirm_restore, "Yes - Restore data"))
-                nandroid_restore(file, 0, 0, 1, 0, 0, 0);
-            break;
-        }
-        case 3: {
-            if (confirm_selection(confirm_restore, "Yes - Restore cache"))
-                nandroid_restore(file, 0, 0, 0, 1, 0, 0);
-            break;
-        }
-        case 4: {
-            if (confirm_selection(confirm_restore, "Yes - Restore sd-ext"))
-                nandroid_restore(file, 0, 0, 0, 0, 1, 0);
-            break;
-        }
-        case 5: {
-            if (confirm_selection(confirm_restore, "Yes - Restore wimax"))
-                nandroid_restore(file, 0, 0, 0, 0, 0, 1);
-            break;
-        }
-    }
+    } while ((chosen_item >=0 && chosen_item < start_restore) || reload_menu);
+
+    if (chosen_item == start_restore)
+        nandroid_restore(file, flags);
 
     free(file);
+    int i;
+    for (i = 0; i < (5-disable_wimax); i++) {
+        free(list[i]);
+    }
 }
 
 static void run_dedupe_gc() {

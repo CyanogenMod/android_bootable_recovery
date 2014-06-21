@@ -196,39 +196,36 @@ Value* RestoreFn(const char* name, State* state, int argc, Expr* argv[]) {
     args2[argc] = NULL;
     
     char* path = strdup(args2[0]);
-    int restoreboot = 1;
-    int restoresystem = 1;
-    int restoredata = 1;
-    int restorecache = 1;
-    int restoresdext = 1;
+    unsigned char flags = NANDROID_BOOT | NANDROID_SYSTEM | NANDROID_DATA
+                          | NANDROID_CACHE | NANDROID_SDEXT;
     int i;
     for (i = 1; i < argc; i++)
     {
         if (args2[i] == NULL)
             continue;
         if (strcmp(args2[i], "noboot") == 0)
-            restoreboot = 0;
+            flags ^= NANDROID_BOOT;
         else if (strcmp(args2[i], "nosystem") == 0)
-            restoresystem = 0;
+            flags ^= NANDROID_SYSTEM;
         else if (strcmp(args2[i], "nodata") == 0)
-            restoredata = 0;
+            flags ^= NANDROID_DATA;
         else if (strcmp(args2[i], "nocache") == 0)
-            restorecache = 0;
+            flags ^= NANDROID_CACHE;
         else if (strcmp(args2[i], "nosd-ext") == 0)
-            restoresdext = 0;
+            flags ^= NANDROID_SDEXT;
     }
-    
+
     for (i = 0; i < argc; ++i) {
         free(args[i]);
     }
     free(args);
     free(args2);
 
-    if (0 != nandroid_restore(path, restoreboot, restoresystem, restoredata, restorecache, restoresdext, 0)) {
+    if (0 != nandroid_restore(path, flags)) {
         free(path);
         return StringValue(strdup(""));
     }
-    
+
     return StringValue(path);
 }
 
