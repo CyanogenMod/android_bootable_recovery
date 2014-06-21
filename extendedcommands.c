@@ -1031,7 +1031,7 @@ static void nandroid_adv_update_selections(char *str[], int listnum, unsigned ch
     }
 }
 
-static int empty_nandroid_bitmask(unsigned char flags) {
+int empty_nandroid_bitmask(unsigned char flags) {
     int ret = !(((flags & NANDROID_BOOT) == NANDROID_BOOT) ||
                 ((flags & NANDROID_SYSTEM) == NANDROID_SYSTEM) ||
                 ((flags & NANDROID_DATA) == NANDROID_DATA) ||
