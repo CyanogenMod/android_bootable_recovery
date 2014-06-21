@@ -822,10 +822,17 @@ static int nandroid_restore_partition(const char* backup_path, const char* root)
     return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax) {
+int nandroid_restore(const char* backup_path, unsigned char flags) {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
     nandroid_files_total = 0;
+
+    int restore_boot = ((flags & NANDROID_BOOT) == NANDROID_BOOT);
+    int restore_system = ((flags & NANDROID_SYSTEM) == NANDROID_SYSTEM);
+    int restore_data = ((flags & NANDROID_DATA) == NANDROID_DATA);
+    int restore_cache = ((flags & NANDROID_CACHE) == NANDROID_CACHE);
+    int restore_sdext = ((flags & NANDROID_SDEXT) == NANDROID_SDEXT);
+    int restore_wimax = ((flags & NANDROID_WIMAX) == NANDROID_WIMAX);
 
     if (ensure_path_mounted(backup_path) != 0)
         return print_and_error("Can't mount backup path\n", NANDROID_ERROR_GENERAL);
@@ -1017,7 +1024,9 @@ int nandroid_main(int argc, char** argv) {
     if (strcmp("restore", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
-        return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
+        unsigned char flags = NANDROID_BOOT | NANDROID_SYSTEM | NANDROID_DATA
+                              | NANDROID_CACHE | NANDROID_SDEXT;
+        return nandroid_restore(argv[2], flags);
     }
 
     if (strcmp("dump", argv[1]) == 0) {
