@@ -219,7 +219,7 @@ int install_zip(const char* packagefilepath) {
     }
 #endif
 
-    ui_set_background(BACKGROUND_ICON_NONE);
+    ui_set_background(BACKGROUND_ICON_CLOCKWORK);
     ui_print("\nInstall from sdcard complete.\n");
     return 0;
 }
