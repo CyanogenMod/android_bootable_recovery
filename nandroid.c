@@ -514,9 +514,6 @@ int nandroid_backup(const char* backup_path) {
 }
 
 static int nandroid_dump(const char* partition) {
-    // silence our ui_print statements and other logging
-    ui_set_log_stdout(0);
-
     nandroid_backup_bitfield = 0;
     refresh_default_backup_handler();
 
