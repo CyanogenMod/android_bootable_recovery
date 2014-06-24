@@ -1,54 +1,112 @@
+/*
+ * Copyright (C) 2014 The CyanogenMod Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <libgen.h>
 #include <limits.h>
 #include <linux/input.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/limits.h>
 #include <sys/reboot.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
-#include <sys/wait.h>
-#include <sys/limits.h>
-#include <dirent.h>
-#include <sys/stat.h>
-
-#include <signal.h>
-#include <sys/wait.h>
-
+#include "adb_install.h"
+#include "bmlutils/bmlutils.h"
 #include "bootloader.h"
 #include "common.h"
+#include "cutils/android_reboot.h"
 #include "cutils/properties.h"
+#include "edify/expr.h"
+#include "extendedcommands.h"
 #include "firmware.h"
+#include "flashutils/flashutils.h"
 #include "install.h"
 #include "make_ext4fs.h"
 #include "minui/minui.h"
 #include "minzip/DirUtil.h"
-#include "roots.h"
-#include "recovery_ui.h"
-
-#include "extendedcommands.h"
-#include "recovery_settings.h"
-#include "nandroid.h"
-#include "mounts.h"
-#include "flashutils/flashutils.h"
-#include "edify/expr.h"
-#include <libgen.h>
-#include "mtdutils/mtdutils.h"
-#include "bmlutils/bmlutils.h"
-#include "cutils/android_reboot.h"
 #include "mmcutils/mmcutils.h"
+#include "mounts.h"
+#include "mtdutils/mtdutils.h"
+#include "nandroid.h"
+#include "recovery_settings.h"
+#include "recovery_ui.h"
+#include "roots.h"
 #include "voldclient/voldclient.h"
 
-#include "adb_install.h"
+// top fixed menu items, those before extra storage volumes
+#define FIXED_TOP_INSTALL_ZIP_MENUS 1
+// bottom fixed menu items, those after extra storage volumes
+#define FIXED_BOTTOM_INSTALL_ZIP_MENUS 3
+#define FIXED_INSTALL_ZIP_MENUS (FIXED_TOP_INSTALL_ZIP_MENUS + FIXED_BOTTOM_INSTALL_ZIP_MENUS)
 
+// number of actions added for each volume by add_nandroid_options_for_volume()
+// these go on top of menu list
+#define NANDROID_ACTIONS_NUM 4
+// number of fixed bottom entries after volume actions
+#define NANDROID_FIXED_ENTRIES 2
+
+#if defined(ENABLE_LOKI) && defined(BOARD_NATIVE_DUALBOOT_SINGLEDATA)
+#define FIXED_ADVANCED_ENTRIES 10
+#elif !defined(ENABLE_LOKI) && defined(BOARD_NATIVE_DUALBOOT_SINGLEDATA)
+#define FIXED_ADVANCED_ENTRIES 9
+#elif defined(ENABLE_LOKI) && !defined(BOARD_NATIVE_DUALBOOT_SINGLEDATA)
+#define FIXED_ADVANCED_ENTRIES 8
+#else
+#define FIXED_ADVANCED_ENTRIES 7
+#endif
+
+extern struct selabel_handle *sehandle;
 int signature_check_enabled = 1;
 
-int get_filtered_menu_selection(const char** headers, char** items, int menu_only, int initial_selection, int items_count) {
+typedef struct {
+    char mount[255];
+    char unmount[255];
+    char path[PATH_MAX];
+} MountMenuEntry;
+
+typedef struct {
+    char txt[255];
+    char path[PATH_MAX];
+    char type[255];
+} FormatMenuEntry;
+
+typedef struct {
+    char *name;
+    int can_mount;
+    int can_format;
+} MFMatrix;
+
+// Prototypes of private functions that are used before defined
+static void show_choose_zip_menu(const char *mount_point);
+static void format_sdcard(const char* volume);
+static int can_partition(const char* volume);
+static int is_path_mounted(const char* path);
+
+static int get_filtered_menu_selection(const char** headers, char** items, int menu_only, int initial_selection, int items_count) {
     int index;
     int offset = 0;
     int* translate_table = (int*)malloc(sizeof(int) * items_count);
@@ -81,7 +139,7 @@ int get_filtered_menu_selection(const char** headers, char** items, int menu_onl
     return ret;
 }
 
-void write_string_to_file(const char* filename, const char* string) {
+static void write_string_to_file(const char* filename, const char* string) {
     ensure_path_mounted(filename);
     char tmp[PATH_MAX];
     sprintf(tmp, "mkdir -p $(dirname %s)", filename);
@@ -109,7 +167,7 @@ static void write_last_install_path(const char* install_path) {
     write_string_to_file(path, install_path);
 }
 
-const char* read_last_install_path() {
+static char* read_last_install_path() {
     static char path[PATH_MAX];
     sprintf(path, "%s%s%s", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"), RECOVERY_LAST_INSTALL_FILE);
 
@@ -124,7 +182,7 @@ const char* read_last_install_path() {
     return NULL;
 }
 
-void toggle_signature_check() {
+static void toggle_signature_check() {
     signature_check_enabled = !signature_check_enabled;
     ui_print("Signature Check: %s\n", signature_check_enabled ? "Enabled" : "Disabled");
 }
@@ -166,12 +224,6 @@ int install_zip(const char* packagefilepath) {
     return 0;
 }
 
-// top fixed menu items, those before extra storage volumes
-#define FIXED_TOP_INSTALL_ZIP_MENUS 1
-// bottom fixed menu items, those after extra storage volumes
-#define FIXED_BOTTOM_INSTALL_ZIP_MENUS 3
-#define FIXED_INSTALL_ZIP_MENUS (FIXED_TOP_INSTALL_ZIP_MENUS + FIXED_BOTTOM_INSTALL_ZIP_MENUS)
-
 int show_install_update_menu() {
     char buf[100];
     int i = 0, chosen_item = 0;
@@ -210,7 +262,7 @@ int show_install_update_menu() {
         } else if (chosen_item >= FIXED_TOP_INSTALL_ZIP_MENUS && chosen_item < FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
             show_choose_zip_menu(extra_paths[chosen_item - FIXED_TOP_INSTALL_ZIP_MENUS]);
         } else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
-            const char *last_path_used = read_last_install_path();
+            char *last_path_used = read_last_install_path();
             if (last_path_used == NULL)
                 show_choose_zip_menu(primary_path);
             else
@@ -225,7 +277,6 @@ int show_install_update_menu() {
         }
     }
 out:
-    // free all the dynamic items
     free(install_menu_items[0]);
     if (extra_paths != NULL) {
         for (i = 0; i < num_extra_volumes; i++)
@@ -234,7 +285,8 @@ out:
     return chosen_item;
 }
 
-void free_string_array(char** array) {
+
+static void free_string_array(char** array) {
     if (array == NULL)
         return;
     char* cursor = array[0];
@@ -246,7 +298,7 @@ void free_string_array(char** array) {
     free(array);
 }
 
-char** gather_files(const char* directory, const char* fileExtensionOrDirectory, int* numFiles) {
+static char** gather_files(const char* directory, const char* fileExtensionOrDirectory, int* numFiles) {
     char path[PATH_MAX] = "";
     DIR *dir;
     struct dirent *de;
@@ -342,7 +394,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
 }
 
 // pass in NULL for fileExtensionOrDirectory and you will get a directory chooser
-char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory, const char* headers[]) {
+static char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory, const char* headers[]) {
     const char* fixed_headers[20];
     int numFiles = 0;
     int numDirs = 0;
@@ -412,7 +464,7 @@ char* choose_file_menu(const char* basedir, const char* fileExtensionOrDirectory
     return return_value;
 }
 
-void show_choose_zip_menu(const char *mount_point) {
+static void show_choose_zip_menu(const char *mount_point) {
     if (ensure_path_mounted(mount_point) != 0) {
         LOGE("Can't mount %s\n", mount_point);
         return;
@@ -434,7 +486,7 @@ void show_choose_zip_menu(const char *mount_point) {
     free(file);
 }
 
-void show_nandroid_restore_menu(const char* path) {
+static void show_nandroid_restore_menu(const char* path) {
     if (ensure_path_mounted(path) != 0) {
         LOGE("Can't mount %s\n", path);
         return;
@@ -454,7 +506,7 @@ void show_nandroid_restore_menu(const char* path) {
     free(file);
 }
 
-void show_nandroid_delete_menu(const char* path) {
+static void show_nandroid_delete_menu(const char* path) {
     if (ensure_path_mounted(path) != 0) {
         LOGE("Can't mount %s\n", path);
         return;
@@ -495,7 +547,7 @@ static int control_usb_storage(bool on) {
     return num;
 }
 
-void show_mount_usb_storage_menu() {
+static void show_mount_usb_storage_menu() {
     // Enable USB storage using vold
     if (!control_usb_storage(true))
         return;
@@ -573,7 +625,6 @@ int confirm_selection(const char* title, const char* confirm) {
     return ret;
 }
 
-extern struct selabel_handle *sehandle;
 int format_device(const char *device, const char *path, const char *fs_type) {
 #ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
     if(device_truedualboot_format_device(device, path, fs_type) <= 0)
@@ -743,25 +794,7 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
     return 0;
 }
 
-typedef struct {
-    char mount[255];
-    char unmount[255];
-    char path[PATH_MAX];
-} MountMenuEntry;
-
-typedef struct {
-    char txt[255];
-    char path[PATH_MAX];
-    char type[255];
-} FormatMenuEntry;
-
-typedef struct {
-    char *name;
-    int can_mount;
-    int can_format;
-} MFMatrix;
-
-MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
+static MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     MFMatrix mfm = { mount_point, 1, 1 };
 
     const int NUM_FS_TYPES = 6;
@@ -962,7 +995,7 @@ int show_partition_menu() {
     return chosen_item;
 }
 
-void show_nandroid_advanced_restore_menu(const char* path) {
+static void show_nandroid_advanced_restore_menu(const char* path) {
     if (ensure_path_mounted(path) != 0) {
         LOGE("Can't mount sdcard\n");
         return;
@@ -1121,12 +1154,6 @@ static void add_nandroid_options_for_volume(char** menu, char* path, int offset)
     menu[offset + 3] = strdup(buf);
 }
 
-// number of actions added for each volume by add_nandroid_options_for_volume()
-// these go on top of menu list
-#define NANDROID_ACTIONS_NUM 4
-// number of fixed bottom entries after volume actions
-#define NANDROID_FIXED_ENTRIES 2
-
 int show_nandroid_menu() {
     char* primary_path = get_primary_storage_path();
     char** extra_paths = get_extra_storage_paths();
@@ -1229,7 +1256,7 @@ out:
     return chosen_item;
 }
 
-void format_sdcard(const char* volume) {
+static void format_sdcard(const char* volume) {
     if (is_data_media_volume_path(volume))
         return;
 
@@ -1309,7 +1336,7 @@ void format_sdcard(const char* volume) {
         ui_print("Done formatting %s (%s)\n", volume, list[chosen_item]);
 }
 
-void partition_sdcard(const char* volume) {
+static void partition_sdcard(const char* volume) {
     if (!can_partition(volume)) {
         ui_print("Can't partition device: %s\n", volume);
         return;
@@ -1371,7 +1398,7 @@ void partition_sdcard(const char* volume) {
         ui_print("An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n");
 }
 
-int can_partition(const char* volume) {
+static int can_partition(const char* volume) {
     if (is_data_media_volume_path(volume))
         return 0;
 
@@ -1405,25 +1432,6 @@ int can_partition(const char* volume) {
 
     return 1;
 }
-
-
-#ifdef ENABLE_LOKI
-
-#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 10
-#else
-#define FIXED_ADVANCED_ENTRIES 8
-#endif
-
-#else
-
-#ifdef BOARD_NATIVE_DUALBOOT_SINGLEDATA
-#define FIXED_ADVANCED_ENTRIES 9
-#else
-#define FIXED_ADVANCED_ENTRIES 7
-#endif
-
-#endif
 
 int show_advanced_menu() {
     char buf[80];
@@ -1578,7 +1586,7 @@ int show_advanced_menu() {
     return chosen_item;
 }
 
-void write_fstab_root(char *path, FILE *file) {
+static void write_fstab_root(char *path, FILE *file) {
     Volume *vol = volume_for_path(path);
     if (vol == NULL) {
         LOGW("Unable to get recovery.fstab info for %s during fstab generation!\n", path);
@@ -1597,7 +1605,7 @@ void write_fstab_root(char *path, FILE *file) {
     fprintf(file, "%s rw\n", vol->fs_type2 != NULL && strcmp(vol->fs_type, "rfs") != 0 ? "auto" : vol->fs_type);
 }
 
-void create_fstab() {
+static void create_fstab() {
     struct stat info;
     __system("touch /etc/mtab");
     FILE *file = fopen("/etc/fstab", "w");
@@ -1620,7 +1628,7 @@ void create_fstab() {
     LOGI("Completed outputting fstab.\n");
 }
 
-int bml_check_volume(const char *path) {
+static int bml_check_volume(const char *path) {
     ui_print("Checking %s...\n", path);
     ensure_path_unmounted(path);
     if (0 == ensure_path_mounted(path)) {
@@ -1714,7 +1722,6 @@ int verify_root_and_recovery() {
             }
         }
     }
-
 
     int exists = 0;
     if (0 == lstat("/system/bin/su", &st)) {
