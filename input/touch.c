@@ -15,6 +15,7 @@
  */
 
 #include <cutils/properties.h>
+#include <limits.h>
 #include <linux/input.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,10 +40,20 @@
 #define KEY_SWIPE_UP   KEY_VOLUMEUP
 #define KEY_SWIPE_DOWN KEY_VOLUMEDOWN
 
+#define MAX_VIRTUAL_KEYS 20
+
 typedef struct {
     int x;
     int y;
 } point;
+
+typedef struct {
+    int keycode;
+    int center_x;
+    int center_y;
+    int width;
+    int height;
+} virtual_key;
 
 static point touch_min;
 static point touch_max;
@@ -63,6 +74,9 @@ static int saw_pos_y = 0;
 // Defaults, will be changed based on dpi in calibrate_swipe()
 static int min_swipe_dx = 100;
 static int min_swipe_dy = 80;
+
+static virtual_key virtual_keys[MAX_VIRTUAL_KEYS];
+static int virtual_key_count = 0;
 
 static void show_event(int fd, struct input_event *ev) {
 #if DEBUG_TOUCH_EVENTS
@@ -129,6 +143,97 @@ static void show_event(int fd, struct input_event *ev) {
 #endif
 }
 
+static int virtual_keys_setup = 0;
+static int setup_virtual_keys(int fd) {
+    if (virtual_keys_setup)
+        return 0;
+    virtual_keys_setup = 1;
+
+    char name[256] = "unknown";
+    char vkpath[PATH_MAX] = "/sys/board_properties/virtualkeys.";
+
+    if (ioctl(fd, EVIOCGNAME(sizeof(name)), name) < 0) {
+        LOGI("Could not find virtual keys device name\n");
+        return -1;
+    }
+    snprintf(vkpath, PATH_MAX, "%s%s", vkpath, name);
+    LOGI("Loading virtual keys file: %s\n", vkpath);
+
+    FILE *f;
+    char buf[1024], tmp[1024];
+
+    f = fopen(vkpath, "r");
+    if (f != NULL) {
+        if (fgets(buf, 1024, f) == NULL) {
+            LOGI("Non-standard virtual keys file, skipping\n");
+            return -1;
+        }
+        fclose(f);
+    } else {
+        LOGI("Could not open virtual keys file\n");
+        return -1;
+    }
+
+    int i;
+    char *token;
+    const char *sep = ":";
+
+    // Count the number of valid virtual keys
+    strcpy(tmp, buf);
+    token = strtok(tmp, sep);
+    int count = 0;
+    while (token && (count/6) < MAX_VIRTUAL_KEYS) {
+        if (count % 6 == 0 && strcmp("0x01", token) != 0) {
+            for (i = 0; i < 6; i++)
+                token = strtok(NULL, sep);
+            continue;
+        }
+        token = strtok(NULL, sep);
+        count++;
+    }
+    if (count % 6 != 0 || count == 0) {
+        LOGI("Non-standard virtual keys file, skipping\n");
+        return -1;
+    }
+    virtual_key_count = count / 6;
+
+    // Assign the virtual key parameters
+    char *endp;
+    strcpy(tmp, buf);
+    token = strtok(tmp, sep);
+    count = 0;
+    while (token) {
+        if (count % 6 == 0 && strcmp("0x01", token) != 0) {
+            for (i = 0; i < 6; i++)
+                token = strtok(NULL, sep);
+            continue;
+        }
+        if (count % 6 == 1)
+            virtual_keys[count / 6].keycode = (int)strtol(token, &endp, 10);
+        if (count % 6 == 2)
+            virtual_keys[count / 6].center_x = (int)strtol(token, &endp, 10);
+        if (count % 6 == 3)
+            virtual_keys[count / 6].center_y = (int)strtol(token, &endp, 10);
+        if (count % 6 == 4)
+            virtual_keys[count / 6].width = (int)strtol(token, &endp, 10);
+        if (count % 6 == 5)
+            virtual_keys[count / 6].height = (int)strtol(token, &endp, 10);
+
+        token = strtok(NULL, sep);
+        count++;
+    }
+#if DEBUG_TOUCH_EVENTS
+    for (i = 0; i < count/6; i++) {
+        LOGI("Virtual key: code=%d, x=%d, y=%d, width=%d, height=%d\n",
+            virtual_keys[i].keycode, virtual_keys[i].center_x,
+            virtual_keys[i].center_y, virtual_keys[i].width,
+            virtual_keys[i].height);
+    }
+#endif
+
+    return 0;
+}
+
 static int swipe_calibrated = 0;
 static void calibrate_swipe() {
     if (swipe_calibrated)
@@ -183,6 +288,7 @@ static void handle_press(struct input_event *ev) {
 }
 
 static void handle_release(struct input_event *ev) {
+    int i;
     int dx, dy;
 
     if (in_swipe) {
@@ -196,7 +302,21 @@ static void handle_release(struct input_event *ev) {
             /* Vertical swipe, handled real-time */
         }
     } else {
-        // Handle tap
+        // Check if virtual key pressed
+        for (i = 0; i < virtual_key_count; i++) {
+            dx = virtual_keys[i].center_x - touch_pos.x;
+            dy = virtual_keys[i].center_y - touch_pos.y;
+            if (abs(dx) < virtual_keys[i].width/2
+                    && abs(dy) < virtual_keys[i].height/2) {
+#if DEBUG_TOUCH_EVENTS
+                LOGI("Virtual key event: code=%d, touch-x=%d, touch-y=%d",
+                        virtual_keys[i].keycode, touch_pos.x, touch_pos.y);
+#endif
+                ev->type = EV_KEY;
+                ev->code = virtual_keys[i].keycode;
+                ev->value = 2;
+            }
+        }
     }
 
     ui_clear_key_queue();
@@ -314,6 +434,8 @@ static void process_abs(struct input_event *ev) {
 static void init_touch(int fd) {
     calibrate_swipe();
     calibrate_touch(fd);
+    if (touch_calibrated)
+        setup_virtual_keys(fd);
 }
 
 void touch_handle_input(int fd, struct input_event *ev) {
