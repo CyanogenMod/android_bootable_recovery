@@ -15,6 +15,7 @@
  */
 
 #include <cutils/properties.h>
+#include <limits.h>
 #include <linux/input.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -153,6 +154,81 @@ static void show_event(int fd, struct input_event *ev) {
 #endif
 }
 
+static int setup_virtual_keys(input_device *dev) {
+    char name[256] = "unknown";
+    char vkpath[PATH_MAX] = "/sys/board_properties/virtualkeys.";
+
+    if (ioctl(dev->fd, EVIOCGNAME(sizeof(name)), name) < 0) {
+        LOGI("[Touch] Could not find virtual keys device name\n");
+        return -1;
+    }
+    snprintf(vkpath, PATH_MAX, "%s%s", vkpath, name);
+    LOGI("[Touch] Loading virtual keys file: %s\n", vkpath);
+
+    int bl = 0;
+    FILE *f;
+    int maxline = 40*MAX_VIRTUAL_KEYS;
+    char buf[MAX_VIRTUAL_KEYS][maxline];
+    char tmp[maxline];
+
+    f = fopen(vkpath, "r");
+    if (f != NULL) {
+        while (fgets(buf[bl], maxline, f) && bl < MAX_VIRTUAL_KEYS) {
+            if (buf[bl][0] == '#')
+                continue;
+            if (buf[bl][strlen(buf[bl])-1] == '\n')
+                buf[bl][strlen(buf[bl])-1] = '\0';
+            bl++;
+        }
+        fclose(f);
+    } else {
+        LOGI("[Touch] Could not open virtual keys file\n");
+        return -1;
+    }
+
+    // Set the virtual key parameters
+    int i, j;
+    int count = 0;
+    char *token, *endp;
+    const char *sep = ":";
+    for (j = 0; j < bl; j++) {
+        snprintf(tmp, maxline, "%s", buf[j]);
+        token = strtok(tmp, sep);
+        while (token && (count/6) < MAX_VIRTUAL_KEYS) {
+            if (count % 6 == 0 && strcmp("0x01", token) != 0) {
+                for (i = 0; i < 6; i++)
+                    token = strtok(NULL, sep);
+                continue;
+            }
+            if (count % 6 == 1)
+                dev->virtual_keys[count/6].keycode = (int)strtol(token, &endp, 10);
+            if (count % 6 == 2)
+                dev->virtual_keys[count/6].center_x = (int)strtol(token, &endp, 10);
+            if (count % 6 == 3)
+                dev->virtual_keys[count/6].center_y = (int)strtol(token, &endp, 10);
+            if (count % 6 == 4)
+                dev->virtual_keys[count/6].width = (int)strtol(token, &endp, 10);
+            if (count % 6 == 5)
+                dev->virtual_keys[count/6].height = (int)strtol(token, &endp, 10);
+
+            token = strtok(NULL, sep);
+            count++;
+        }
+    }
+    dev->virtual_key_count = count/6;
+
+#if DEBUG_TOUCH_EVENTS
+    for (i = 0; i < dev->virtual_key_count; i++) {
+        LOGI("[Touch] Virtual key: code=%d, x=%d, y=%d, width=%d, height=%d\n",
+            dev->virtual_keys[i].keycode, dev->virtual_keys[i].center_x,
+            dev->virtual_keys[i].center_y, dev->virtual_keys[i].width,
+            dev->virtual_keys[i].height);
+    }
+#endif
+
+    return 0;
+}
+
 static void calibrate_swipe() {
     char value[PROPERTY_VALUE_MAX];
     property_get("ro.sf.lcd_density", value, "0");
@@ -197,6 +273,7 @@ static void handle_press(input_device *dev, struct input_event *ev) {
 }
 
 static void handle_release(input_device *dev, struct input_event *ev) {
+    int i;
     int dx, dy;
 
     if (dev->in_swipe) {
@@ -210,7 +287,22 @@ static void handle_release(input_device *dev, struct input_event *ev) {
             /* Vertical swipe, handled real-time */
         }
     } else {
-        // Handle tap
+        // Check if virtual key pressed
+        for (i = 0; i < dev->virtual_key_count; i++) {
+            dx = dev->virtual_keys[i].center_x - dev->touch_pos.x;
+            dy = dev->virtual_keys[i].center_y - dev->touch_pos.y;
+            if (abs(dx) < dev->virtual_keys[i].width/2
+                    && abs(dy) < dev->virtual_keys[i].height/2) {
+#if DEBUG_TOUCH_EVENTS
+                LOGI("[Touch] Virtual key event: code=%d, touch-x=%d, touch-y=%d\n",
+                        dev->virtual_keys[i].keycode,
+                        dev->touch_pos.x, dev->touch_pos.y);
+#endif
+                ev->type = EV_KEY;
+                ev->code = dev->virtual_keys[i].keycode;
+                ev->value = 2;
+            }
+        }
     }
 
     dev->in_touch = 0;
@@ -377,6 +469,8 @@ void touch_handle_input(int fd, struct input_event *ev) {
             dev->touch_min.y = 0;
             dev->touch_max.y = 0;
             dev->touch_calibrated = calibrate_touch(dev);
+            if(dev->touch_calibrated)
+                setup_virtual_keys(dev);
             break;
         }
     }
