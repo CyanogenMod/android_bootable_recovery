@@ -19,11 +19,20 @@
 
 #define DEBUG_TOUCH_EVENTS 0
 #define MAX_INPUT_DEVS   8
+#define MAX_VIRTUAL_KEYS 8
 
 typedef struct {
     int x;
     int y;
 } point;
+
+typedef struct {
+    int keycode;
+    int center_x;
+    int center_y;
+    int width;
+    int height;
+} virtual_key;
 
 typedef struct {
     int          fd;            // Initialize to -1
@@ -45,6 +54,9 @@ typedef struct {
     point        touch_pos;      // Current touch coordinates
     point        touch_start;    // Coordinates of touch start
     point        touch_track;    // Last tracked coordinates
+
+    virtual_key  virtual_keys[MAX_VIRTUAL_KEYS];
+    int          virtual_key_count;
 } input_device;
 
 void touch_handle_input(int fd, struct input_event *ev);
