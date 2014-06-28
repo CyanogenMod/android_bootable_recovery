@@ -238,7 +238,8 @@ int nandroid_restore_md5_check(const char *backup_path, unsigned char flags) {
     if (fd != NULL) {
         char tmp[PATH_MAX];
         while (fgets(tmp, PATH_MAX, fd) && i < MAX_FILES_CHECKED) {
-            tmp[strlen(tmp)-1] = '\0';
+            if (tmp[strlen(tmp)-1] == '\n')
+                tmp[strlen(tmp)-1] = '\0';
             if (is_selected_for_restore(tmp, flags)) {
                 md5hashes[i] = malloc(sizeof(char[HASH_LENGTH+1]));
                 snprintf(md5hashes[i], HASH_LENGTH+1, "%s", tmp);
