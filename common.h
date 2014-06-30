@@ -67,6 +67,7 @@ void ui_end_menu();
 
 int ui_get_selected_item();
 
+int is_ui_initialized();
 void ui_set_showing_back_button(int showBackButton);
 int ui_is_showing_back_button();
 
