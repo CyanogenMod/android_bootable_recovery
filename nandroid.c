@@ -1,48 +1,68 @@
+/*
+ * Copyright (C) 2014 The CyanogenMod Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <libgen.h>
 #include <limits.h>
 #include <linux/input.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/limits.h>
 #include <sys/reboot.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/vfs.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-
-#include <sys/wait.h>
-#include <sys/limits.h>
-#include <dirent.h>
-#include <sys/stat.h>
-
-#include <signal.h>
-#include <sys/wait.h>
-
-#include "libcrecovery/common.h"
 
 #include "bootloader.h"
 #include "common.h"
 #include "cutils/properties.h"
+#include "extendedcommands.h"
 #include "firmware.h"
+#include "flashutils/flashutils.h"
 #include "install.h"
+#include "libcrecovery/common.h"
 #include "minui/minui.h"
 #include "minzip/DirUtil.h"
-#include "roots.h"
-#include "recovery_ui.h"
-
-#include <sys/vfs.h>
-
-#include "extendedcommands.h"
-#include "recovery_settings.h"
-#include "nandroid.h"
 #include "mounts.h"
+#include "nandroid.h"
+#include "nandroid_md5.h"
+#include "recovery_settings.h"
+#include "recovery_ui.h"
+#include "roots.h"
 
-#include "flashutils/flashutils.h"
-#include <libgen.h>
+#define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
 
-void nandroid_generate_timestamp_path(char* backup_path) {
+typedef void (*file_event_callback)(const char* filename);
+typedef int (*nandroid_backup_handler)(const char* backup_path, const char* backup_file_image, int callback);
+typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, int callback);
+
+static int nandroid_backup_bitfield = 0;
+static unsigned int nandroid_files_total = 0;
+static unsigned int nandroid_files_count = 0;
+
+static void nandroid_generate_timestamp_path(char* backup_path) {
     time_t t = time(NULL);
     struct tm *tmp = localtime(&t);
     if (tmp == NULL) {
@@ -71,10 +91,6 @@ static int print_and_error(const char* message, int ret) {
     return ret;
 }
 
-static int nandroid_backup_bitfield = 0;
-#define NANDROID_FIELD_DEDUPE_CLEARED_SPACE 1
-static unsigned int nandroid_files_total = 0;
-static unsigned int nandroid_files_count = 0;
 static void nandroid_callback(const char* filename) {
     if (filename == NULL)
         return;
@@ -122,9 +138,6 @@ static void compute_directory_stats(const char* directory) {
     ui_reset_progress();
     ui_show_progress(1, 0);
 }
-
-typedef void (*file_event_callback)(const char* filename);
-typedef int (*nandroid_backup_handler)(const char* backup_path, const char* backup_file_image, int callback);
 
 static int mkyaffs2image_wrapper(const char* backup_path, const char* backup_file_image, int callback) {
     char tmp[PATH_MAX];
@@ -244,6 +257,7 @@ static char forced_backup_format[5] = "";
 void nandroid_force_backup_format(const char* fmt) {
     strcpy(forced_backup_format, fmt);
 }
+
 static void refresh_default_backup_handler() {
     char fmt[5];
     if (strlen(forced_backup_format) > 0) {
@@ -261,6 +275,7 @@ static void refresh_default_backup_handler() {
         fread(fmt, 1, sizeof(fmt), f);
         fclose(f);
     }
+
     fmt[3] = '\0';
     if (0 == strcmp(fmt, "dup"))
         default_backup_handler = dedupe_compress_wrapper;
@@ -272,7 +287,7 @@ static void refresh_default_backup_handler() {
         default_backup_handler = tar_compress_wrapper;
 }
 
-unsigned nandroid_get_default_backup_format() {
+unsigned int nandroid_get_default_backup_format() {
     refresh_default_backup_handler();
     if (default_backup_handler == dedupe_compress_wrapper) {
         return NANDROID_BACKUP_FORMAT_DUP;
@@ -312,7 +327,7 @@ static nandroid_backup_handler get_backup_handler(const char *backup_path) {
     return default_backup_handler;
 }
 
-int nandroid_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
+static int nandroid_backup_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
     int ret = 0;
     char name[PATH_MAX];
     char tmp[PATH_MAX];
@@ -359,7 +374,7 @@ int nandroid_backup_partition_extended(const char* backup_path, const char* moun
     return 0;
 }
 
-int nandroid_backup_partition(const char* backup_path, const char* root) {
+static int nandroid_backup_partition(const char* backup_path, const char* root) {
     Volume *vol = volume_for_path(root);
     // make sure the volume exists before attempting anything...
     if (vol == NULL || vol->fs_type == NULL)
@@ -472,11 +487,8 @@ int nandroid_backup(const char* backup_path) {
             return print_and_error(NULL, ret);
     }
 
-    ui_print("Generating md5 sum...\n");
-    sprintf(tmp, "nandroid-md5.sh %s", backup_path);
-    if (0 != (ret = __system(tmp))) {
-        return print_and_error("Error while generating md5 sum!\n", ret);
-    }
+    if (0 != (ret = nandroid_backup_md5_gen(backup_path)))
+        return print_and_error(NULL, ret);
 
     sprintf(tmp, "cp /tmp/recovery.log %s/recovery.log", backup_path);
     __system(tmp);
@@ -495,13 +507,13 @@ int nandroid_backup(const char* backup_path) {
     __system(tmp);
 
     sync();
-    ui_set_background(BACKGROUND_ICON_NONE);
+    ui_set_background(BACKGROUND_ICON_CLOCKWORK);
     ui_reset_progress();
     ui_print("\nBackup complete!\n");
     return 0;
 }
 
-int nandroid_dump(const char* partition) {
+static int nandroid_dump(const char* partition) {
     // silence our ui_print statements and other logging
     ui_set_log_stdout(0);
 
@@ -536,8 +548,6 @@ int nandroid_dump(const char* partition) {
 
     return 1;
 }
-
-typedef int (*nandroid_restore_handler)(const char* backup_file_image, const char* backup_path, int callback);
 
 static int unyaffs_wrapper(const char* backup_file_image, const char* backup_path, int callback) {
     char tmp[PATH_MAX];
@@ -652,7 +662,7 @@ static nandroid_restore_handler get_restore_handler(const char *backup_path) {
     return tar_extract_wrapper;
 }
 
-int nandroid_restore_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
+static int nandroid_restore_partition_extended(const char* backup_path, const char* mount_point, int umount_when_finished) {
     int ret = 0;
     char* name = basename(mount_point);
 
@@ -776,7 +786,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
     return 0;
 }
 
-int nandroid_restore_partition(const char* backup_path, const char* root) {
+static int nandroid_restore_partition(const char* backup_path, const char* root) {
     Volume *vol = volume_for_path(root);
     // make sure the volume exists...
     if (vol == NULL || vol->fs_type == NULL)
@@ -810,22 +820,26 @@ int nandroid_restore_partition(const char* backup_path, const char* root) {
     return nandroid_restore_partition_extended(backup_path, root, 1);
 }
 
-int nandroid_restore(const char* backup_path, int restore_boot, int restore_system, int restore_data, int restore_cache, int restore_sdext, int restore_wimax) {
+int nandroid_restore(const char* backup_path, unsigned char flags) {
     ui_set_background(BACKGROUND_ICON_INSTALLING);
     ui_show_indeterminate_progress();
     nandroid_files_total = 0;
+    int ret;
+
+    int restore_boot = ((flags & NANDROID_BOOT) == NANDROID_BOOT);
+    int restore_system = ((flags & NANDROID_SYSTEM) == NANDROID_SYSTEM);
+    int restore_data = ((flags & NANDROID_DATA) == NANDROID_DATA);
+    int restore_cache = ((flags & NANDROID_CACHE) == NANDROID_CACHE);
+    int restore_sdext = ((flags & NANDROID_SDEXT) == NANDROID_SDEXT);
+    int restore_wimax = ((flags & NANDROID_WIMAX) == NANDROID_WIMAX);
 
     if (ensure_path_mounted(backup_path) != 0)
         return print_and_error("Can't mount backup path\n", NANDROID_ERROR_GENERAL);
 
     char tmp[PATH_MAX];
 
-    ui_print("Checking MD5 sums...\n");
-    sprintf(tmp, "cd %s && md5sum -c nandroid.md5", backup_path);
-    if (0 != __system(tmp))
-        return print_and_error("MD5 mismatch!\n", NANDROID_ERROR_GENERAL);
-
-    int ret;
+    if (0 != (ret = nandroid_restore_md5_check(backup_path, flags)))
+        return print_and_error(NULL, ret);
 
     if (restore_boot && NULL != volume_for_path("/boot") && 0 != (ret = nandroid_restore_partition(backup_path, "/boot")))
         return print_and_error(NULL, ret);
@@ -876,13 +890,13 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
         return print_and_error(NULL, ret);
 
     sync();
-    ui_set_background(BACKGROUND_ICON_NONE);
+    ui_set_background(BACKGROUND_ICON_CLOCKWORK);
     ui_reset_progress();
     ui_print("\nRestore complete!\n");
     return 0;
 }
 
-int nandroid_undump(const char* partition) {
+static int nandroid_undump(const char* partition) {
     nandroid_files_total = 0;
 
     int ret;
@@ -917,7 +931,7 @@ int nandroid_undump(const char* partition) {
     return 0;
 }
 
-int nandroid_usage() {
+static int nandroid_usage() {
     printf("Usage: nandroid backup\n");
     printf("Usage: nandroid restore <directory>\n");
     printf("Usage: nandroid dump <partition>\n");
@@ -949,7 +963,6 @@ int bu_main(int argc, char** argv) {
             close(fd);
         }
 
-        // fprintf(stderr, "%d %d %s\n", fd, STDOUT_FILENO, argv[3]);
         int ret = nandroid_dump(partition);
         sleep(10);
         return ret;
@@ -981,7 +994,6 @@ int bu_main(int argc, char** argv) {
         if (partition[len - 1] == '\n')
             partition[len - 1] = '\0';
 
-        // fprintf(stderr, "%d %d %s\n", fd, STDIN_FILENO, argv[3]);
         return nandroid_undump(partition);
     }
 
@@ -1007,7 +1019,9 @@ int nandroid_main(int argc, char** argv) {
     if (strcmp("restore", argv[1]) == 0) {
         if (argc != 3)
             return nandroid_usage();
-        return nandroid_restore(argv[2], 1, 1, 1, 1, 1, 0);
+        unsigned char flags = NANDROID_BOOT | NANDROID_SYSTEM | NANDROID_DATA
+                              | NANDROID_CACHE | NANDROID_SDEXT;
+        return nandroid_restore(argv[2], flags);
     }
 
     if (strcmp("dump", argv[1]) == 0) {

@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef _RECOVERY_SETTINGS_H
-#define _RECOVERY_SETTINGS_H
+#ifndef _NANDROID_MD5_H
+#define _NANDROID_MD5_H
 
-#define RECOVERY_NO_CONFIRM_FILE    "clockworkmod/.no_confirm"
-#define RECOVERY_MANY_CONFIRM_FILE  "clockworkmod/.many_confirm"
-#define RECOVERY_VERSION_FILE       "clockworkmod/.recovery_version"
-#define RECOVERY_LAST_INSTALL_FILE  "clockworkmod/.last_install_path"
+#define DEBUG_MD5_CHECKER 0
 
-// nandroid settings
-#define NANDROID_HIDE_PROGRESS_FILE  "clockworkmod/.hidenandroidprogress"
-#define NANDROID_BACKUP_FORMAT_FILE  "clockworkmod/.default_backup_format"
+int nandroid_backup_md5_gen(const char *backup_path);
+int nandroid_restore_md5_check(const char *backup_path, unsigned char flags);
 
-#endif // _RECOVERY_SETTINGS_H
+#endif
