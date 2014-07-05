@@ -76,6 +76,20 @@ int res_create_surface(const char* name, gr_surface* pSurface);
 static inline int res_create_display_surface(const char* name, gr_surface* pSurface) {
     return res_create_surface(name, pSurface);
 }
+
+// Load a single display surface from a PNG image.
+int res_create_display_surface(const char* name, gr_surface* pSurface);
+
+// Load an array of display surfaces from a single PNG image. The PNG
+// should have a 'Frames' text chunk whose value is the number of
+// frames this image represents. The pixel data itself is interlaced
+// by row.
+int res_create_multi_display_surface(const char* name,
+                                     int* frames, gr_surface** pSurface);
+
+// Load a single alpha surface from a grayscale PNG image.
+int res_create_alpha_surface(const char* name, gr_surface* pSurface);
+
 void res_free_surface(gr_surface surface);
 
 #endif
