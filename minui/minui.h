@@ -19,6 +19,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void* gr_surface;
 typedef unsigned short gr_pixel;
 
@@ -34,18 +38,13 @@ void gr_fb_blank(bool blank);
 void gr_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 void gr_fill(int x1, int y1, int x2, int y2);
 int gr_text(int x, int y, const char *s, int bold);
+ void gr_texticon(int x, int y, gr_surface icon);
 int gr_measure(const char *s);
 void gr_font_size(int *x, int *y);
 
 void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy);
 unsigned int gr_get_width(gr_surface surface);
 unsigned int gr_get_height(gr_surface surface);
-
-// overlays
-int getFbXres(void);
-int getLeftSplit(void);
-void setDisplaySplit(void);
-bool isDisplaySplit(void);
 
 // input event structure, include <linux/input.h> for the definition.
 // see http://www.mjmwired.net/kernel/Documentation/input/ for info.
@@ -73,9 +72,11 @@ void ev_dispatch(void);
 
 // Returns 0 if no error, else negative.
 int res_create_surface(const char* name, gr_surface* pSurface);
-static inline int res_create_display_surface(const char* name, gr_surface* pSurface) {
-    return res_create_surface(name, pSurface);
-}
+int res_create_localized_surface(const char* name, gr_surface* pSurface);
 void res_free_surface(gr_surface surface);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
