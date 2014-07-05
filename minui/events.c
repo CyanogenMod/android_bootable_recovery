@@ -102,6 +102,23 @@ int ev_add_fd(int fd, ev_callback cb, void *data)
     return 0;
 }
 
+int ev_del_fd(int fd)
+{
+    unsigned n;
+    for (n = 0; n < ev_count; ++n) {
+        if (ev_fds[n].fd == fd) {
+            if (n != ev_count-1) {
+                ev_fds[n] = ev_fds[ev_count-1];
+                ev_fdinfo[n] = ev_fdinfo[ev_count-1];
+            }
+            ev_count--;
+            ev_misc_count--;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void ev_exit(void)
 {
     while (ev_count > 0) {
