@@ -191,7 +191,7 @@ static int get_bootloader_message_block(bootloader_message* out,
 static int set_bootloader_message_block(const bootloader_message* in,
                                         const Volume* v) {
     wait_for_device(v->blk_device);
-    unique_fd fd(open(v->blk_device, O_WRONLY | O_SYNC));
+    unique_fd fd(open(v->blk_device, O_RDWR | O_APPEND | O_SYNC));
     if (fd.get() == -1) {
         LOGE("failed to open \"%s\": %s\n", v->blk_device, strerror(errno));
         return -1;
