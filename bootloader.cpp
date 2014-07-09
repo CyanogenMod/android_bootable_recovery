@@ -174,6 +174,9 @@ static int get_bootloader_message_block(bootloader_message* out,
         LOGE("failed to open \"%s\": %s\n", v->blk_device, strerror(errno));
         return -1;
     }
+#ifdef BOARD_RECOVERY_BLDRMSG_OFFSET
+    fseek(f, BOARD_RECOVERY_BLDRMSG_OFFSET, SEEK_SET);
+#endif
     bootloader_message temp;
     int count = fread(&temp, sizeof(temp), 1, f);
     if (count != 1) {
@@ -196,6 +199,10 @@ static int set_bootloader_message_block(const bootloader_message* in,
         LOGE("failed to open \"%s\": %s\n", v->blk_device, strerror(errno));
         return -1;
     }
+
+#ifdef BOARD_RECOVERY_BLDRMSG_OFFSET
+    fseek(f, BOARD_RECOVERY_BLDRMSG_OFFSET, SEEK_SET);
+#endif
 
     size_t written = 0;
     const uint8_t* start = reinterpret_cast<const uint8_t*>(in);
