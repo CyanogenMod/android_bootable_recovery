@@ -17,6 +17,7 @@ int device_handle_key(int key_code, int visible) {
             case KEY_UP:
             case KEY_VOLUMEUP:
             case KEY_HOME:
+            case KEY_HOMEPAGE:
                 return HIGHLIGHT_UP;
 
             case KEY_POWER:
@@ -26,7 +27,6 @@ int device_handle_key(int key_code, int visible) {
             case KEY_CAMERA:
             case KEY_F21:
             case KEY_SEND:
-            case KEY_HOMEPAGE:
             case KEY_SEARCH:
                 return SELECT_ITEM;
             
