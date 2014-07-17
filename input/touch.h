@@ -46,6 +46,7 @@ typedef struct {
     int          saw_pos_x;      // Did this sequence have an ABS_MT_POSITION_X?
     int          saw_pos_y;      // Did this sequence have an ABS_MT_POSITION_Y?
     int          saw_mt_report;  // Did this sequence have an SYN_MT_REPORT?
+    int          saw_tracking_id;// Did this sequence have a SYN_TRACKING_ID?
     int          in_touch;       // Are we in a touch event?
     int          in_swipe;       // Are we in a swipe event?
 
