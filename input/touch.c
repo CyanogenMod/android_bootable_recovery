@@ -398,6 +398,13 @@ static void process_abs(input_device *dev, struct input_event *ev) {
         return;
     }
     if (ev->code == ABS_MT_TRACKING_ID) {
+        /*
+         * Some devices send an initial ABS_MT_SLOT event before switching
+         * to type B events, so discard any type A state related to slot.
+         */
+        dev->slot_first = 0;
+        dev->slot_current = 0;
+
         if (ev->value != dev->tracking_id) {
             dev->tracking_id = ev->value;
             if (dev->tracking_id < 0)
