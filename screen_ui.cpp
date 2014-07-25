@@ -778,6 +778,10 @@ void ScreenRecoveryUI::StartMenu(const char* const * headers, const char* const 
         menu_items = i;
         show_menu = true;
         menu_sel = initial_selection;
+        if (menu_show_start_ <= menu_sel - max_menu_rows_ ||
+                menu_show_start_ > menu_sel) {
+            menu_show_start_ = menu_sel;
+        }
         update_screen_locked();
     }
     pthread_mutex_unlock(&updateMutex);
