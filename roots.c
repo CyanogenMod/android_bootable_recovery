@@ -388,7 +388,13 @@ int format_volume(const char* volume) {
         if (ensure_path_unmounted(volume) != 0) {
             LOGE("format_volume failed to unmount %s", v->mount_point);
         }
-        return vold_format_volume(v->mount_point, 1) == CommandOkay ? 0 : -1;
+        if (strcmp(v->fs_type, "auto") == 0) {
+            // Format with current filesystem
+            return vold_format_volume(v->mount_point, 1) == CommandOkay ? 0 : -1;
+        } else {
+            // Format filesystem defined in fstab
+            return vold_custom_format_volume(v->mount_point, v->fs_type, 1) == CommandOkay ? 0 : -1;
+        }
     }
 
     if (strcmp(v->fs_type, "ramdisk") == 0) {
