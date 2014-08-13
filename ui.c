@@ -82,6 +82,8 @@ static gr_surface *gInstallationOverlay;
 static gr_surface *gProgressBarIndeterminate;
 static gr_surface gProgressBarEmpty;
 static gr_surface gProgressBarFill;
+static gr_surface gStageMarkerEmpty;
+static gr_surface gStageMarkerFill;
 static gr_surface gBackground;
 static int ui_has_initialized = 0;
 static int ui_log_stdout = 1;
@@ -99,6 +101,8 @@ static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     { &gBackgroundIcon[BACKGROUND_ICON_FIRMWARE_ERROR],      "icon_firmware_error" },
     { &gProgressBarEmpty,                                    "progress_empty" },
     { &gProgressBarFill,                                     "progress_fill" },
+    { &gStageMarkerEmpty,                                    "stage_empty" },
+    { &gStageMarkerFill,                                     "stage_fill" },
     { &gBackground,                                          "stitch" },
     { NULL,                                                  NULL },
 };
@@ -142,6 +146,9 @@ static int menu_items = 0;
 static int menu_sel = 0;
 static int menu_show_start = 0; // line at which menu display starts
 static int max_menu_rows;
+
+static int stage = -1;
+static int max_stage = -1;
 
 static unsigned cur_rainbow_color = 0;
 static int gRainbowMode = 0;
@@ -201,14 +208,29 @@ static void draw_background_locked(int icon) {
     }
 
     if (icon) {
+        int i;
         gr_surface surface = gBackgroundIcon[icon];
         int iconWidth = gr_get_width(surface);
         int iconHeight = gr_get_height(surface);
+        int stageHeight = gr_get_height(gStageMarkerEmpty);
+
+        int sh = (max_stage >= 0) ? stageHeight : 0;
+
         int iconX = (gr_fb_width() - iconWidth) / 2;
-        int iconY = (gr_fb_height() - iconHeight) / 2;
+        int iconY = (gr_fb_height() - (iconHeight+sh)) / 2;
         gr_blit(surface, 0, 0, iconWidth, iconHeight, iconX, iconY);
         if (icon == BACKGROUND_ICON_INSTALLING) {
             draw_install_overlay_locked(gInstallingFrame);
+        }
+        if (stageHeight > 0) {
+            int sw = gr_get_width(gStageMarkerEmpty);
+            int x = (gr_fb_width() - max_stage * gr_get_width(gStageMarkerEmpty)) / 2;
+            int y = iconY + iconHeight + 20;
+            for (i = 0; i < max_stage; ++i) {
+                gr_blit((i < stage) ? gStageMarkerFill : gStageMarkerEmpty,
+                        0, 0, sw, stageHeight, x, y);
+                x += sw;
+            }
         }
     }
 }
@@ -519,6 +541,18 @@ static void *input_thread(void *cookie) {
     return NULL;
 }
 
+static void stage_adjust_bg() {
+    // Readjust the offset to account for the positioning of the stage report
+    // on the screen.
+    int stg = ((max_stage >= 0) ? gr_get_height(gStageMarkerEmpty) : 0);
+    if (gInstallationOverlay != NULL &&
+            gBackgroundIcon[BACKGROUND_ICON_INSTALLING] != NULL) {
+        gr_surface bg = gBackgroundIcon[BACKGROUND_ICON_INSTALLING];
+        ui_parameters.install_overlay_offset_y =
+            (2 * ui_parameters.install_overlay_offset_y + stg) / 2;
+    }
+}
+
 void ui_init(void) {
     ui_has_initialized = 1;
     gr_init();
@@ -701,6 +735,14 @@ void ui_reset_progress() {
 
 int ui_get_text_cols() {
     return text_cols;
+}
+
+void ui_set_stage(int current, int max) {
+    pthread_mutex_lock(&gUpdateMutex);
+    stage = current;
+    max_stage = max;
+    stage_adjust_bg();
+    pthread_mutex_unlock(&gUpdateMutex);
 }
 
 void ui_print(const char *fmt, ...) {
