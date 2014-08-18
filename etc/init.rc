@@ -1,6 +1,13 @@
 import /init.recovery.${ro.hardware}.rc
 
 on early-init
+    # Apply strict SELinux checking of PROT_EXEC on mmap/mprotect calls.
+    write /sys/fs/selinux/checkreqprot 0
+
+    # Set the security context for the init process.
+    # This should occur before anything else (e.g. ueventd) is started.
+    setcon u:r:init:s0
+
     start ueventd
     start healthd
 
@@ -70,22 +77,27 @@ on property:sys.powerctl=*
 
 service ueventd /sbin/ueventd
     critical
+    seclabel u:r:ueventd:s0
 
 service healthd /sbin/healthd -n
     critical
+    seclabel u:r:healthd:s0
 
 service recovery /sbin/recovery
+    seclabel u:r:recovery:s0
 
 service setup_adbd /sbin/setup_adbd
     oneshot
 
-service adbd /sbin/adbd recovery
+service adbd /sbin/adbd --root_seclabel=u:r:su:s0 --device_banner=recovery
     disabled
     socket adbd stream 660 system system
+    seclabel u:r:adbd:s0
 
 service vold /sbin/minivold
     socket vold stream 0660 root mount
     ioprio be 2
+    seclabel u:r:recovery:s0
 
 # setup_adbd will start adb once it has checked the keys
 on property:service.adb.root=1

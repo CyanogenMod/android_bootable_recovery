@@ -167,6 +167,9 @@ static int get_bootloader_message_block(struct bootloader_message *out,
         LOGE("Can't open %s\n(%s)\n", v->blk_device, strerror(errno));
         return -1;
     }
+#ifdef BOARD_RECOVERY_BLDRMSG_OFFSET
+    fseek(f, BOARD_RECOVERY_BLDRMSG_OFFSET, SEEK_SET);
+#endif
     struct bootloader_message temp;
     int count = fread(&temp, sizeof(temp), 1, f);
     if (count != 1) {
@@ -184,11 +187,14 @@ static int get_bootloader_message_block(struct bootloader_message *out,
 static int set_bootloader_message_block(const struct bootloader_message *in,
                                         const Volume* v) {
     wait_for_device(v->blk_device);
-    FILE* f = fopen(v->blk_device, "wb");
+    FILE* f = fopen(v->blk_device, "rb+");
     if (f == NULL) {
         LOGE("Can't open %s\n(%s)\n", v->blk_device, strerror(errno));
         return -1;
     }
+#ifdef BOARD_RECOVERY_BLDRMSG_OFFSET
+    fseek(f, BOARD_RECOVERY_BLDRMSG_OFFSET, SEEK_SET);
+#endif
     int count = fwrite(in, sizeof(*in), 1, f);
     if (count != 1) {
         LOGE("Failed writing %s\n(%s)\n", v->blk_device, strerror(errno));

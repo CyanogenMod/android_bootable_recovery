@@ -357,10 +357,12 @@ static void process_syn(input_device *dev, struct input_event *ev) {
         if (dev->in_touch) {
             handle_gestures(dev, ev);
         } else {
+            if (dev->saw_tracking_id) {
 #if DEBUG_TOUCH_EVENTS
-            LOGI("[Touch] handle_press(fd=%d): type B\n", dev->fd);
+                LOGI("[Touch] handle_press(fd=%d): type B\n", dev->fd);
 #endif
-            handle_press(dev, ev);
+                handle_press(dev, ev);
+            }
         }
 
         /* Detect release */
@@ -373,7 +375,7 @@ static void process_syn(input_device *dev, struct input_event *ev) {
                 dev->slot_first = 0;
             }
         } else {
-            if (dev->slot_current == dev->slot_first
+            if (dev->saw_tracking_id && dev->slot_current == dev->slot_first
                     && dev->tracking_id == -1) {
 #if DEBUG_TOUCH_EVENTS
                 LOGI("[Touch] handle_release(fd=%d): type B\n", dev->fd);
@@ -386,6 +388,7 @@ static void process_syn(input_device *dev, struct input_event *ev) {
         dev->saw_pos_x = 0;
         dev->saw_pos_y = 0;
         dev->saw_mt_report = 0;
+        dev->saw_tracking_id = 0;
     }
 }
 
@@ -398,6 +401,14 @@ static void process_abs(input_device *dev, struct input_event *ev) {
         return;
     }
     if (ev->code == ABS_MT_TRACKING_ID) {
+        /*
+         * Some devices send an initial ABS_MT_SLOT event before switching
+         * to type B events, so discard any type A state related to slot.
+         */
+        dev->saw_tracking_id = 1;
+        dev->slot_first = 0;
+        dev->slot_current = 0;
+
         if (ev->value != dev->tracking_id) {
             dev->tracking_id = ev->value;
             if (dev->tracking_id < 0)
