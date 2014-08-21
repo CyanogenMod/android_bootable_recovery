@@ -148,6 +148,11 @@ LOCAL_STATIC_LIBRARIES += libbml_over_mtd
 endif
 
 LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils liblog
+
+ifeq ($(TARGET_ARCH),x86)
+LOCAL_STATIC_LIBRARIES += libenc
+endif
+
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 LOCAL_STATIC_LIBRARIES += libselinux
