@@ -1520,7 +1520,7 @@ static int can_partition(const char* volume) {
     return 1;
 }
 
-int show_advanced_menu() {
+int show_additonal_items() {
     char buf[80];
     int i = 0, j = 0, chosen_item = 0, list_index = 0;
     /* Default number of entries if no compile-time extras are added */
@@ -1530,7 +1530,7 @@ int show_advanced_menu() {
     char** extra_paths = get_extra_storage_paths();
     int num_extra_volumes = get_num_extra_volumes();
 
-    static const char* headers[] = { "Advanced Menu", "", NULL };
+    static const char* headers[] = { "Additonal Items", "", NULL };
 
     memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1);
 

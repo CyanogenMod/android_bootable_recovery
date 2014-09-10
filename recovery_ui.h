@@ -112,7 +112,7 @@ extern void device_truedualboot_after_load_volume_table();
 #define ITEM_APPLY_CACHE     4
 #define ITEM_NANDROID        4
 #define ITEM_PARTITION       5
-#define ITEM_ADVANCED        6
+#define ITEM_ADDITIONAL      6
 
 // Header text to display above the main menu.
 extern char* MENU_HEADERS[];
