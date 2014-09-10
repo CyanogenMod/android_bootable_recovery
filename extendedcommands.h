@@ -22,7 +22,7 @@ extern int signature_check_enabled;
 int __system(const char *command);
 
 int show_nandroid_menu();
-int show_advanced_menu();
+int show_additonal_items();
 int show_partition_menu();
 int show_install_update_menu();
 int confirm_selection(const char* title, const char* confirm);

@@ -838,8 +838,8 @@ prompt_and_wait() {
                     ret = show_partition_menu();
                     break;
 
-                case ITEM_ADVANCED:
-                    ret = show_advanced_menu();
+                case ITEM_ADDITIONAL_ITEMS:
+                    ret = show_additonal_items();
                     break;
             }
             if (ret == REFRESH) {
