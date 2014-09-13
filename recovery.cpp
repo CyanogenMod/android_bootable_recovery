@@ -554,9 +554,6 @@ typedef struct _saved_log_file {
 static bool erase_volume(const char* volume, bool force = false) {
     bool is_cache = (strcmp(volume, CACHE_ROOT) == 0);
 
-    ui->SetBackground(RecoveryUI::ERASING);
-    ui->SetProgressType(RecoveryUI::INDETERMINATE);
-
     saved_log_file* head = NULL;
 
     if (!force && is_cache) {
@@ -605,6 +602,9 @@ static bool erase_volume(const char* volume, bool force = false) {
     }
 
     ui->Print("Formatting %s...\n", volume);
+
+    ui->SetBackground(RecoveryUI::ERASING);
+    ui->SetProgressType(RecoveryUI::INDETERMINATE);
 
     if (volume[0] == '/') {
         ensure_path_unmounted(volume);
@@ -870,15 +870,8 @@ static bool wipe_cache(bool should_confirm, Device* device) {
     modified_flash = true;
 
     ui->Print("\n-- Wiping cache...\n");
-    ui->DialogShowInfo("Wiping cache ...");
     bool success = erase_volume("/cache");
     ui->Print("Cache wipe %s.\n", success ? "complete" : "failed");
-    if (!should_confirm || success) {
-        ui->DialogDismiss();
-    }
-    else {
-        ui->DialogShowErrorLog("Cache wipe failed");
-    }
     return success;
 }
 
