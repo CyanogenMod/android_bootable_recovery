@@ -1,12 +1,6 @@
+ifeq ($(call my-dir),$(call project-path-for,recovery))
+
 LOCAL_PATH := $(call my-dir)
-
-ifeq ($(RECOVERY_VARIANT),)
-ifeq ($(LOCAL_PATH),bootable/recovery)
-RECOVERY_VARIANT := cwm
-endif
-endif
-
-ifeq ($(RECOVERY_VARIANT),cwm)
 
 include $(CLEAR_VARS)
 
