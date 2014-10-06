@@ -1,6 +1,16 @@
-ifeq ($(call my-dir),$(call project-path-for,recovery))
-
 LOCAL_PATH := $(call my-dir)
+
+ifdef project-path-for
+  ifeq ($(LOCAL_PATH),$(call project-path-for,recovery))
+    PROJECT_PATH_AGREES := true
+  endif
+else
+  ifeq ($(LOCAL_PATH),bootable/recovery)
+    PROJECT_PATH_AGREES := true
+  endif
+endif
+
+ifeq ($(PROJECT_PATH_AGREES),true)
 
 include $(CLEAR_VARS)
 
