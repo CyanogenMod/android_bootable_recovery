@@ -147,8 +147,6 @@ LOCAL_STATIC_LIBRARIES += libstdc++ libc
 LOCAL_STATIC_LIBRARIES += libselinux
 LOCAL_STATIC_LIBRARIES += libcrypto_static
 
-include $(BUILD_EXECUTABLE)
-
 RECOVERY_LINKS := bu make_ext4fs edify busybox flash_image dump_image mkyaffs2image unyaffs erase_image nandroid reboot volume setprop getprop start stop dedupe minizip setup_adbd fsck_msdos newfs_msdos vdc sdcard pigz
 
 ifeq ($(TARGET_USERIMAGES_USE_F2FS), true)
@@ -157,27 +155,44 @@ endif
 
 # nc is provided by external/netcat
 RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
+
+BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
+exclude := tune2fs mke2fs
+RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
+
+LOCAL_ADDITIONAL_DEPENDENCIES := \
+    killrecovery.sh \
+    parted \
+    sdparted \
+    su.recovery \
+    install-su.sh \
+    run-su-daemon.sh
+
+LOCAL_ADDITIONAL_DEPENDENCIES += \
+    minivold \
+    recovery_e2fsck \
+    recovery_mke2fs \
+    recovery_tune2fs \
+    mount.exfat_static
+
+LOCAL_ADDITIONAL_DEPENDENCIES += $(RECOVERY_SYMLINKS) $(RECOVERY_BUSYBOX_SYMLINKS)
+
+include $(BUILD_EXECUTABLE)
+
 $(RECOVERY_SYMLINKS): RECOVERY_BINARY := $(LOCAL_MODULE)
-$(RECOVERY_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
+$(RECOVERY_SYMLINKS):
 	@echo "Symlink: $@ -> $(RECOVERY_BINARY)"
 	@mkdir -p $(dir $@)
 	@rm -rf $@
 	$(hide) ln -sf $(RECOVERY_BINARY) $@
 
-ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_SYMLINKS)
-
 # Now let's do recovery symlinks
-BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
-exclude := tune2fs mke2fs
-RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
 $(RECOVERY_BUSYBOX_SYMLINKS): BUSYBOX_BINARY := busybox
-$(RECOVERY_BUSYBOX_SYMLINKS): $(LOCAL_INSTALLED_MODULE)
+$(RECOVERY_BUSYBOX_SYMLINKS):
 	@echo "Symlink: $@ -> $(BUSYBOX_BINARY)"
 	@mkdir -p $(dir $@)
 	@rm -rf $@
 	$(hide) ln -sf $(BUSYBOX_BINARY) $@
-
-ALL_DEFAULT_INSTALLED_MODULES += $(RECOVERY_BUSYBOX_SYMLINKS) 
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := killrecovery.sh
