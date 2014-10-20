@@ -22,13 +22,13 @@
 
 char* MENU_HEADERS[] = { NULL };
 
-char* MENU_ITEMS[] = { "reboot system now",
-                       "install zip from sdcard",
-                       "wipe data/factory reset",
-                       "wipe cache partition",
-                       "backup and restore",
-                       "mounts and storage",
-                       "advanced",
+char* MENU_ITEMS[] = { "reiniciar el sistema ahora",
+                       "instalar zip desde sdcard",
+                       "borrar datos/restablecimiento de fabrica",
+                       "Limpiar particion de memoria cache",
+                       "copia de seguridad y restaurar",
+                       "soporte y almacenamiento",
+                       "avanzado",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {

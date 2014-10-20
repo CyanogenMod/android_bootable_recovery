@@ -73,20 +73,20 @@ static int get_bootloader_message_mtd(struct bootloader_message *out,
     mtd_scan_partitions();
     const MtdPartition *part = mtd_find_partition_by_name(v->device);
     if (part == NULL || mtd_partition_info(part, NULL, NULL, &write_size)) {
-        LOGE("Can't find %s\n", v->device);
+        LOGE("No se puede encontrar %s\n", v->device);
         return -1;
     }
 
     MtdReadContext *read = mtd_read_partition(part);
     if (read == NULL) {
-        LOGE("Can't open %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("No se puede abrir %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
 
     const ssize_t size = write_size * MISC_PAGES;
     char data[size];
     ssize_t r = mtd_read_data(read, data, size);
-    if (r != size) LOGE("Can't read %s\n(%s)\n", v->device, strerror(errno));
+    if (r != size) LOGE("No se puede leer %s\n(%s)\n", v->device, strerror(errno));
     mtd_read_close(read);
     if (r != size) return -1;
 
@@ -99,20 +99,20 @@ static int set_bootloader_message_mtd(const struct bootloader_message *in,
     mtd_scan_partitions();
     const MtdPartition *part = mtd_find_partition_by_name(v->device);
     if (part == NULL || mtd_partition_info(part, NULL, NULL, &write_size)) {
-        LOGE("Can't find %s\n", v->device);
+        LOGE("No se puede encontrar %s\n", v->device);
         return -1;
     }
 
     MtdReadContext *read = mtd_read_partition(part);
     if (read == NULL) {
-        LOGE("Can't open %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("No se puede abrir %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
 
     ssize_t size = write_size * MISC_PAGES;
     char data[size];
     ssize_t r = mtd_read_data(read, data, size);
-    if (r != size) LOGE("Can't read %s\n(%s)\n", v->device, strerror(errno));
+    if (r != size) LOGE("No se puede leer %s\n(%s)\n", v->device, strerror(errno));
     mtd_read_close(read);
     if (r != size) return -1;
 
@@ -120,16 +120,16 @@ static int set_bootloader_message_mtd(const struct bootloader_message *in,
 
     MtdWriteContext *write = mtd_write_partition(part);
     if (write == NULL) {
-        LOGE("Can't open %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("No se puede abrir %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
     if (mtd_write_data(write, data, size) != size) {
-        LOGE("Can't write %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("No se puede escribir %s\n(%s)\n", v->device, strerror(errno));
         mtd_write_close(write);
         return -1;
     }
     if (mtd_write_close(write)) {
-        LOGE("Can't finish %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("No se puede terminar %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
 
@@ -164,17 +164,17 @@ static int get_bootloader_message_block(struct bootloader_message *out,
     wait_for_device(v->device);
     FILE* f = fopen(v->device, "rb");
     if (f == NULL) {
-        LOGE("Can't open %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("No se puede abrir %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
     struct bootloader_message temp;
     int count = fread(&temp, sizeof(temp), 1, f);
     if (count != 1) {
-        LOGE("Failed reading %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("Error de lectura %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
     if (fclose(f) != 0) {
-        LOGE("Failed closing %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("Error de cierre %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
     memcpy(out, &temp, sizeof(temp));
@@ -186,16 +186,16 @@ static int set_bootloader_message_block(const struct bootloader_message *in,
     wait_for_device(v->device);
     FILE* f = fopen(v->device, "wb");
     if (f == NULL) {
-        LOGE("Can't open %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("No se puede abrir %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
     int count = fwrite(in, sizeof(*in), 1, f);
     if (count != 1) {
-        LOGE("Failed writing %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("Error de escritura %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
     if (fclose(f) != 0) {
-        LOGE("Failed closing %s\n(%s)\n", v->device, strerror(errno));
+        LOGE("Error de cierre %s\n(%s)\n", v->device, strerror(errno));
         return -1;
     }
     return 0;
@@ -241,19 +241,19 @@ int write_update_for_bootloader(
         int bitmap_width, int bitmap_height, int bitmap_bpp,
         const char *busy_bitmap, const char *fail_bitmap) {
     if (ensure_path_unmounted("/cache")) {
-        LOGE("Can't unmount /cache\n");
+        LOGE("No se puede desmontar /cache\n");
         return -1;
     }
  
     const MtdPartition *part = mtd_find_partition_by_name("cache");
     if (part == NULL) {
-        LOGE("Can't find cache\n");
+        LOGE("Si no encuentra caché\n");
         return -1;
     }
  
     MtdWriteContext *write = mtd_write_partition(part);
     if (write == NULL) {
-        LOGE("Can't open cache\n(%s)\n", strerror(errno));
+        LOGE("Si no encuentra caché\n(%s)\n", strerror(errno));
         return -1;
     }
  
@@ -266,7 +266,7 @@ int write_update_for_bootloader(
     memset(&header, 0, sizeof(header));
     const ssize_t header_size = sizeof(header);
     if (mtd_write_data(write, (char*) &header, header_size) != header_size) {
-        LOGE("Can't write header to cache\n(%s)\n", strerror(errno));
+        LOGE("No se puede escribir la cabecera de caché\n(%s)\n", strerror(errno));
         mtd_write_close(write);
         return -1;
     }
@@ -283,7 +283,7 @@ int write_update_for_bootloader(
     header.image_length = update_length;
     if ((int) header.image_offset == -1 ||
         mtd_write_data(write, update, update_length) != update_length) {
-        LOGE("Can't write update to cache\n(%s)\n", strerror(errno));
+        LOGE("No se puede escribir la actualización de caché\n(%s)\n", strerror(errno));
         mtd_write_close(write);
         return -1;
     }

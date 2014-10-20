@@ -91,12 +91,12 @@ void
 toggle_signature_check()
 {
     signature_check_enabled = !signature_check_enabled;
-    ui_print("Signature Check: %s\n", signature_check_enabled ? "Enabled" : "Disabled");
+    ui_print("Verificar firma: %s\n", signature_check_enabled ? "Activada" : "Desactivada");
 }
 
 int install_zip(const char* packagefilepath)
 {
-    ui_print("\n-- Installing: %s\n", packagefilepath);
+    ui_print("\n-- Instalando: %s\n", packagefilepath);
     if (device_flash_type() == MTD) {
         set_sdcard_update_bootloader_message();
     }
@@ -104,11 +104,11 @@ int install_zip(const char* packagefilepath)
     ui_reset_progress();
     if (status != INSTALL_SUCCESS) {
         ui_set_background(BACKGROUND_ICON_ERROR);
-        ui_print("Installation aborted.\n");
+        ui_print("Instalacion abortada.\n");
         return 1;
     }
     ui_set_background(BACKGROUND_ICON_NONE);
-    ui_print("\nInstall from sdcard complete.\n");
+    ui_print("\nInstalacion desde sdcard completa.\n");
     return 0;
 }
 
@@ -119,25 +119,25 @@ int install_zip(const char* packagefilepath)
 
 void show_install_update_menu()
 {
-    static char* headers[] = {  "Apply update from .zip file on SD card",
+    static char* headers[] = {  "Aplicar actualización .zip en la tarjeta SD",
                                 "",
                                 NULL
     };
     
-    char* install_menu_items[] = {  "choose zip from sdcard",
-                                    "apply /sdcard/update.zip",
-                                    "toggle signature verification",
+    char* install_menu_items[] = {  "elegir zip desde sdcard",
+                                    "aplicar /sdcard/update.zip",
+                                    "activar/desactivar verificación de firmas",
                                     NULL,
                                     NULL };
 
     char *other_sd = NULL;
     if (volume_for_path("/emmc") != NULL) {
         other_sd = "/emmc/";
-        install_menu_items[3] = "choose zip from internal sdcard";
+        install_menu_items[3] = "elegir zip de sdcard interna";
     }
     else if (volume_for_path("/external_sd") != NULL) {
         other_sd = "/external_sd/";
-        install_menu_items[3] = "choose zip from external sdcard";
+        install_menu_items[3] = "elegir zip de sdcard externa";
     }
     
     for (;;)
@@ -150,7 +150,7 @@ void show_install_update_menu()
                 break;
             case ITEM_APPLY_SDCARD:
             {
-                if (confirm_selection("Confirm install?", "Yes - Install /sdcard/update.zip"))
+                if (confirm_selection("Confirmar instalacion "," Sí - Instale /sdcard/update.zip"))
                     install_zip(SDCARD_UPDATE_FILE);
                 break;
             }
@@ -379,9 +379,9 @@ void show_choose_zip_menu(const char *mount_point)
     char* file = choose_file_menu(mount_point, ".zip", headers);
     if (file == NULL)
         return;
-    static char* confirm_install  = "Confirm install?";
+    static char* confirm_install  = "Confirmar instalacion?";
     static char confirm[PATH_MAX];
-    sprintf(confirm, "Yes - Install %s", basename(file));
+    sprintf(confirm, "Si - Instalar %s", basename(file));
     if (confirm_selection(confirm_install, confirm))
         install_zip(file);
 }
@@ -426,7 +426,7 @@ void show_nandroid_delete_menu(const char* path)
     if (file == NULL)
         return;
 
-    if (confirm_selection("Confirm delete?", "Yes - Delete")) {
+    if (confirm_selection("Estas Seguro?", "Si - Borrar Copia de Seguridad")) {
         // nandroid_restore(file, 1, 1, 1, 1, 1, 0);
         sprintf(tmp, "rm -rf %s", file);
         __system(tmp);
@@ -571,14 +571,15 @@ void show_mount_usb_storage_menu()
     if (control_usb_storage(volumes, 1))
         return;
 
-    static char* headers[] = {  "USB Mass Storage device",
-                                "Leaving this menu unmount",
-                                "your SD card from your PC.",
+    static char* headers[] = {  "Dispositivo USB de almacenamiento masivo",
+                                "Su tarjeta Sd y particion interna an sido",
+                                "montadas puede interactuar con ella desde",
+				"su PC."
                                 "",
                                 NULL
     };
 
-    static char* list[] = { "Unmount", NULL };
+    static char* list[] = { "desmontar", NULL };
 
     for (;;)
     {
@@ -597,10 +598,10 @@ int confirm_selection(const char* title, const char* confirm)
     if (0 == stat("/sdcard/clockworkmod/.no_confirm", &info))
         return 1;
 
-    char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
+    char* confirm_headers[]  = {  title, "  ESTO NO SE PUEDE DESHACER.", "", NULL };
     if (0 == stat("/sdcard/clockworkmod/.one_confirm", &info)) {
         char* items[] = { "No",
-                        confirm, //" Yes -- wipe partition",   // [1]
+                        confirm, //" Sí - borrar partición",   // [1]
                         NULL };
         int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
         return chosen_item == 1;
@@ -610,10 +611,7 @@ int confirm_selection(const char* title, const char* confirm)
                         "No",
                         "No",
                         "No",
-                        "No",
-                        "No",
-                        "No",
-                        confirm, //" Yes -- wipe partition",   // [7]
+                        confirm, //" Sí - borrar particion",   // [7]
                         "No",
                         "No",
                         "No",
@@ -806,7 +804,7 @@ int is_safe_to_format(char* name)
 
 void show_partition_menu()
 {
-    static char* headers[] = {  "Mounts and Storage Menu",
+    static char* headers[] = {  "Menu Montaje y almacenamiento",
                                 "",
                                 NULL
     };
@@ -855,8 +853,8 @@ void show_partition_menu()
         }
     }
 
-    static char* confirm_format  = "Confirm format?";
-    static char* confirm = "Yes - Format";
+    static char* confirm_format  = "Confirmar formateo?";
+    static char* confirm = "Si - Formatear";
     char confirm_string[255];
 
     for (;;)
@@ -879,7 +877,7 @@ void show_partition_menu()
         }
 
         if (!is_data_media()) {
-          options[mountable_volumes + formatable_volumes] = "mount USB storage";
+          options[mountable_volumes + formatable_volumes] = "montar almacenamiento USB";
           options[mountable_volumes + formatable_volumes + 1] = NULL;
         }
         else {
@@ -932,11 +930,11 @@ void show_partition_menu()
 void show_nandroid_advanced_restore_menu(const char* path)
 {
     if (ensure_path_mounted(path) != 0) {
-        LOGE ("Can't mount sdcard\n");
+        LOGE ("No se puede montar sdcard\n");
         return;
     }
 
-    static char* advancedheaders[] = {  "Choose an image to restore",
+    static char* advancedheaders[] = {  "Elija una imagen para restaurar",
                                 "",
                                 "Choose an image to restore",
                                 "first. The next menu will",
@@ -951,17 +949,17 @@ void show_nandroid_advanced_restore_menu(const char* path)
     if (file == NULL)
         return;
 
-    static char* headers[] = {  "Advanced Restore",
+    static char* headers[] = {  "Restaurar avanzada",
                                 "",
                                 NULL
     };
 
-    static char* list[] = { "Restore boot",
-                            "Restore system",
-                            "Restore data",
-                            "Restore cache",
-                            "Restore sd-ext",
-                            "Restore wimax",
+    static char* list[] = { "Restaurar boot",
+                            "Restaurar system",
+                            "Restaurar data",
+                            "Restaurar cache",
+                            "Restaurar sd-ext",
+                            "Restaurar wimax",
                             NULL
     };
     
@@ -970,33 +968,33 @@ void show_nandroid_advanced_restore_menu(const char* path)
         list[5] = NULL;
     }
 
-    static char* confirm_restore  = "Confirm restore?";
+    static char* confirm_restore  = "confirmar restaurar?";
 
     int chosen_item = get_menu_selection(headers, list, 0, 0);
     switch (chosen_item)
     {
         case 0:
-            if (confirm_selection(confirm_restore, "Yes - Restore boot"))
+            if (confirm_selection(confirm_restore, "Si - Restaurar boot"))
                 nandroid_restore(file, 1, 0, 0, 0, 0, 0);
             break;
         case 1:
-            if (confirm_selection(confirm_restore, "Yes - Restore system"))
+            if (confirm_selection(confirm_restore, "Si - Restaurar system"))
                 nandroid_restore(file, 0, 1, 0, 0, 0, 0);
             break;
         case 2:
-            if (confirm_selection(confirm_restore, "Yes - Restore data"))
+            if (confirm_selection(confirm_restore, "Si - Restaurar data"))
                 nandroid_restore(file, 0, 0, 1, 0, 0, 0);
             break;
         case 3:
-            if (confirm_selection(confirm_restore, "Yes - Restore cache"))
+            if (confirm_selection(confirm_restore, "Si - Restaurar cache"))
                 nandroid_restore(file, 0, 0, 0, 1, 0, 0);
             break;
         case 4:
-            if (confirm_selection(confirm_restore, "Yes - Restore sd-ext"))
+            if (confirm_selection(confirm_restore, "Si - Restaurar sd-ext"))
                 nandroid_restore(file, 0, 0, 0, 0, 1, 0);
             break;
         case 5:
-            if (confirm_selection(confirm_restore, "Yes - Restore wimax"))
+            if (confirm_selection(confirm_restore, "Si - Restaurar wimax"))
                 nandroid_restore(file, 0, 0, 0, 0, 0, 1);
             break;
     }
@@ -1038,14 +1036,14 @@ static void choose_backup_format() {
 
 void show_nandroid_menu()
 {
-    static char* headers[] = {  "Backup and Restore",
+    static char* headers[] = {  "Copia de seguridad y restauracion",
                                 "",
                                 NULL
     };
 
-    char* list[] = { "backup",
-                            "restore",
-                            "delete",
+    char* list[] = { "Copia de seguridad",
+                            "restaurar",
+                            "borrar",
                             "advanced restore",
                             "free unused backup data",
                             "choose backup format",
@@ -1251,21 +1249,21 @@ int can_partition(const char* volume) {
 
 void show_advanced_menu()
 {
-    static char* headers[] = {  "Advanced Menu",
+    static char* headers[] = {  "Menu Avanzado",
                                 "",
                                 NULL
     };
 
-    static char* list[] = { "reboot recovery",
-                            "wipe dalvik cache",
-                            "wipe battery stats",
-                            "report error",
-                            "key test",
-                            "show log",
-                            "fix permissions",
-                            "partition sdcard",
-                            "partition external sdcard",
-                            "partition internal sdcard",
+    static char* list[] = { "reiniciar en modo recovery",
+                            "limpiar dalvik cache",
+                            "limpiar estado de la bateria",
+                            "reportar un error",
+                            "probar teclas",
+                            "Mostrar registro",
+                            "corregir permisos",
+                            "particionar sdcard",
+                            "particionar external sdcard",
+                            "particionar internal sdcard",
                             NULL
     };
 
@@ -1303,7 +1301,7 @@ void show_advanced_menu()
                 ensure_path_unmounted("/data");
                 break;
             case 2:
-                if (confirm_selection( "Confirm wipe?", "Yes - Wipe Battery Stats"))
+                if (confirm_selection( "Estas seguro?", "SI - limpiar estado de la bateria"))
                     wipe_battery_stats();
                 break;
             case 3:

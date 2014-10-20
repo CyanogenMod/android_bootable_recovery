@@ -98,7 +98,7 @@ void load_volume_table() {
 
     FILE* fstab = fopen("/etc/recovery.fstab", "r");
     if (fstab == NULL) {
-        LOGE("failed to open /etc/recovery.fstab (%s)\n", strerror(errno));
+        LOGE("Error al abrir /etc/recovery.fstab (%s)\n", strerror(errno));
         return;
     }
 
@@ -195,7 +195,7 @@ int try_mount(const char* device, const char* mount_point, const char* fs_type, 
     }
     if (ret == 0)
         return 0;
-    LOGW("failed to mount %s (%s)\n", device, strerror(errno));
+    LOGW("Error al montar %s (%s)\n", device, strerror(errno));
     return ret;
 }
 
