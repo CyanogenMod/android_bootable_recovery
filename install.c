@@ -347,7 +347,7 @@ really_install_package(const char *path)
         return INSTALL_CORRUPT;
     }
 
-    ui_print("Opening update package...\n");
+    ui_print("Abrir paquete de actualizacion...\n");
 
     int err;
 
@@ -382,13 +382,13 @@ really_install_package(const char *path)
     ZipArchive zip;
     err = mzOpenZipArchive(path, &zip);
     if (err != 0) {
-        LOGE("Can't open %s\n(%s)\n", path, err != -1 ? strerror(err) : "bad");
+        LOGE("No se puede abrir %s\n(%s)\n", path, err != -1 ? strerror(err) : "bad");
         return INSTALL_CORRUPT;
     }
 
     /* Verify and install the contents of the package.
      */
-    ui_print("Installing update...\n");
+    ui_print("Instalando actualizacion...\n");
     return try_update_binary(path, &zip);
 }
 
@@ -400,7 +400,7 @@ install_package(const char* path)
         fputs(path, install_log);
         fputc('\n', install_log);
     } else {
-        LOGE("failed to open last_install: %s\n", strerror(errno));
+        LOGE("Error al abrir last_install: %s\n", strerror(errno));
     }
     int result = really_install_package(path);
     if (install_log) {
