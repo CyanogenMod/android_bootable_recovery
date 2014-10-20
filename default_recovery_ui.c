@@ -27,7 +27,7 @@ char* MENU_ITEMS[] = { "reiniciar el sistema ahora",
                        "borrar datos/restablecimiento de fabrica",
                        "Limpiar particion de memoria cache",
                        "copia de seguridad y restaurar",
-                       "copia de seguridad y restaurar",
+                       "soporte y almacenamiento",
                        "avanzado",
                        NULL };
 
