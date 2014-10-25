@@ -238,4 +238,60 @@ include $(commands_recovery_local_path)/voldclient/Android.mk
 include $(commands_recovery_local_path)/loki/Android.mk
 commands_recovery_local_path :=
 
+# All LOCAL_MODULES declared by recovery
+RECOVERY_MODULES := \
+    add-property-tag \
+    applypatch \
+    applypatch_static \
+    check-lost+found \
+    dedupe \
+    dump_image \
+    edify \
+    erase_image \
+    flash_image \
+    imgdiff \
+    libapplypatch \
+    libbmlutils \
+    libcrecovery \
+    libdedupe \
+    libdump_image \
+    libedify \
+    liberase_image \
+    libflash_image \
+    libflashutils \
+    libloki_static \
+    libmake_ext4fs \
+    libminadbd \
+    libminelf \
+    libminizip \
+    libminui \
+    libminzip \
+    libmmcutils \
+    libmtdutils \
+    libvoldclient \
+    loki_tool_static \
+    recovery \
+    su.recovery \
+    updater \
+    utility_dedupe \
+    utility_dump_image \
+    utility_erase_image \
+    utility_flash_image \
+    verifier_test
+
+ifeq ($(BOARD_USES_BML_OVER_MTD),true)
+RECOVERY_MODULES += \
+    bml_over_mtd \
+    libbml_over_mtd
+endif
+
+# Anything that depends on recovery headers or libs
+# mgrep "project-path-for.*recovery"
+RECOVERY_MODULES += \
+    charger
+
+clean_RECOVERY_MODULES := $(foreach RECOVERY_MODULE,$(RECOVERY_MODULES),clean-$(RECOVERY_MODULE))
+
+switch-recovery: $(clean_RECOVERY_MODULES)
+
 endif
