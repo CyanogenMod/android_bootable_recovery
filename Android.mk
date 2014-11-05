@@ -165,6 +165,10 @@ RECOVERY_TOOLS := \
 LOCAL_POST_INSTALL_CMD := \
 	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
 
+ifneq ($(TARGET_RECOVERY_DEVICE_MODULES),)
+    LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_RECOVERY_DEVICE_MODULES)
+endif
+
 include $(BUILD_EXECUTABLE)
 
 # Run toybox-instlist and generate the rest of the symlinks
