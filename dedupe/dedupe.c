@@ -23,8 +23,11 @@
 
 #include <selinux/selinux.h>
 
-#define DEDUPE_VERSION 2
+#define DEDUPE_VERSION 3
 #define ARRAY_CAPACITY 1000
+
+static const char DUMMY_SELABEL_V2[] = "unlabel";
+static const char DUMMY_SELABEL[] = "-";
 
 static int copy_file(const char *src, const char *dst) {
     char buf[4096];
@@ -223,7 +226,9 @@ static int store_st(struct DEDUPE_STORE_CONTEXT *context, struct stat st, const 
     char* selabel = NULL;
     if (lgetfilecon(s, &selabel) < 0) {
         fprintf(stderr, "Can't get %s context\n", s);
-        selabel = strdup("unlabel");
+        selabel = strdup(DUMMY_SELABEL);
+        if (!selabel)
+            return errno;
     }
     if (S_ISREG(st.st_mode)) {
         print_stat(context, 'f', st, selabel, s);
@@ -356,6 +361,25 @@ static int check_file(const char* f) {
     return lstat(f, &cst);
 }
 
+static char* tokenize_selabel(char* selabel, const char* token, const char sep, int version)
+{
+    const char* token_bk = token;
+    token = tokenize(selabel, token, sep);
+    // someone added selabel without incrementing version, fix load old backup
+    if (version == 2) {
+        // "unlabel" changed to "-" in version 3
+        if (!strcmp(selabel, DUMMY_SELABEL_V2)) {
+            strcpy(selabel, DUMMY_SELABEL);
+        }
+        // selabel is atime if not contain ":"
+        else if (!strchr(selabel, ':')) {
+            strcpy(selabel, DUMMY_SELABEL);
+            token = token_bk;
+        }
+    }
+    return token;
+}
+
 int dedupe_main(int argc, char** argv) {
     if (argc < 3) {
         usage(argv);
@@ -446,8 +470,8 @@ int dedupe_main(int argc, char** argv) {
             token = tokenize(mode, token, '\t');
             token = tokenize(uid, token, '\t');
             token = tokenize(gid, token, '\t');
-            token = tokenize(selabel, token, '\t');
             if (version >= 2) {
+                token = tokenize_selabel(selabel, token, '\t', version);
                 token = tokenize(at, token, '\t');
                 token = tokenize(mt, token, '\t');
                 token = tokenize(ct, token, '\t');
@@ -480,7 +504,7 @@ int dedupe_main(int argc, char** argv) {
                 chmod(filename, mode_oct);
             }
             else if (strcmp(type, "l") == 0) {
-                char link[41];
+                char link[PATH_MAX];
                 token = tokenize(link, token, '\t');
                 // printf("%s\n", link);
 
@@ -503,7 +527,7 @@ int dedupe_main(int argc, char** argv) {
                 fclose(input_manifest);
                 return 1;
             }
-            if (lsetfilecon(filename, selabel) < 0) {
+            if (strcmp(selabel, DUMMY_SELABEL) && lsetfilecon(filename, selabel) < 0) {
                 fprintf(stderr, "Can't setfilecon %s\n", filename);
             }
             if (version >= 2) {
@@ -574,8 +598,8 @@ int dedupe_main(int argc, char** argv) {
                 token = tokenize(mode, token, '\t');
                 token = tokenize(uid, token, '\t');
                 token = tokenize(gid, token, '\t');
-                token = tokenize(selabel, token, '\t');
                 if (version >= 2) {
+                    token = tokenize_selabel(selabel, token, '\t', version);
                     token = tokenize(at, token, '\t');
                     token = tokenize(mt, token, '\t');
                     token = tokenize(ct, token, '\t');
