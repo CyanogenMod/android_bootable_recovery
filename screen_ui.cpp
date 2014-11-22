@@ -350,7 +350,7 @@ void ScreenRecoveryUI::draw_screen_locked() {
         gr_color(0, 0, 0, 255);
         gr_clear();
 
-        if (currentIcon == INSTALLING_UPDATE) {
+        if (currentIcon == INSTALLING_UPDATE || currentIcon == VIEWING_LOG) {
             size_t y = header_height_ + 4;
 
             draw_background_locked(currentIcon);
@@ -687,6 +687,8 @@ void ScreenRecoveryUI::ShowFile(FILE* fp) {
     std::vector<long> offsets;
     offsets.push_back(ftell(fp));
     ClearText();
+
+    SetBackground(RecoveryUI::VIEWING_LOG);
 
     struct stat sb;
     fstat(fileno(fp), &sb);
