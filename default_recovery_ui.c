@@ -29,7 +29,8 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "wipe cache partition",
                        "backup and restore",
                        "mounts and storage",
-                       "advanced",
+                       "advanced"
+                       "reset rooting counter",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {
