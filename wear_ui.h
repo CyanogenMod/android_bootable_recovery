@@ -91,7 +91,7 @@ class WearRecoveryUI : public RecoveryUI {
     bool rtl_locale;
 
     pthread_mutex_t updateMutex;
-    GRSurface* backgroundIcon[5];
+    GRSurface* backgroundIcon[NR_ICONS];
     GRSurface* *introFrames;
     GRSurface* *loopFrames;
 

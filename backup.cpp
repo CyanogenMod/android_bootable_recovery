@@ -18,6 +18,8 @@
 
 #include "voldclient.h"
 
+#include "messagesocket.h"
+
 using namespace android;
 
 static int append_sod(const char* opt_hash)
@@ -248,6 +250,10 @@ int do_backup(int argc, char **argv)
         }
     }
 
+    MessageSocket ms;
+    ms.ClientInit();
+    ms.Show("Backup in progress...");
+
     rc = create_tar(adb_ofd, opt_compress, "w");
     if (rc != 0) {
         logmsg("do_backup: cannot open tar stream\n");
@@ -292,6 +298,8 @@ int do_backup(int argc, char **argv)
 
     if (opt_compress)
         gzflush(gzf, Z_FINISH);
+
+    ms.Dismiss();
 
     logmsg("backup complete: rc=%d\n", rc);
 

@@ -41,6 +41,7 @@ LOCAL_SRC_FILES := \
     recovery.cpp \
     roots.cpp \
     screen_ui.cpp \
+    messagesocket.cpp \
     ui.cpp \
     verifier.cpp \
     wear_ui.cpp \
@@ -181,6 +182,7 @@ LOCAL_SRC_FILES := \
     bu.cpp \
     backup.cpp \
     restore.cpp \
+    messagesocket.cpp \
     roots.cpp \
     voldclient.cpp
 LOCAL_CFLAGS += -DMINIVOLD
@@ -283,7 +285,8 @@ LOCAL_SRC_FILES := \
     verifier_test.cpp \
     asn1_decoder.cpp \
     verifier.cpp \
-    ui.cpp
+    ui.cpp \
+    messagesocket.cpp
 LOCAL_STATIC_LIBRARIES := \
     libmincrypt \
     libminui \
