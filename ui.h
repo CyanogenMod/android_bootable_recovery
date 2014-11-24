@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include <time.h>
 
+#include "messagesocket.h"
 #include "voldclient.h"
 
 #define MAX_NR_INPUT_DEVICES    8
@@ -105,7 +106,7 @@ class RecoveryUI {
     virtual void SetLocale(const char* locale) = 0;
 
     // Set the overall recovery state ("background image").
-    enum Icon { NONE, INSTALLING_UPDATE, ERASING, NO_COMMAND, ERROR };
+    enum Icon { NONE, INSTALLING_UPDATE, ERASING, NO_COMMAND, INFO, ERROR, NR_ICONS };
     virtual void SetBackground(Icon icon) = 0;
     virtual void SetSystemUpdateText(bool security_update) = 0;
 
@@ -138,6 +139,12 @@ class RecoveryUI {
 
     virtual void ShowFile(const char* filename) = 0;
     virtual void ClearText() = 0;
+
+    virtual void DialogShowInfo(const char* text) = 0;
+    virtual void DialogShowError(const char* text) = 0;
+    virtual int  DialogShowing() const = 0;
+    virtual bool DialogDismissable() const = 0;
+    virtual void DialogDismiss() = 0;
 
     // --- key handling ---
 
@@ -244,6 +251,8 @@ private:
     };
 
     pthread_t input_thread_;
+
+    MessageSocket message_socket;
 
     void OnKeyDetected(int key_code);
 

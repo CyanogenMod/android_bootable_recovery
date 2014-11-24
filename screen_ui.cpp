@@ -71,6 +71,8 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     text_top_(0),
     show_text(false),
     show_text_ever(false),
+    dialog_icon(NONE),
+    dialog_text(nullptr),
     menu_(nullptr),
     menu_headers_(nullptr),
     header_items(0),
@@ -250,6 +252,9 @@ void ScreenRecoveryUI::SetColor(UIElement e) {
         case TEXT_FILL:
             gr_color(0, 0, 0, 160);
             break;
+        case ERROR_TEXT:
+            gr_color(255, 0, 0, 255);
+            break;
         default:
             gr_color(255, 255, 255, 255);
             break;
@@ -351,6 +356,43 @@ void ScreenRecoveryUI::draw_sysbar()
     }
 }
 
+void ScreenRecoveryUI::draw_dialog()
+{
+    int x, y, w, h;
+
+    draw_background_locked(dialog_icon);
+
+    int iconHeight = gr_get_height(backgroundIcon[dialog_icon]);
+
+    x = (gr_fb_width()/2 - (char_width*strlen(dialog_text))/2);
+    y = (gr_fb_height()/2 + iconHeight/2);
+
+    SetColor(ERROR_TEXT);
+    gr_text(x, y, dialog_text, 0);
+
+    if (dialog_icon == ERROR) {
+        /*
+         * This could be improved...
+         *
+         * Draw rect around text "Okay".
+         * Text is centered horizontally.
+         * Bottom of text is 4 lines from bottom of screen.
+         * Rect width 4px
+         * Rect padding 8px
+         */
+        w = char_width*4;
+        h = char_height;
+        x = gr_fb_width()/2 - w/2;
+        y = gr_fb_height() - h - 4*char_height;
+        SetColor(HEADER);
+        gr_fill(x-(4+8), y-(4+8), x+w+(4+8), y+h+(4+8));
+        SetColor(MENU_SEL_BG);
+        gr_fill(x-8, y-8, x+w+8, y+h+8);
+        SetColor(MENU_SEL_FG);
+        gr_text(x, y, "Okay", 0);
+    }
+}
+
 // Redraw everything on the screen.  Does not flip pages.
 // Should only be called with updateMutex locked.
 void ScreenRecoveryUI::draw_screen_locked() {
@@ -358,6 +400,12 @@ void ScreenRecoveryUI::draw_screen_locked() {
         draw_background_locked();
         draw_foreground_locked();
     } else {
+
+        if (DialogShowing()) {
+            draw_dialog();
+            return;
+        }
+
         gr_color(0, 0, 0, 255);
         gr_clear();
 
@@ -544,6 +592,7 @@ void ScreenRecoveryUI::Init() {
     text_col_ = text_row_ = 0;
     text_top_ = 1;
 
+    LoadBitmap("icon_info", &info_icon);
     LoadBitmap("icon_error", &error_icon);
 
     LoadBitmap("icon_header", &headerIcon);
@@ -851,6 +900,35 @@ void ScreenRecoveryUI::SetSysbarState(int state)
     }
     sysbar_state = state;
     Redraw();
+}
+
+void ScreenRecoveryUI::DialogShowInfo(const char* text)
+{
+    pthread_mutex_lock(&updateMutex);
+    free(dialog_text);
+    dialog_text = strdup(text);
+    dialog_icon = INFO;
+    update_screen_locked();
+    pthread_mutex_unlock(&updateMutex);
+}
+
+void ScreenRecoveryUI::DialogShowError(const char* text)
+{
+    pthread_mutex_lock(&updateMutex);
+    free(dialog_text);
+    dialog_text = strdup(text);
+    dialog_icon = ERROR;
+    update_screen_locked();
+    pthread_mutex_unlock(&updateMutex);
+}
+
+void ScreenRecoveryUI::DialogDismiss()
+{
+    pthread_mutex_lock(&updateMutex);
+    free(dialog_text);
+    dialog_text = NULL;
+    update_screen_locked();
+    pthread_mutex_unlock(&updateMutex);
 }
 
 void ScreenRecoveryUI::StartMenu(const char* const * headers, const char* const * items,

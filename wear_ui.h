@@ -81,7 +81,7 @@ class WearRecoveryUI : public ScreenRecoveryUI {
 
     int current_frame;
 
-    GRSurface* backgroundIcon[5];
+    GRSurface* backgroundIcon[NR_ICONS];
     GRSurface* *introFrames;
     GRSurface* *loopFrames;
 

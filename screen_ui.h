@@ -61,6 +61,12 @@ class ScreenRecoveryUI : public RecoveryUI {
     int  GetSysbarState() { return sysbar_state; }
     void SetSysbarState(int state);
 
+    void DialogShowInfo(const char* text);
+    void DialogShowError(const char* text);
+    int  DialogShowing() const { return (dialog_text != NULL); }
+    bool DialogDismissable() const { return (dialog_icon == ERROR); }
+    void DialogDismiss();
+
     // menu display
     virtual int MenuItemStart() const { return menu_item_start_; }
     virtual int MenuItemHeight() const { return 3 * char_height_; }
@@ -74,7 +80,7 @@ class ScreenRecoveryUI : public RecoveryUI {
     void Redraw();
 
     enum UIElement {
-        HEADER, MENU, MENU_SEL_BG, MENU_SEL_BG_ACTIVE, MENU_SEL_FG, LOG, TEXT_FILL, INFO
+        HEADER, MENU, MENU_SEL_BG, MENU_SEL_BG_ACTIVE, MENU_SEL_FG, LOG, TEXT_FILL, INFO, ERROR_TEXT
     };
     void SetColor(UIElement e);
 
@@ -91,6 +97,7 @@ class ScreenRecoveryUI : public RecoveryUI {
     bool is_large_;
 
     GRSurface* error_icon;
+    GRSurface* info_icon;
 
     GRSurface* erasing_text;
     GRSurface* error_text;
@@ -127,6 +134,9 @@ class ScreenRecoveryUI : public RecoveryUI {
 
     bool show_text;
     bool show_text_ever;   // has show_text ever been true?
+
+    Icon dialog_icon;
+    char *dialog_text;
 
     char** menu_;
     const char* const* menu_headers_;
@@ -176,6 +186,7 @@ class ScreenRecoveryUI : public RecoveryUI {
     int  draw_header_icon();
     void draw_menu_item(int textrow, const char *text, int selected);
     void draw_sysbar();
+    void draw_dialog();
     void draw_screen_locked();
     void update_screen_locked();
     void update_progress_locked();

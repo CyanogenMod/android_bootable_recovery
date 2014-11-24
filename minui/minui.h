@@ -68,6 +68,7 @@ typedef int (*ev_set_key_callback)(int code, int value, void* data);
 int ev_init(ev_callback input_cb, void* data);
 void ev_exit();
 int ev_add_fd(int fd, ev_callback cb, void* data);
+int ev_del_fd(int fd);
 void ev_iterate_available_keys(std::function<void(int)> f);
 int ev_sync_key_state(ev_set_key_callback set_key_cb, void* data);
 

@@ -137,6 +137,23 @@ int ev_add_fd(int fd, ev_callback cb, void* data) {
     return ret;
 }
 
+int ev_del_fd(int fd)
+{
+    unsigned n;
+    for (n = 0; n < ev_count; ++n) {
+        if (ev_fdinfo[n].fd == fd) {
+            epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+            if (n != ev_count-1) {
+                ev_fdinfo[n] = ev_fdinfo[ev_count-1];
+            }
+            ev_count--;
+            ev_misc_count--;
+            return 0;
+        }
+    }
+    return -1;
+}
+
 void ev_exit(void) {
     while (ev_count > 0) {
         close(ev_fdinfo[--ev_count].fd);

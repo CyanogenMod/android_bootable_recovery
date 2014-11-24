@@ -74,7 +74,7 @@ WearRecoveryUI::WearRecoveryUI() :
     menu_items(0),
     menu_sel(0) {
 
-    for (size_t i = 0; i < 5; i++)
+    for (size_t i = 0; i < NR_ICONS; i++)
         backgroundIcon[i] = NULL;
 
     self = this;
