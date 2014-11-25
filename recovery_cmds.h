@@ -31,6 +31,7 @@ int pigz_main(int argc, char **argv);
 int start_main(int argc, char **argv);
 int stop_main(int argc, char **argv);
 int mksh_main(int argc, char **argv);
+int vdc_main(int argc, char **argv);
 
 int toybox_driver(int argc, char **argv);
 
@@ -54,6 +55,7 @@ static const struct recovery_cmd recovery_cmds[] = {
     { "start",          start_main },
     { "stop",           stop_main },
     { "sh",             mksh_main },
+    { "vdc",            vdc_main },
     { NULL, NULL },
 };
 
