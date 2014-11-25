@@ -1133,35 +1133,33 @@ refresh:
     bool wipe_cache;
     int status = INSTALL_ERROR;
 
-    for (;;) {
-        int chosen = get_menu_selection(headers, menu_items, 0, 0, device);
-        for (i = 0; i < n; ++i) {
-            free(menu_items[i]);
-        }
-        if (chosen == Device::kRefresh) {
-            goto refresh;
-        }
-        if (chosen == Device::kGoBack) {
-            break;
-        }
-        if (chosen == item_sideload) {
-            static const char* headers[] = {  "ADB Sideload",
-                                        "",
-                                        NULL
-            };
-            static const char* list[] = { "Cancel sideload", NULL };
+    int chosen = get_menu_selection(headers, menu_items, 0, 0, device);
+    for (i = 0; i < n; ++i) {
+        free(menu_items[i]);
+    }
+    if (chosen == Device::kRefresh) {
+        goto refresh;
+    }
+    if (chosen == Device::kGoBack) {
+        return INSTALL_NONE;
+    }
+    if (chosen == item_sideload) {
+        static const char* headers[] = {  "ADB Sideload",
+                                    "",
+                                    NULL
+        };
+        static const char* list[] = { "Cancel sideload", NULL };
 
-            start_sideload(ui, &wipe_cache, TEMPORARY_INSTALL_FILE);
-            int item = get_menu_selection(headers, list, 0, 0, device);
-            if (item != Device::kNoAction) {
-                stop_sideload();
-            }
-            status = wait_sideload();
+        start_sideload(ui, &wipe_cache, TEMPORARY_INSTALL_FILE);
+        int item = get_menu_selection(headers, list, 0, 0, device);
+        if (item != Device::kNoAction) {
+            stop_sideload();
         }
-        else {
-            std::string id = volumes[chosen - 1].mId;
-            status = apply_from_storage(device, id, &wipe_cache);
-        }
+        status = wait_sideload();
+    }
+    else {
+        std::string id = volumes[chosen - 1].mId;
+        status = apply_from_storage(device, id, &wipe_cache);
     }
 
     return status;
