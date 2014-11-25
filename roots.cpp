@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 #include <fs_mgr.h>
 #include "mtdutils/mtdutils.h"
@@ -33,9 +34,29 @@
 #include "wipe.h"
 #include "cryptfs.h"
 
+#include "voldclient.h"
+
 static struct fstab *fstab = NULL;
 
 extern struct selabel_handle *sehandle;
+
+static int mkdir_p(const char* path, mode_t mode)
+{
+    char dir[PATH_MAX];
+    char* p;
+    strcpy(dir, path);
+    for (p = strchr(&dir[1], '/'); p != NULL; p = strchr(p+1, '/')) {
+        *p = '\0';
+        if (mkdir(dir, mode) != 0 && errno != EEXIST) {
+            return -1;
+        }
+        *p = '/';
+    }
+    if (mkdir(dir, mode) != 0 && errno != EEXIST) {
+        return -1;
+    }
+    return 0;
+}
 
 static void write_fstab_entry(Volume *v, FILE *file)
 {
@@ -49,6 +70,14 @@ static void write_fstab_entry(Volume *v, FILE *file)
         fprintf(file, "%s ", v->fs_type);
         fprintf(file, "%s 0 0\n", v->fs_options == NULL ? "defaults" : v->fs_options);
     }
+}
+
+int get_num_volumes() {
+    return fstab->num_entries;
+}
+
+Volume* get_device_volumes() {
+    return fstab->recs;
 }
 
 void load_volume_table()
@@ -96,6 +125,17 @@ Volume* volume_for_path(const char* path) {
     return fs_mgr_get_entry_for_mount_point(fstab, path);
 }
 
+Volume* volume_for_label(const char* label) {
+    int i;
+    for (i = 0; i < get_num_volumes(); i++) {
+        Volume* v = get_device_volumes() + i;
+        if (v->label && !strcmp(v->label, label)) {
+            return v;
+        }
+    }
+    return NULL;
+}
+
 // Mount the volume specified by path at the given mount_point.
 int ensure_path_mounted_at(const char* path, const char* mount_point) {
     Volume* v = volume_for_path(path);
@@ -119,14 +159,16 @@ int ensure_path_mounted_at(const char* path, const char* mount_point) {
         mount_point = v->mount_point;
     }
 
-    const MountedVolume* mv =
-        find_mounted_volume_by_mount_point(mount_point);
-    if (mv) {
-        // volume is already mounted
-        return 0;
+    if (!fs_mgr_is_voldmanaged(v)) {
+        const MountedVolume* mv =
+            find_mounted_volume_by_mount_point(mount_point);
+        if (mv) {
+            // volume is already mounted
+            return 0;
+        }
     }
 
-    mkdir(mount_point, 0755);  // in case it doesn't already exist
+    mkdir_p(mount_point, 0755);  // in case it doesn't already exist
 
     if (strcmp(v->fs_type, "yaffs2") == 0) {
         // mount an MTD partition as a YAFFS2 filesystem.
@@ -154,15 +196,47 @@ int ensure_path_mounted_at(const char* path, const char* mount_point) {
     return -1;
 }
 
+int ensure_volume_mounted(Volume* v) {
+    if (v == NULL) {
+        LOGE("cannot mount unknown volume\n");
+        return -1;
+    }
+    return ensure_path_mounted_at(v->mount_point, nullptr);
+}
+
 int ensure_path_mounted(const char* path) {
     // Mount at the default mount point.
     return ensure_path_mounted_at(path, nullptr);
 }
 
-int ensure_path_unmounted(const char* path) {
-    Volume* v = volume_for_path(path);
+int ensure_path_unmounted(const char* path, bool detach /* = false */) {
+    Volume* v;
+    if (memcmp(path, "/storage/", 9) == 0) {
+        char label[PATH_MAX];
+        const char* p = path+9;
+        const char* q = strchr(p, '/');
+        memset(label, 0, sizeof(label));
+        if (q) {
+            memcpy(label, p, q-p);
+        }
+        else {
+            strcpy(label, p);
+        }
+        v = volume_for_label(label);
+    }
+    else {
+        v = volume_for_path(path);
+    }
     if (v == NULL) {
         LOGE("unknown volume for path [%s]\n", path);
+        return -1;
+    }
+    return ensure_volume_unmounted(v, detach);
+}
+
+int ensure_volume_unmounted(Volume* v, bool detach /* = false */) {
+    if (v == NULL) {
+        LOGE("cannot unmount unknown volume\n");
         return -1;
     }
     if (strcmp(v->fs_type, "ramdisk") == 0) {
@@ -184,7 +258,14 @@ int ensure_path_unmounted(const char* path) {
         return 0;
     }
 
-    return unmount_mounted_volume(mv);
+    if (detach) {
+        result = unmount_mounted_volume_detach(mv);
+    }
+    else {
+        result = unmount_mounted_volume(mv);
+    }
+
+    return result;
 }
 
 static int exec_cmd(const char* path, char* const argv[]) {
@@ -219,6 +300,11 @@ int format_volume(const char* volume, const char* directory) {
 
     if (ensure_path_unmounted(volume) != 0) {
         LOGE("format_volume failed to unmount \"%s\"\n", v->mount_point);
+        return -1;
+    }
+
+    if (fs_mgr_is_voldmanaged(v)) {
+        LOGE("can't format vold volume \"%s\"", volume);
         return -1;
     }
 
@@ -319,7 +405,13 @@ int setup_install_mounts() {
             }
 
         } else {
-            if (ensure_path_unmounted(v->mount_point) != 0) {
+            // datamedia and anything managed by vold must be unmounted
+            // with the detach flag to ensure that FUSE works.
+            bool detach = false;
+            if (is_data_media() && strcmp(v->mount_point, "/data") == 0) {
+                detach = true;
+            }
+            if (ensure_volume_unmounted(v, detach) != 0) {
                 LOGE("failed to unmount %s\n", v->mount_point);
                 return -1;
             }

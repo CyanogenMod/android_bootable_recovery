@@ -60,6 +60,8 @@
 #include "ui.h"
 #include "screen_ui.h"
 
+#include "voldclient.h"
+
 extern "C" {
 #include "recovery_cmds.h"
 }
@@ -94,7 +96,6 @@ static const char *CONVERT_FBE_DIR = "/tmp/convert_fbe";
 static const char *CONVERT_FBE_FILE = "/tmp/convert_fbe/convert_fbe";
 static const char *CACHE_ROOT = "/cache";
 static const char *DATA_ROOT = "/data";
-static const char *SDCARD_ROOT = "/sdcard";
 static const char *TEMPORARY_LOG_FILE = "/tmp/recovery.log";
 static const char *TEMPORARY_INSTALL_FILE = "/tmp/last_install";
 static const char *LAST_KMSG_FILE = "/cache/recovery/last_kmsg";
@@ -117,6 +118,8 @@ bool modified_flash = false;
 static bool has_cache = false;
 
 extern "C" int toybox_driver(int argc, char **argv);
+
+#include "mtdutils/mounts.h"
 
 /*
  * The recovery tool communicates with the main system through /cache files.
@@ -661,7 +664,7 @@ static bool erase_volume(const char* volume) {
     return (result == 0);
 }
 
-static int
+int
 get_menu_selection(const char* const * headers, const char* const * items,
                    int menu_only, int initial_selection, Device* device) {
     // throw away keys pressed previously, so user doesn't
@@ -672,7 +675,7 @@ get_menu_selection(const char* const * headers, const char* const * items,
     int selected = initial_selection;
     int chosen_item = -1;
 
-    while (chosen_item < 0 && chosen_item != Device::kGoBack) {
+    while (chosen_item < 0 && chosen_item != Device::kGoBack && chosen_item != Device::kRefresh) {
         int key = ui->WaitKey();
         int visible = ui->IsTextVisible();
 
@@ -686,6 +689,9 @@ get_menu_selection(const char* const * headers, const char* const * items,
             }
         } else if (key == -2) { // we are returning from ui_cancel_wait_key(): trigger a GO_BACK
             return Device::kGoBack;
+        }
+        else if (key == -6) {
+            return Device::kRefresh;
         }
 
         int action = device->HandleMenuKey(key, visible);
@@ -706,6 +712,9 @@ get_menu_selection(const char* const * headers, const char* const * items,
                 case Device::kGoBack:
                     chosen_item = Device::kGoBack;
                     break;
+                case Device::kRefresh:
+                    chosen_item = Device::kRefresh;
+                    break;
             }
         } else if (!menu_only) {
             chosen_item = action;
@@ -722,8 +731,6 @@ static int compare_string(const void* a, const void* b) {
 
 // Returns a malloc'd path, or NULL.
 static char* browse_directory(const char* path, Device* device) {
-    ensure_path_mounted(path);
-
     DIR* d = opendir(path);
     if (d == NULL) {
         LOGE("error opening %s: %s\n", path, strerror(errno));
@@ -788,14 +795,14 @@ static char* browse_directory(const char* path, Device* device) {
     int chosen_item = 0;
     while (true) {
         chosen_item = get_menu_selection(headers, zips, 1, chosen_item, device);
-
-        char* item = zips[chosen_item];
-        int item_len = strlen(item);
-        if (chosen_item == 0) {          // item 0 is always "../"
+        if (chosen_item == 0 || chosen_item == Device::kGoBack) {
             // go up but continue browsing (if the caller is update_directory)
             result = NULL;
             break;
         }
+
+        char* item = zips[chosen_item];
+        int item_len = strlen(item);
 
         char new_path[PATH_MAX];
         strlcpy(new_path, path, PATH_MAX);
@@ -959,19 +966,22 @@ static void run_graphics_test(Device* device) {
 // appear, before timing out.
 #define SDCARD_INSTALL_TIMEOUT 10
 
-static int apply_from_sdcard(Device* device, bool* wipe_cache) {
+static int apply_from_storage(Device* device, const std::string& id, bool* wipe_cache) {
     modified_flash = true;
 
-    if (ensure_path_mounted(SDCARD_ROOT) != 0) {
-        ui->Print("\n-- Couldn't mount %s.\n", SDCARD_ROOT);
+    int status;
+
+    if (!vdc->volumeMount(id)) {
         return INSTALL_ERROR;
     }
 
-    char* path = browse_directory(SDCARD_ROOT, device);
+    VolumeInfo vi = vdc->getVolume(id);
+
+    char* path = browse_directory(vi.mInternalPath.c_str(), device);
     if (path == NULL) {
         ui->Print("\n-- No package file selected.\n");
-        ensure_path_unmounted(SDCARD_ROOT);
-        return INSTALL_ERROR;
+        vdc->volumeUnmount(vi.mId);
+        return INSTALL_NONE;
     }
 
     ui->Print("\n-- Install %s ...\n", path);
@@ -1012,6 +1022,8 @@ static int apply_from_sdcard(Device* device, bool* wipe_cache) {
             }
         }
 
+        vdc->volumeUnmount(vi.mId, true);
+
         result = install_package(FUSE_SIDELOAD_HOST_PATHNAME, wipe_cache,
                                  TEMPORARY_INSTALL_FILE, false, 0/*retry_count*/);
         break;
@@ -1030,8 +1042,54 @@ static int apply_from_sdcard(Device* device, bool* wipe_cache) {
         LOGE("Error exit from the fuse process: %d\n", WEXITSTATUS(status));
     }
 
-    ensure_path_unmounted(SDCARD_ROOT);
     return result;
+}
+
+static int
+show_apply_update_menu(Device* device) {
+    static const char* headers[] = { "Apply update", "", NULL };
+    char* menu_items[MAX_NUM_MANAGED_VOLUMES + 1 + 1];
+    std::vector<VolumeInfo> volumes = vdc->getVolumes();
+
+    const int item_sideload = 0;
+    int n, i;
+    std::vector<VolumeInfo>::iterator vitr;
+
+refresh:
+    menu_items[item_sideload] = strdup("Apply from ADB");
+
+    n = item_sideload + 1;
+    for (vitr = volumes.begin(); vitr != volumes.end(); ++vitr) {
+        menu_items[n] = (char*)malloc(256);
+        sprintf(menu_items[n], "Choose from %s", vitr->mLabel.c_str());
+        ++n;
+    }
+    menu_items[n] = NULL;
+
+    bool wipe_cache;
+    int status = INSTALL_ERROR;
+
+    for (;;) {
+        int chosen = get_menu_selection(headers, menu_items, 0, 0, device);
+        for (i = 0; i < n; ++i) {
+            free(menu_items[i]);
+        }
+        if (chosen == Device::kRefresh) {
+            goto refresh;
+        }
+        if (chosen == Device::kGoBack) {
+            break;
+        }
+        if (chosen == item_sideload) {
+            status = apply_from_adb(ui, &wipe_cache, TEMPORARY_INSTALL_FILE);
+        }
+        else {
+            std::string id = volumes[chosen - 1].mId;
+            status = apply_from_storage(device, id, &wipe_cache);
+        }
+    }
+
+    return status;
 }
 
 int ui_root_menu = 0;
@@ -1066,81 +1124,83 @@ prompt_and_wait(Device* device, int status) {
         Device::BuiltinAction chosen_action = device->InvokeMenuItem(chosen_item);
 
         bool should_wipe_cache = false;
-        switch (chosen_action) {
-            case Device::NO_ACTION:
-                break;
+        for (;;) {
+            switch (chosen_action) {
+                case Device::NO_ACTION:
+                    break;
 
-            case Device::REBOOT:
-            case Device::SHUTDOWN:
-            case Device::REBOOT_BOOTLOADER:
-                return chosen_action;
+                case Device::REBOOT:
+                case Device::SHUTDOWN:
+                case Device::REBOOT_BOOTLOADER:
+                    return chosen_action;
 
-            case Device::WIPE_DATA:
-                wipe_data(ui->IsTextVisible(), device);
-                if (!ui->IsTextVisible()) return Device::NO_ACTION;
-                break;
+                case Device::WIPE_DATA:
+                    wipe_data(ui->IsTextVisible(), device);
+                    if (!ui->IsTextVisible()) return Device::NO_ACTION;
+                    break;
 
-            case Device::WIPE_CACHE:
-                wipe_cache(ui->IsTextVisible(), device);
-                if (!ui->IsTextVisible()) return Device::NO_ACTION;
-                break;
+                case Device::WIPE_CACHE:
+                    wipe_cache(ui->IsTextVisible(), device);
+                    if (!ui->IsTextVisible()) return Device::NO_ACTION;
+                    break;
 
-            case Device::APPLY_ADB_SIDELOAD:
-            case Device::APPLY_SDCARD:
-                {
-                    bool adb = (chosen_action == Device::APPLY_ADB_SIDELOAD);
-                    if (adb) {
-                        status = apply_from_adb(ui, &should_wipe_cache, TEMPORARY_INSTALL_FILE);
-                    } else {
-                        status = apply_from_sdcard(device, &should_wipe_cache);
+                case Device::APPLY_UPDATE:
+                    {
+                        status = show_apply_update_menu(device);
+
+                        if (status == INSTALL_SUCCESS && should_wipe_cache) {
+                            if (!wipe_cache(false, device)) {
+                                status = INSTALL_ERROR;
+                            }
+                        }
+
+                        if (status != INSTALL_SUCCESS) {
+                            ui->SetBackground(RecoveryUI::ERROR);
+                            ui->Print("Installation aborted.\n");
+                            copy_logs();
+                        } else if (!ui->IsTextVisible()) {
+                            return Device::NO_ACTION;  // reboot if logs aren't visible
+                        } else {
+                            ui->Print("\nInstall complete.\n");
                     }
+                    break;
+                }
+                    break;
 
-                    if (status == INSTALL_SUCCESS && should_wipe_cache) {
-                        if (!wipe_cache(false, device)) {
-                            status = INSTALL_ERROR;
+                case Device::VIEW_RECOVERY_LOGS:
+                    choose_recovery_file(device);
+                    break;
+
+                case Device::RUN_GRAPHICS_TEST:
+                    run_graphics_test(device);
+                    break;
+
+                case Device::MOUNT_SYSTEM:
+                    char system_root_image[PROPERTY_VALUE_MAX];
+                    property_get("ro.build.system_root_image", system_root_image, "");
+
+                    // For a system image built with the root directory (i.e.
+                    // system_root_image == "true"), we mount it to /system_root, and symlink /system
+                    // to /system_root/system to make adb shell work (the symlink is created through
+                    // the build system).
+                    // Bug: 22855115
+                    if (strcmp(system_root_image, "true") == 0) {
+                        if (ensure_path_mounted_at("/", "/system_root") != -1) {
+                            ui->Print("Mounted /system.\n");
+                        }
+                    } else {
+                        if (ensure_path_mounted("/system") != -1) {
+                            ui->Print("Mounted /system.\n");
                         }
                     }
 
-                    if (status != INSTALL_SUCCESS) {
-                        ui->SetBackground(RecoveryUI::ERROR);
-                        ui->Print("Installation aborted.\n");
-                        copy_logs();
-                    } else if (!ui->IsTextVisible()) {
-                        return Device::NO_ACTION;  // reboot if logs aren't visible
-                    } else {
-                        ui->Print("\nInstall from %s complete.\n", adb ? "ADB" : "SD card");
-                    }
-                }
-                break;
-
-            case Device::VIEW_RECOVERY_LOGS:
-                choose_recovery_file(device);
-                break;
-
-            case Device::RUN_GRAPHICS_TEST:
-                run_graphics_test(device);
-                break;
-
-            case Device::MOUNT_SYSTEM:
-                char system_root_image[PROPERTY_VALUE_MAX];
-                property_get("ro.build.system_root_image", system_root_image, "");
-
-                // For a system image built with the root directory (i.e.
-                // system_root_image == "true"), we mount it to /system_root, and symlink /system
-                // to /system_root/system to make adb shell work (the symlink is created through
-                // the build system).
-                // Bug: 22855115
-                if (strcmp(system_root_image, "true") == 0) {
-                    if (ensure_path_mounted_at("/", "/system_root") != -1) {
-                        ui->Print("Mounted /system.\n");
-                    }
-                } else {
-                    if (ensure_path_mounted("/system") != -1) {
-                        ui->Print("Mounted /system.\n");
-                    }
-                }
-
-                break;
+                    break;
+            }
+            if (status == Device::kRefresh) {
+                status = 0;
+                continue;
+            }
+            break;
         }
     }
 }
@@ -1470,6 +1530,9 @@ int main(int argc, char **argv) {
     ui = device->GetUI();
     gCurrentUI = ui;
 
+    vdc = new VoldClient(device);
+    vdc->start();
+
     ui->SetLocale(locale);
     ui->Init();
     // Set background string to "installing security update" for security update,
@@ -1639,6 +1702,11 @@ int main(int argc, char **argv) {
 
     // Save logs and clean up before rebooting or shutting down.
     finish_recovery(send_intent);
+
+    vdc->unmountAll();
+    vdc->stop();
+
+    sync();
 
     switch (after) {
         case Device::SHUTDOWN:

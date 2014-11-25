@@ -153,6 +153,21 @@ unmount_mounted_volume(const MountedVolume *volume)
 }
 
 int
+unmount_mounted_volume_detach(const MountedVolume *volume)
+{
+    /* Intentionally pass NULL to umount if the caller tries
+     * to unmount a volume they already unmounted using this
+     * function.
+     */
+    int ret = umount2(volume->mount_point, MNT_DETACH);
+    if (ret == 0) {
+        free_volume_internals(volume, 1);
+        return 0;
+    }
+    return ret;
+}
+
+int
 remount_read_only(const MountedVolume* volume)
 {
     return mount(volume->device, volume->mount_point, volume->filesystem,

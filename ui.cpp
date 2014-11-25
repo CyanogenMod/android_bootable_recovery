@@ -38,6 +38,8 @@
 #include "screen_ui.h"
 #include "ui.h"
 
+#include "voldclient.h"
+
 #define UI_WAIT_KEY_TIMEOUT_SEC    120
 
 RecoveryUI::RecoveryUI()
@@ -46,6 +48,7 @@ RecoveryUI::RecoveryUI()
           key_long_press(false),
           key_down_count(0),
           enable_reboot(true),
+          v_changed(0),
           consecutive_power_keys(0),
           last_key(-1),
           has_power_key(false),
@@ -174,6 +177,9 @@ void RecoveryUI::ProcessKey(int key_code, int updown) {
             break;
 
           case RecoveryUI::REBOOT:
+#ifndef VERIFIER_TEST
+            vdc->unmountAll();
+#endif
             if (reboot_enabled) {
                 property_set(ANDROID_RB_PROPERTY, "reboot,");
                 while (true) { pause(); }
@@ -217,6 +223,7 @@ void RecoveryUI::EnqueueKey(int key_code) {
 
 int RecoveryUI::WaitKey() {
     pthread_mutex_lock(&key_queue_mutex);
+    int timeouts = UI_WAIT_KEY_TIMEOUT_SEC;
 
     // Time out after UI_WAIT_KEY_TIMEOUT_SEC, unless a USB cable is
     // plugged in.
@@ -226,13 +233,18 @@ int RecoveryUI::WaitKey() {
         gettimeofday(&now, nullptr);
         timeout.tv_sec = now.tv_sec;
         timeout.tv_nsec = now.tv_usec * 1000;
-        timeout.tv_sec += UI_WAIT_KEY_TIMEOUT_SEC;
+        timeout.tv_sec += 1;
 
         int rc = 0;
         while (key_queue_len == 0 && rc != ETIMEDOUT) {
             rc = pthread_cond_timedwait(&key_queue_cond, &key_queue_mutex, &timeout);
+            if (VolumesChanged()) {
+                pthread_mutex_unlock(&key_queue_mutex);
+                return Device::kRefresh;
+            }
+            timeouts--;
         }
-    } while (IsUsbConnected() && key_queue_len == 0);
+    } while ((timeouts || IsUsbConnected()) && key_queue_len == 0);
 
     int key = -1;
     if (key_queue_len > 0) {
@@ -336,4 +348,11 @@ void RecoveryUI::SetEnableReboot(bool enabled) {
     pthread_mutex_lock(&key_queue_mutex);
     enable_reboot = enabled;
     pthread_mutex_unlock(&key_queue_mutex);
+}
+
+bool RecoveryUI::VolumesChanged() {
+    int ret = v_changed;
+    if (v_changed > 0)
+        v_changed = 0;
+    return ret == 1;
 }
