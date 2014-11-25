@@ -44,12 +44,14 @@ LOCAL_SRC_FILES := \
     ui.cpp \
     verifier.cpp \
     wear_ui.cpp \
+    voldclient.cpp
 
 # External tools
 LOCAL_SRC_FILES += \
     ../../system/core/toolbox/newfs_msdos.c \
     ../../system/core/toolbox/start.c \
-    ../../system/core/toolbox/stop.c
+    ../../system/core/toolbox/stop.c \
+    ../../system/vold/vdc.c
 
 LOCAL_MODULE := recovery
 
@@ -78,6 +80,7 @@ LOCAL_STATIC_LIBRARIES := \
     libminipigz_static \
     libzopfli \
     libreboot_static \
+    libsdcard \
     libminzip \
     libz \
     libmtdutils \
@@ -105,11 +108,15 @@ ifeq ($(TARGET_USE_MDTP), true)
     LOCAL_CFLAGS += -DUSE_MDTP
 endif
 
-ifeq ($(TARGET_RECOVERY_UI_LIB),)
+LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
+LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
+LOCAL_C_INCLUDES += system/vold
+
+#ifeq ($(TARGET_RECOVERY_UI_LIB),)
   LOCAL_SRC_FILES += default_device.cpp
-else
-  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
-endif
+#else
+#  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
+#endif
 
 LOCAL_C_INCLUDES += system/extras/ext4_utils
 LOCAL_C_INCLUDES += external/boringssl/include
@@ -117,7 +124,9 @@ LOCAL_C_INCLUDES += external/boringssl/include
 ifeq ($(ONE_SHOT_MAKEFILE),)
 LOCAL_ADDITIONAL_DEPENDENCIES += \
     fstools \
-    recovery_mkshrc
+    recovery_mkshrc \
+    minivold \
+    recovery_sgdisk
 
 endif
 
@@ -126,7 +135,7 @@ LOCAL_ADDITIONAL_DEPENDENCIES += toybox_recovery_links
 
 # Set up the static symlinks
 RECOVERY_TOOLS := \
-    gunzip gzip make_ext4fs reboot setup_adbd sh start stop toybox unzip zip
+    gunzip gzip make_ext4fs reboot setup_adbd sh start stop toybox unzip vdc zip
 LOCAL_POST_INSTALL_CMD := \
 	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
 
@@ -209,6 +218,7 @@ LOCAL_MODULE := verifier_test
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE_TAGS := tests
 LOCAL_CFLAGS += -Wno-unused-parameter
+LOCAL_CFLAGS += -DVERIFIER_TEST
 LOCAL_SRC_FILES := \
     verifier_test.cpp \
     asn1_decoder.cpp \
@@ -220,6 +230,9 @@ LOCAL_STATIC_LIBRARIES := \
     libminzip \
     libcutils \
     libc
+LOCAL_C_INCLUDES += \
+    system/core/fs_mgr/include \
+    system/vold
 include $(BUILD_EXECUTABLE)
 
 

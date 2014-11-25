@@ -21,6 +21,8 @@
 #include <pthread.h>
 #include <time.h>
 
+#include "voldclient.h"
+
 // Abstract class for controlling the user interface during recovery.
 class RecoveryUI {
   public:
@@ -121,6 +123,9 @@ class RecoveryUI {
     // statements will be displayed.
     virtual void EndMenu() = 0;
 
+    // Notify of volume state change
+    void onVolumeChanged() { v_changed = 1; }
+
 protected:
     void EnqueueKey(int key_code);
 
@@ -135,6 +140,7 @@ private:
     int key_down_count;                // under key_queue_mutex
     bool enable_reboot;                // under key_queue_mutex
     int rel_sum;
+    int v_changed;
 
     int consecutive_power_keys;
     int last_key;
@@ -158,6 +164,8 @@ private:
     void ProcessKey(int key_code, int updown);
 
     bool IsUsbConnected();
+
+    bool VolumesChanged();
 
     static void* time_key_helper(void* cookie);
     void time_key(int key_code, int count);
