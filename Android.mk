@@ -205,11 +205,11 @@ LOCAL_SRC_FILES := \
     voldclient.cpp
 LOCAL_CFLAGS += -DMINIVOLD
 LOCAL_CFLAGS += -Wno-unused-parameter
-ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
+#ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
     LOCAL_CFLAGS += -DUSE_EXT4
     LOCAL_C_INCLUDES += system/extras/ext4_utils
     LOCAL_STATIC_LIBRARIES += libext4_utils_static libz
-endif
+#endif
 LOCAL_STATIC_LIBRARIES += \
     libsparse_static \
     libz \
