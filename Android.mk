@@ -101,15 +101,8 @@ ifeq ($(TARGET_HAVE_OEMLOCK), true)
     LOCAL_STATIC_LIBRARIES += liboemlock
 endif
 
-ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
-    LOCAL_CFLAGS += -DUSE_EXT4
-    LOCAL_C_INCLUDES += system/extras/ext4_utils system/vold
-    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz
-endif
-
-LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
-LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
-LOCAL_C_INCLUDES += system/vold
+LOCAL_CFLAGS += -DUSE_EXT4
+LOCAL_CFLAGS += -DMINIVOLD
 
 ifneq ($(BOARD_RECOVERY_BLDRMSG_OFFSET),)
     LOCAL_CFLAGS += -DBOARD_RECOVERY_BLDRMSG_OFFSET=$(BOARD_RECOVERY_BLDRMSG_OFFSET)
@@ -136,8 +129,12 @@ LOCAL_MODULE_TAGS := eng
 
 LOCAL_LDFLAGS += -Wl,--no-fatal-warnings
 
-LOCAL_C_INCLUDES += system/extras/ext4_utils
-LOCAL_C_INCLUDES += external/openssl/include
+LOCAL_C_INCLUDES +=            \
+    system/core/fs_mgr/include \
+    system/extras/ext4_utils   \
+    system/vold                \
+    external/fsck_msdos        \
+    external/openssl/include
 
 # Symlinks
 RECOVERY_LINKS := busybox getprop reboot sdcard setup_adbd setprop start stop vdc
@@ -190,14 +187,13 @@ LOCAL_SRC_FILES := \
     restore.cpp \
     messagesocket.cpp \
     roots.cpp
-LOCAL_CFLAGS += -DMINIVOLD
+
 LOCAL_CFLAGS += -Wno-unused-parameter
-ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
-    LOCAL_CFLAGS += -DUSE_EXT4
-    LOCAL_C_INCLUDES += system/extras/ext4_utils
-    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz
-endif
+LOCAL_CFLAGS += -DUSE_EXT4
+LOCAL_CFLAGS += -DMINIVOLD
+
 LOCAL_STATIC_LIBRARIES += \
+    libext4_utils_static \
     libsparse_static \
     libvoldclient \
     libz \
@@ -214,10 +210,11 @@ LOCAL_STATIC_LIBRARIES += \
     libm \
     libc
 
-LOCAL_C_INCLUDES +=         	\
-    system/core/fs_mgr/include	\
-    system/core/include     	\
+LOCAL_C_INCLUDES +=             \
+    system/core/fs_mgr/include  \
+    system/core/include         \
     system/core/libcutils       \
+    system/extras/ext4_utils    \
     system/vold                 \
     external/libtar             \
     external/libtar/listhash    \
