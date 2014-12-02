@@ -20,7 +20,7 @@
 class RecoveryUI;
 
 void start_sideload(RecoveryUI* h, int* wipe_cache, const char* install_file);
-void wait_sideload();
-int  stop_sideload();
+void stop_sideload();
+int  wait_sideload();
 
 #endif
