@@ -117,7 +117,7 @@ maybe_restart_adbd() {
 struct sideload_data {
     int*        wipe_cache;
     const char* install_file;
-    bool        joined;
+    bool        cancel;
     int         result;
 };
 
@@ -135,33 +135,48 @@ void *adb_sideload_thread(void* v) {
         _exit(-1);
     }
 
+    time_t start_time = time(NULL);
+    time_t now = start_time;
+
     // FUSE_SIDELOAD_HOST_PATHNAME will start to exist once the host
     // connects and starts serving a package.  Poll for its
     // appearance.  (Note that inotify doesn't work with FUSE.)
-    int result;
-    int status;
+    int result = INSTALL_NONE;
+    int status = -1;
     struct stat st;
-    for (int i = 0; i < ADB_INSTALL_TIMEOUT; ++i) {
+    while (now - start_time < ADB_INSTALL_TIMEOUT) {
+        /*
+         * Exit if either:
+         *  - The adb child process dies, or
+         *  - The ui tells us to cancel
+         */
         if (kill(child, 0) != 0) {
             result = INSTALL_ERROR;
             break;
         }
 
-        if (stat(FUSE_SIDELOAD_HOST_PATHNAME, &st) != 0) {
-            int err = errno;
-            printf("%s: stat sideload pathname returned errno=%d (%s)\n", __func__, errno, strerror(errno));
-            if (err == ENOENT && i < ADB_INSTALL_TIMEOUT-1) {
-                printf("%s: sleeping\n", __func__);
-                sleep(1);
-                continue;
-            } else {
-                ui->Print("\nTimed out waiting for package.\n\n", strerror(errno));
-                result = INSTALL_ERROR;
-                kill(child, SIGKILL);
-                break;
-            }
+        if (sideload_data.cancel) {
+            break;
         }
 
+        status = stat(FUSE_SIDELOAD_HOST_PATHNAME, &st);
+        if (status == 0) {
+            break;
+        }
+        if (errno != ENOENT && errno != ENOTCONN) {
+            ui->Print("\nError %s waiting for package\n\n", strerror(errno));
+            result = INSTALL_ERROR;
+            break;
+        }
+
+        sleep(1);
+        now = time(NULL);
+    }
+
+    // Signal UI thread that we can no longer cancel
+    ui->CancelWaitKey();
+
+    if (status == 0) {
         const char* sideload_pathname = FUSE_SIDELOAD_HOST_PATHNAME;
         bool copied = false;
 
@@ -179,20 +194,12 @@ void *adb_sideload_thread(void* v) {
         if (copied) {
             unlink(sideload_pathname);
         }
-
-        break;
     }
 
     sideload_data.result = result;
 
-    // Calling stat() on this magic filename signals the minadbd
-    // subprocess to shut down.
-    stat(FUSE_SIDELOAD_HOST_EXIT_PATHNAME, &st);
-
-    // TODO(dougz): there should be a way to cancel waiting for a
-    // package (by pushing some button combo on the device).  For now
-    // you just have to 'adb sideload' a file that's not a valid
-    // package, like "/dev/null".
+    // Ensure adb exits
+    kill(child, SIGTERM);
     waitpid(child, &status, 0);
 
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
@@ -219,31 +226,21 @@ start_sideload(RecoveryUI* ui_, int* wipe_cache, const char* install_file) {
 
     sideload_data.wipe_cache = wipe_cache;
     sideload_data.install_file = install_file;
-    sideload_data.joined = false;
-    sideload_data.result = 0;
+    sideload_data.cancel = false;
+    sideload_data.result = INSTALL_NONE;
 
     pthread_create(&sideload_thread, NULL, &adb_sideload_thread, NULL);
 }
 
-void wait_sideload() {
-    if (!sideload_data.joined) {
-        pthread_join(sideload_thread, NULL);
-        sideload_data.joined = true;
-    }
+void stop_sideload() {
+    sideload_data.cancel = true;
 }
 
-int stop_sideload() {
+int wait_sideload() {
     set_perf_mode(true);
 
-    // Calling stat() on this magic filename signals the minadbd
-    // subprocess to shut down.
-    struct stat st;
-    stat(FUSE_SIDELOAD_HOST_EXIT_PATHNAME, &st);
+    pthread_join(sideload_thread, NULL);
 
-    if (!sideload_data.joined) {
-        pthread_join(sideload_thread, NULL);
-        sideload_data.joined = true;
-    }
     ui->FlushKeys();
 
     maybe_restart_adbd();

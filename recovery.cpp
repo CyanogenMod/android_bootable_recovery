@@ -853,10 +853,10 @@ static int enter_sideload_mode(int* wipe_cache, Device* device) {
 
     int status = INSTALL_NONE;
     int item = get_menu_selection(headers, list, 0, 0, device);
-    if (item == Device::kNoAction) {
-        wait_sideload();
+    if (item != Device::kNoAction) {
+        stop_sideload();
     }
-    status = stop_sideload();
+    status = wait_sideload();
 
     if (status >= 0 && status != INSTALL_NONE) {
         if (status != INSTALL_SUCCESS) {
