@@ -27,6 +27,9 @@ else
   common_cflags += -DOVERSCAN_PERCENT=0
 endif
 
+ifneq ($(BOARD_USE_CUSTOM_RECOVERY_FONT),)
+  common_cflags += -DRECOVERY_FONT=$(BOARD_USE_CUSTOM_RECOVERY_FONT)
+ENDIF
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libminui
