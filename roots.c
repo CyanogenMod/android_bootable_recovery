@@ -41,10 +41,14 @@ static struct fstab *fstab = NULL;
 extern struct selabel_handle *sehandle;
 
 int get_num_volumes() {
+    if (fstab == 0)
+	return 0;
     return fstab->num_entries;
 }
 
 Volume* get_device_volumes() {
+    if (fstab == 0)
+	return 0;
     return fstab->recs;
 }
 
