@@ -477,7 +477,7 @@ int is_data_media_preserved() {
 void setup_legacy_storage_paths() {
     char* primary_path = get_primary_storage_path();
 
-    if (!is_data_media_volume_path(primary_path)) {
+    if (!is_data_media_volume_path(primary_path) && strcmp(primary_path, "/sdcard") != 0) {
         rmdir("/sdcard");
         symlink(primary_path, "/sdcard");
     }
