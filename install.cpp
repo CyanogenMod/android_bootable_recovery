@@ -255,9 +255,10 @@ really_install_package(const char *path, int* wipe_cache, bool needs_mount)
 
     set_perf_mode(true);
 
-    ui->Print("Verifying update package...\n");
-
     int err;
+
+#ifndef DISABLE_SIGCHECK
+    ui->Print("Verifying update package...\n");
 
     // Because we mmap() the update file which is backed by FUSE, we get
     // SIGBUS when the host aborts the transfer.  We handle this by using
@@ -279,6 +280,7 @@ really_install_package(const char *path, int* wipe_cache, bool needs_mount)
         ret = INSTALL_CORRUPT;
         goto out;
     }
+#endif
 
     /* Try to open the package.
      */
