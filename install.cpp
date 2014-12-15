@@ -251,6 +251,7 @@ really_install_package(const char *path, int* wipe_cache, bool needs_mount)
     ui->Print("Verifying update package...\n");
 
     int err;
+#ifndef DISABLE_SIGCHECK
     err = verify_file(map.addr, map.length, loadedKeys, numKeys);
     free(loadedKeys);
     LOGI("verify_file returned %d\n", err);
@@ -260,6 +261,7 @@ really_install_package(const char *path, int* wipe_cache, bool needs_mount)
         ret = INSTALL_CORRUPT;
         goto out;
     }
+#endif
 
     // Past the point of no return
     ui->CancelWaitKey();

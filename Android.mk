@@ -101,6 +101,11 @@ ifeq ($(TARGET_HAVE_OEMLOCK), true)
     LOCAL_STATIC_LIBRARIES += liboemlock
 endif
 
+# Disable signature checking on eng and userdebug builds
+ifneq ($(filter eng userdebug,$(TARGET_BUILD_VARIANT)),)
+    LOCAL_CFLAGS += -DDISABLE_SIGCHECK
+endif
+
 ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
     LOCAL_CFLAGS += -DUSE_EXT4
     LOCAL_C_INCLUDES += system/extras/ext4_utils system/vold
