@@ -80,59 +80,6 @@ struct sideload_data {
 
 static struct sideload_data sideload_data;
 
-#include <ctype.h>
-static uint64_t free_memory() {
-    uint64_t mem = 0;
-    FILE* fp = fopen("/proc/meminfo", "r");
-    if (fp) {
-        char buf[256];
-        char* linebuf = buf; // XXX: why can't we use &buf?
-        size_t buflen = sizeof(buf);
-        while (getline(&linebuf, &buflen, fp) > 0) {
-            char* key = buf;
-            char* val = strchr(buf, ':');
-            *val = '\0';
-            ++val;
-            while (isspace(*val)) ++val;
-            if (strcmp(key, "MemFree") == 0) {
-                mem = strtoul(val, NULL, 0) * 1024;
-            }
-        }
-        fclose(fp);
-    }
-    printf("%s: mem=%llu\n", __func__, mem);
-    return mem;
-}
-
-#define INSTALL_REQUIRED_MEMORY (100*1024*1024)
-
-#define ADB_SIDELOAD_FILENAME "/tmp/update.zip"
-
-static int adb_copy_file(const char* fuse_pathname, off_t size) {
-    int sfd = open(fuse_pathname, O_RDONLY);
-    int dfd = creat(ADB_SIDELOAD_FILENAME, 0600);
-    int rc = 0;
-    while (size > 0) {
-        char buf[65536];
-        ssize_t len = read(sfd, buf, sizeof(buf));
-        if (len < 0) {
-            rc = -1;
-            break;
-        }
-        if (len > 0) {
-            write(dfd, buf, len);
-            size -= len;
-        }
-        if (sideload_data.cancel) {
-            rc = -1;
-            break;
-        }
-    }
-    close(dfd);
-    close(sfd);
-    return rc;
-}
-
 // How long (in seconds) we wait for the host to start sending us a
 // package, before timing out.
 #define ADB_INSTALL_TIMEOUT 300
@@ -184,30 +131,16 @@ void *adb_sideload_thread(void* v) {
     }
 
     if (status == 0) {
-        if (free_memory() >= (uint64_t)(st.st_size + INSTALL_REQUIRED_MEMORY)) {
-            result = INSTALL_ERROR;
-            if (adb_copy_file(FUSE_SIDELOAD_HOST_PATHNAME, st.st_size) == 0) {
-                // Signal UI thread that we can no longer cancel
-                ui->CancelWaitKey();
-                result = install_package(ADB_SIDELOAD_FILENAME,
-                                         sideload_data.wipe_cache,
-                                         sideload_data.install_file,
-                                         false);
-                unlink(ADB_SIDELOAD_FILENAME);
-            }
-        }
-        else {
-            // Signal UI thread that we can no longer cancel
-            ui->CancelWaitKey();
-            result = install_package(FUSE_SIDELOAD_HOST_PATHNAME,
-                                     sideload_data.wipe_cache,
-                                     sideload_data.install_file,
-                                     false);
-        }
+        // Signal UI thread that we can no longer cancel
+        ui->CancelWaitKey();
 
+        result = install_package(FUSE_SIDELOAD_HOST_PATHNAME,
+                                 sideload_data.wipe_cache,
+                                 sideload_data.install_file,
+                                 false);
+
+        sideload_data.result = result;
     }
-
-    sideload_data.result = result;
 
     // Ensure adb exits
     kill(child, SIGTERM);
