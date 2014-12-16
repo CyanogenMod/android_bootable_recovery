@@ -917,6 +917,7 @@ show_apply_update_menu(Device* device) {
             }
             else {
                  ui->Print("\n-- No package file selected.\n", path);
+                 status = INSTALL_NONE;
             }
         }
         else {
