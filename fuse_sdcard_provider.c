@@ -119,11 +119,6 @@ void* start_sdcard_fuse(const char* path) {
         }
     }
 
-    // The installation process expects to find the sdcard unmounted.
-    // Unmount it with MNT_DETACH so that our open file continues to
-    // work but new references see it as unmounted.
-    umount2("/sdcard", MNT_DETACH);
-
     return t;
 }
 

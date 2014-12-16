@@ -322,7 +322,7 @@ int ensure_volume_mounted(fstab_rec* v) {
     return -1;
 }
 
-int ensure_path_unmounted(const char* path) {
+int ensure_path_unmounted(const char* path, bool detach) {
     fstab_rec* v;
     if (memcmp(path, "/storage/", 9) == 0) {
         char label[PATH_MAX];
@@ -344,10 +344,10 @@ int ensure_path_unmounted(const char* path) {
         LOGE("unknown volume for path [%s]\n", path);
         return -1;
     }
-    return ensure_volume_unmounted(v);
+    return ensure_volume_unmounted(v, detach);
 }
 
-int ensure_volume_unmounted(fstab_rec* v) {
+int ensure_volume_unmounted(fstab_rec* v, bool detach) {
     if (v == NULL) {
         LOGE("cannot unmount unknown volume\n");
         return -1;
@@ -366,9 +366,9 @@ int ensure_volume_unmounted(fstab_rec* v) {
 
     if (fs_mgr_is_voldmanaged(v)) {
         if (!strcmp(v->mount_point, "auto")) {
-            return vold_unmount_auto_volume(v->label, 0, 1);
+            return vold_unmount_auto_volume(v->label, 0, 1, detach);
         }
-        return vold_unmount_volume(v->mount_point, 0, 1);
+        return vold_unmount_volume(v->mount_point, 0, 1, detach);
     }
 
     const MountedVolume* mv =
@@ -378,7 +378,14 @@ int ensure_volume_unmounted(fstab_rec* v) {
         return 0;
     }
 
-    return unmount_mounted_volume(mv);
+    if (detach) {
+        result = unmount_mounted_volume_detach(mv);
+    }
+    else {
+        result = unmount_mounted_volume(mv);
+    }
+
+    return result;
 }
 
 static int exec_cmd(const char* path, char* const argv[]) {
@@ -638,7 +645,16 @@ int setup_install_mounts() {
             }
 
         } else {
-            if (ensure_path_unmounted(v->mount_point) != 0) {
+            // datamedia and anything managed by vold must be unmounted
+            // with the detach flag to ensure that FUSE works.
+            bool detach = false;
+            if (is_data_media() && strcmp(v->mount_point, "/data") == 0) {
+                detach = true;
+            }
+            if (fs_mgr_is_voldmanaged(v)) {
+                detach = true;
+            }
+            if (ensure_volume_unmounted(v, detach) != 0) {
                 LOGE("failed to unmount %s\n", v->mount_point);
                 return -1;
             }

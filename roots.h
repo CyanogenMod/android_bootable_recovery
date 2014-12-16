@@ -37,8 +37,8 @@ int ensure_path_mounted(const char* path);
 
 // Make sure that the volume 'path' is on is mounted.  Returns 0 on
 // success (volume is unmounted);
-int ensure_volume_unmounted(fstab_rec *v);
-int ensure_path_unmounted(const char* path);
+int ensure_volume_unmounted(fstab_rec *v, bool detach=false);
+int ensure_path_unmounted(const char* path, bool detach=false);
 
 // Reformat the given volume (must be the mount point only, eg
 // "/cache"), no paths permitted.  Attempts to unmount the volume if
