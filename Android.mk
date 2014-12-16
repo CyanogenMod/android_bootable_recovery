@@ -148,6 +148,8 @@ BUSYBOX_LINKS := $(shell cat external/busybox/busybox-minimal.links)
 exclude := tune2fs mke2fs
 RECOVERY_BUSYBOX_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(filter-out $(exclude),$(notdir $(BUSYBOX_LINKS))))
 
+ifeq ($(ONE_SHOT_MAKEFILE),)
+
 LOCAL_ADDITIONAL_DEPENDENCIES += \
     minivold \
     recovery_e2fsck \
@@ -162,6 +164,8 @@ LOCAL_ADDITIONAL_DEPENDENCIES += $(RECOVERY_SYMLINKS) $(RECOVERY_BUSYBOX_SYMLINK
 
 ifneq ($(TARGET_RECOVERY_DEVICE_MODULES),)
     LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_RECOVERY_DEVICE_MODULES)
+endif
+
 endif
 
 include $(BUILD_EXECUTABLE)
