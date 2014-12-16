@@ -78,9 +78,10 @@ int vold_mount_auto_volume(const char* label, bool wait) {
     return vold_command(3, cmd, wait);
 }
 
-int vold_unmount_volume(const char* path, bool force, bool wait) {
+int vold_unmount_volume(const char* path, bool force, bool wait, bool detach) {
 
-    const char *cmd[4] = { "volume", "unmount", path, "force" };
+    const char *cmd[4] = { "volume", "unmount", path, NULL };
+    int cmdlen = 3;
     int state = vold_get_volume_state(path);
 
     if (state <= Volume::State_Idle) {
@@ -93,14 +94,24 @@ int vold_unmount_volume(const char* path, bool force, bool wait) {
         return -1;
     }
 
-    return vold_command(force ? 4: 3, cmd, wait);
+    if (force) {
+        cmd[3] = "force";
+        cmdlen = 4;
+    }
+    else if (detach) {
+        cmd[3] = "detach";
+        cmdlen = 4;
+    }
+
+    return vold_command(cmdlen, cmd, wait);
 }
 
-int vold_unmount_auto_volume(const char* label, bool force, bool wait) {
+int vold_unmount_auto_volume(const char* label, bool force, bool wait, bool detach) {
 
     char path[80];
     sprintf(path, "/storage/%s", label);
-    const char *cmd[4] = { "volume", "unmount", label, "force" };
+    const char *cmd[4] = { "volume", "unmount", label, NULL };
+    int cmdlen = 3;
     int state = vold_get_volume_state(path);
 
     if (state <= Volume::State_Idle) {
@@ -113,7 +124,16 @@ int vold_unmount_auto_volume(const char* label, bool force, bool wait) {
         return -1;
     }
 
-    return vold_command(force ? 4: 3, cmd, wait);
+    if (force) {
+        cmd[3] = "force";
+        cmdlen = 4;
+    }
+    else if (detach) {
+        cmd[3] = "detach";
+        cmdlen = 4;
+    }
+
+    return vold_command(cmdlen, cmd, wait);
 }
 
 int vold_share_volume(const char* path) {
