@@ -76,6 +76,9 @@ struct sideload_data {
     const char* install_file;
     bool        cancel;
     int         result;
+
+    pthread_mutex_t cancel_mutex;
+    pthread_cond_t  cancel_cond;
 };
 
 static struct sideload_data sideload_data;
@@ -179,7 +182,15 @@ void *adb_sideload_thread(void* v) {
             break;
         }
 
-        sleep(1);
+        struct timespec timeout;
+        timeout.tv_sec = now.tv_sec;
+        timeout.tv_nsec = now.tv_usec * 1000;
+        timeout.tv_sec += 1;
+
+        pthread_mutex_lock(&sideload_data.cancel_mutex);
+        pthread_cond_timedwait(&sideload_data.cancel_cond, &sideload_data.cancel_mutex, &timeout);
+        pthread_mutex_unlock(&sideload_data.cancel_mutex);
+
         now = time(NULL);
     }
 
@@ -239,12 +250,17 @@ start_sideload(RecoveryUI* ui_, int* wipe_cache, const char* install_file) {
     sideload_data.install_file = install_file;
     sideload_data.cancel = false;
     sideload_data.result = INSTALL_NONE;
+    pthread_mutex_init(&sideload_data.cancel_mutex, NULL);
+    pthread_cond_init(&sideload_data.cancel_cond, NULL);
 
     pthread_create(&sideload_thread, NULL, &adb_sideload_thread, NULL);
 }
 
 void stop_sideload() {
     sideload_data.cancel = true;
+    pthread_mutex_lock(&sideload_data.cancel_mutex);
+    pthread_cond_signal(&sideload_data.cancel_cond);
+    pthread_mutex_unlock(&sideload_data.cancel_mutex);
 }
 
 int wait_sideload() {
