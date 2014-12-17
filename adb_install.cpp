@@ -118,7 +118,11 @@ struct sideload_data {
     int*        wipe_cache;
     const char* install_file;
     bool        joined;
+    bool        canceled;
     int         result;
+
+    pthread_mutex_t cancel_mutex;
+    pthread_cond_t  cancel_cond;
 };
 
 static struct sideload_data sideload_data;
@@ -152,8 +156,25 @@ void *adb_sideload_thread(void* v) {
             printf("%s: stat sideload pathname returned errno=%d (%s)\n", __func__, errno, strerror(errno));
             if (err == ENOENT && i < ADB_INSTALL_TIMEOUT-1) {
                 printf("%s: sleeping\n", __func__);
-                sleep(1);
-                continue;
+
+                struct timeval now;
+                struct timespec timeout;
+                gettimeofday(&now, NULL);
+                timeout.tv_sec = now.tv_sec;
+                timeout.tv_nsec = now.tv_usec * 1000;
+                timeout.tv_sec += 1;
+
+                pthread_mutex_lock(&sideload_data.cancel_mutex);
+                pthread_cond_timedwait(&sideload_data.cancel_cond, &sideload_data.cancel_mutex, &timeout);
+                pthread_mutex_unlock(&sideload_data.cancel_mutex);
+
+                if (sideload_data.canceled) {
+                    result = INSTALL_NONE;
+                    kill(child, SIGKILL);
+                    break;
+                } else {
+                    continue;
+                }
             } else {
                 ui->Print("\nTimed out waiting for package.\n\n", strerror(errno));
                 result = INSTALL_ERROR;
@@ -221,6 +242,9 @@ start_sideload(RecoveryUI* ui_, int* wipe_cache, const char* install_file) {
     sideload_data.install_file = install_file;
     sideload_data.joined = false;
     sideload_data.result = 0;
+    sideload_data.canceled = false;
+    pthread_mutex_init(&sideload_data.cancel_mutex, NULL);
+    pthread_cond_init(&sideload_data.cancel_cond, NULL);
 
     pthread_create(&sideload_thread, NULL, &adb_sideload_thread, NULL);
 }
@@ -239,6 +263,11 @@ int stop_sideload() {
     // subprocess to shut down.
     struct stat st;
     stat(FUSE_SIDELOAD_HOST_EXIT_PATHNAME, &st);
+
+    pthread_mutex_lock(&sideload_data.cancel_mutex);
+    sideload_data.canceled = true;
+    pthread_cond_signal(&sideload_data.cancel_cond);
+    pthread_mutex_unlock(&sideload_data.cancel_mutex);
 
     if (!sideload_data.joined) {
         pthread_join(sideload_thread, NULL);
