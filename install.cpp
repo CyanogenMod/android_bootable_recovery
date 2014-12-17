@@ -248,6 +248,7 @@ really_install_package(const char *path, int* wipe_cache, bool needs_mount)
 
     set_perf_mode(true);
 
+    ui->CancelWaitKey();
     ui->Print("Verifying update package...\n");
 
     int err;
@@ -260,9 +261,6 @@ really_install_package(const char *path, int* wipe_cache, bool needs_mount)
         ret = INSTALL_CORRUPT;
         goto out;
     }
-
-    // Past the point of no return
-    ui->CancelWaitKey();
 
     /* Try to open the package.
      */
