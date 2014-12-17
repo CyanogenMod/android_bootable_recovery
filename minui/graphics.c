@@ -340,7 +340,7 @@ void gr_blit(GRSurface* source, int sx, int sy, int w, int h, int dx, int dy) {
     unsigned char* src_p = source->data + sy*source->row_bytes + sx*source->pixel_bytes;
     unsigned char* dst_p = gr_draw->data + dy*gr_draw->row_bytes + dx*gr_draw->pixel_bytes;
 
-    icon_blend_alpha(src_p,source->row_bytes,dst_p,gr_draw->row_bytes,source->width,source->height);
+    icon_blend_alpha(src_p, source->row_bytes, dst_p, gr_draw->row_bytes, w, h);
 }
 
 unsigned int gr_get_width(GRSurface* surface) {
