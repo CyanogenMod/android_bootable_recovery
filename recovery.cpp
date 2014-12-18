@@ -896,6 +896,12 @@ show_apply_update_menu(Device* device) {
     }
     if (chosen == item_sideload) {
         status = enter_sideload_mode(&wipe_cache, device);
+        if (status == INSTALL_ABORT) {
+            ui->SetProgressType(RecoveryUI::EMPTY);
+            ui->DialogShowErrorLog("Install aborted, restarting...");
+            sleep(5);
+            _exit(1);
+        }
     }
     else {
         storage_item* item = &items[chosen-1];

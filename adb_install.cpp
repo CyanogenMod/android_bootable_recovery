@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <setjmp.h>
 
 #include "ui.h"
 #include "cutils/properties.h"
@@ -84,6 +85,12 @@ static struct sideload_data sideload_data;
 // package, before timing out.
 #define ADB_INSTALL_TIMEOUT 300
 
+static jmp_buf jb;
+static void sig_bus(int sig)
+{
+    longjmp(jb, 1);
+}
+
 void *adb_sideload_thread(void* v) {
 
     pid_t child;
@@ -128,6 +135,17 @@ void *adb_sideload_thread(void* v) {
 
         sleep(1);
         now = time(NULL);
+    }
+
+    // Because we mmap() the update file which is backed by FUSE, we get
+    // SIGBUS when the host aborts the transfer.  We handle this by using
+    // setjmp/longjmp.  After we get SIGBUS and do a longjmp, the process
+    // will be in a unexpected/undefined state, so we return INSTALL_ABORT
+    // to let the main recovery process briefly show an error and restart.
+    signal(SIGBUS, sig_bus);
+    if (setjmp(jb) != 0) {
+        sideload_data.result = INSTALL_ABORT;
+        status = -1;
     }
 
     if (status == 0) {
