@@ -407,10 +407,10 @@ static int handle_read(void* data, struct fuse_data* fd, const struct fuse_in_he
     return NO_STATUS;
 }
 
+static volatile int terminated = 0;
 static void sig_term(int sig)
 {
-    umount2(FUSE_SIDELOAD_HOST_MOUNTPOINT, MNT_FORCE);
-    _exit(-1);
+    terminated = 1;
 }
 
 int run_fuse_sideload(struct provider_vtab* vtab, void* cookie,
@@ -510,7 +510,17 @@ int run_fuse_sideload(struct provider_vtab* vtab, void* cookie,
         goto done;
     }
     uint8_t request_buffer[sizeof(struct fuse_in_header) + PATH_MAX*8];
-    for (;;) {
+    while (!terminated) {
+        fd_set fds;
+        struct timeval tv;
+        FD_ZERO(&fds);
+        FD_SET(fd.ffd, &fds);
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        int rc = select(fd.ffd+1, &fds, NULL, NULL, &tv);
+        if (rc <= 0) {
+            continue;
+        }
         ssize_t len = read(fd.ffd, request_buffer, sizeof(request_buffer));
         if (len < 0) {
             if (errno != EINTR) {
