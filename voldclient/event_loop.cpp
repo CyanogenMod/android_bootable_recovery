@@ -64,16 +64,15 @@ static int vold_connect() {
     while (retries > 0) {
         if ((sock = socket_local_client("vold",
                                          ANDROID_SOCKET_NAMESPACE_RESERVED,
-                                         SOCK_STREAM)) < 0) {
-            LOGE("Error connecting to Vold! (%s)\n", strerror(errno));
-        } else {
+                                         SOCK_STREAM)) >= 0) {
             LOGI("Connected to Vold..\n");
-            ret = 1;
-            break;
+            return 1;
         }
         sleep(1);
         retries--;
     }
+
+    LOGE("Error connecting to Vold! (%s)\n", strerror(errno));
     return ret;
 }
 
