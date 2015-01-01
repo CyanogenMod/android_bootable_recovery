@@ -28,6 +28,9 @@
 
 #include "mtdutils.h"
 
+static const char mtdprefix[] = "/dev/block/mtd/by-name/";
+#define MTD_BASENAME_OFFSET (sizeof(mtdprefix)-1+1)
+
 struct MtdPartition {
     int device_index;
     unsigned int size;
@@ -144,7 +147,7 @@ mtd_scan_partitions()
             p->device_index = mtdnum;
             p->size = mtdsize;
             p->erase_size = mtderasesize;
-            p->name = strdup(mtdname);
+            asprintf(&p->name, "%s%s", mtdprefix, mtdname);
             if (p->name == NULL) {
                 errno = ENOMEM;
                 goto bail;
@@ -181,6 +184,9 @@ mtd_find_partition_by_name(const char *name)
             MtdPartition *p = &g_mtd_state.partitions[i];
             if (p->device_index >= 0 && p->name != NULL) {
                 if (strcmp(p->name, name) == 0) {
+                    return p;
+                }
+                if (strcmp(p->name+MTD_BASENAME_OFFSET, name) == 0) {
                     return p;
                 }
             }
