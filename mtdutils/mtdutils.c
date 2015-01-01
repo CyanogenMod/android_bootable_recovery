@@ -131,6 +131,7 @@ mtd_scan_partitions()
         int mtdnum, mtdsize, mtderasesize;
         int matches;
         char mtdname[64];
+        char mtdpartname[64];
         mtdname[0] = '\0';
         mtdnum = -1;
 
@@ -144,7 +145,8 @@ mtd_scan_partitions()
             p->device_index = mtdnum;
             p->size = mtdsize;
             p->erase_size = mtderasesize;
-            p->name = strdup(mtdname);
+            sprintf(mtdpartname, "/dev/block/mtd/by-name/%s", mtdname);
+            p->name = strdup(mtdpartname);
             if (p->name == NULL) {
                 errno = ENOMEM;
                 goto bail;
