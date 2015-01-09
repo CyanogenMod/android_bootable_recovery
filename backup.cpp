@@ -31,7 +31,7 @@ static int append_sod(const char* opt_hash)
     strcpy(value, opt_hash);
     p += sprintf(p, "%s=%s\n", key, value);
 
-    key = "ro.build.product";
+    key = "ro.product.device";
     property_get(key, value, "");
     p += sprintf(p, "%s=%s\n", key, value);
 
