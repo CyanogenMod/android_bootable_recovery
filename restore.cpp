@@ -54,7 +54,7 @@ static int verify_sod()
             if (strcmp(key, "hash.name") == 0) {
                 strncpy(val_hashname, val, sizeof(val_hashname));
             }
-            if (strcmp(key, "ro.build.product") == 0) {
+            if (strcmp(key, "ro.product.device") == 0) {
                 strncpy(val_product, val, sizeof(val_product));
             }
             if (strncmp(key, "fs.", 3) == 0) {
@@ -83,10 +83,10 @@ static int verify_sod()
     hash_name = strdup(val_hashname);
 
     if (!val_product[0]) {
-        logmsg("verify_sod: did not find ro.build.product\n");
+        logmsg("verify_sod: did not find ro.product.device\n");
         return -1;
     }
-    key = "ro.build.product";
+    key = "ro.product.device";
     property_get(key, value, "");
     if (strcmp(val_product, value) != 0) {
         logmsg("verify_sod: product does not match\n");
