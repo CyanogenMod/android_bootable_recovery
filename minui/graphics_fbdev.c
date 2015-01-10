@@ -81,6 +81,7 @@ static void set_displayed_framebuffer(unsigned n)
 static gr_surface fbdev_init(minui_backend* backend) {
     int fd;
     void *bits;
+    int offsetbak;
 
     struct fb_fix_screeninfo fi;
 
@@ -125,17 +126,10 @@ static gr_surface fbdev_init(minui_backend* backend) {
 
     if (vi.bits_per_pixel != 32) {
         vi.bits_per_pixel = 32;
-#ifdef RECOVERY_BGRA
-        vi.red.offset     = 8;
-        vi.green.offset   = 16;
-        vi.blue.offset    = 24;
-        vi.transp.offset  = 0;
-#else
         vi.red.offset     = 24;
         vi.green.offset   = 16;
         vi.blue.offset    = 8;
         vi.transp.offset  = 0;
-#endif
         vi.red.length     = 8;
         vi.green.length   = 8;
         vi.blue.length    = 8;
@@ -151,6 +145,12 @@ static gr_surface fbdev_init(minui_backend* backend) {
             return NULL;
         }
     }
+
+#ifdef RECOVERY_BGRA
+    offsetbak = vi.red.offset;
+    vi.red.offset = vi.blue.offset;
+    vi.blue.offset = offsetbak;
+#endif
 
     bits = mmap(0, fi.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (bits == MAP_FAILED) {
