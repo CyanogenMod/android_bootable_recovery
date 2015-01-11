@@ -33,6 +33,7 @@
 #include <sys/xattr.h>
 #include <linux/xattr.h>
 #include <inttypes.h>
+#include <blkid/blkid.h>
 
 #include "bootloader.h"
 #include "applypatch/applypatch.h"
@@ -169,6 +170,18 @@ Value* MountFn(const char* name, State* state, int argc, Expr* argv[]) {
         }
         result = mount_point;
     } else {
+        if (strcmp(fs_type, "auto") == 0) {
+            fs_type = blkid_get_tag_value(NULL, "TYPE", location);
+            if (fs_type) {
+                uiPrintf(state, "detected filesystem %s for %s\n",
+                        fs_type, location);
+            } else {
+                ErrorAbort(state, "could not detect filesystem for %s\n",
+                        location);
+                goto done;
+            }
+        }
+
         if (mount(location, mount_point, fs_type,
                   MS_NOATIME | MS_NODEV | MS_NODIRATIME,
                   has_mount_options ? mount_options : "") < 0) {
