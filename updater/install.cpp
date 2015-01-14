@@ -33,6 +33,7 @@
 #include <sys/xattr.h>
 #include <linux/xattr.h>
 #include <inttypes.h>
+#include <blkid/blkid.h>
 
 #include <memory>
 #include <vector>
@@ -186,6 +187,16 @@ Value* MountFn(const char* name, State* state, int argc, Expr* argv[]) {
         }
         result = mount_point;
     } else {
+        char *detected_fs_type = blkid_get_tag_value(NULL, "TYPE", location);
+        if (detected_fs_type) {
+            uiPrintf(state, "detected filesystem %s for %s\n",
+                    detected_fs_type, location);
+            fs_type = detected_fs_type;
+        } else {
+            uiPrintf(state, "could not detect filesystem for %s, assuming %s\n",
+                    location, fs_type);
+        }
+
         if (mount(location, mount_point, fs_type,
                   MS_NOATIME | MS_NODEV | MS_NODIRATIME,
                   has_mount_options ? mount_options : "") < 0) {

@@ -41,6 +41,9 @@ LOCAL_STATIC_LIBRARIES += \
     libsparse_static \
     libz
 
+LOCAL_C_INCLUDES += external/e2fsprogs/lib
+LOCAL_STATIC_LIBRARIES += libext2_blkid libext2_uuid
+
 ifneq ($(BOARD_RECOVERY_BLDRMSG_OFFSET),)
     LOCAL_CFLAGS += -DBOARD_RECOVERY_BLDRMSG_OFFSET=$(BOARD_RECOVERY_BLDRMSG_OFFSET)
 endif
