@@ -37,6 +37,7 @@ extern "C" {
 }
 
 #include "voldclient/voldclient.h"
+#include <blkid/blkid.h>
 
 static struct fstab *fstab = NULL;
 
@@ -224,7 +225,27 @@ void free_storage_items(storage_item* items) {
 }
 
 fstab_rec* volume_for_path(const char* path) {
-    return fs_mgr_get_entry_for_mount_point(fstab, path);
+    fstab_rec *rec = fs_mgr_get_entry_for_mount_point(fstab, path);
+
+    if (rec == NULL)
+        return rec;
+
+    if (strcmp(rec->fs_type, "ext4") == 0 || strcmp(rec->fs_type, "f2fs") == 0 ||
+            strcmp(rec->fs_type, "vfat") == 0) {
+        char *detected_fs_type = blkid_get_tag_value(NULL, "TYPE", rec->blk_device);
+
+        if (detected_fs_type == NULL)
+            return rec;
+
+        fstab_rec *fetched_rec = rec;
+        while (rec != NULL && strcmp(rec->fs_type, detected_fs_type) != 0)
+            rec = fs_mgr_get_entry_for_mount_point_after(rec, fstab, path);
+
+        if (rec == NULL)
+            return fetched_rec;
+    }
+
+    return rec;
 }
 
 fstab_rec* volume_for_label(const char* label) {
