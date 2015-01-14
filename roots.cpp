@@ -37,6 +37,7 @@ extern "C" {
 }
 
 #include "voldclient/voldclient.h"
+#include <blkid/blkid.h>
 
 static struct fstab *fstab = NULL;
 
@@ -291,6 +292,8 @@ int ensure_volume_mounted(fstab_rec* v) {
 
     mkdir_p(v->mount_point, 0755);  // in case it doesn't already exist
 
+    char *detected_fs_type = blkid_get_tag_value(NULL, "TYPE", v->blk_device);
+
     if (fs_mgr_is_voldmanaged(v)) {
         if (!strcmp(v->mount_point, "auto")) {
             return vold_mount_auto_volume(v->label, 1);
@@ -308,9 +311,9 @@ int ensure_volume_mounted(fstab_rec* v) {
             return -1;
         }
         return mtd_mount_partition(partition, v->mount_point, v->fs_type, 0);
-    } else if (strcmp(v->fs_type, "ext4") == 0 ||
-               strcmp(v->fs_type, "f2fs") == 0 ||
-               strcmp(v->fs_type, "vfat") == 0) {
+    } else {
+        v->fs_type = detected_fs_type;
+
         result = mount(v->blk_device, v->mount_point, v->fs_type,
                        MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
         if (result == 0) return 0;
