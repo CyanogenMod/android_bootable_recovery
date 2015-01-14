@@ -37,6 +37,7 @@ extern "C" {
 }
 
 #include "voldclient/voldclient.h"
+#include <blkid/blkid.h>
 
 static struct fstab *fstab = NULL;
 
@@ -224,7 +225,32 @@ void free_storage_items(storage_item* items) {
 }
 
 fstab_rec* volume_for_path(const char* path) {
-    return fs_mgr_get_entry_for_mount_point(fstab, path);
+    fstab_rec *rec = fs_mgr_get_entry_for_mount_point(fstab, path);
+    char *detected_fs_type;
+
+    if (rec != NULL && (strcmp(rec->fs_type, "ext4") == 0 ||
+                        strcmp(rec->fs_type, "f2fs") == 0 ||
+                        strcmp(rec->fs_type, "vfat") == 0)) {
+        detected_fs_type = blkid_get_tag_value(NULL, "TYPE", rec->blk_device);
+
+        if (detected_fs_type != NULL && strcmp(rec->fs_type, detected_fs_type) != 0) {
+            /* Different filesystem detected on block than what fs_mgr
+             * fed us from fstab. Try another fstab entry and continue
+             * trying until we receive nothing or a match.
+             */
+            while (rec != NULL && strcmp(rec->fs_type, detected_fs_type) != 0) {
+                rec = fs_mgr_get_entry_for_mount_point_after(rec, fstab, path);
+            }
+
+            if (rec == NULL) {
+                /* We didn't find a better candidate, use old behavior
+                 * and accept the first response from fs_mgr.
+                 */
+                rec = fs_mgr_get_entry_for_mount_point(fstab, path);
+            }
+        }
+    }
+    return rec;
 }
 
 fstab_rec* volume_for_label(const char* label) {
