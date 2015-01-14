@@ -37,6 +37,7 @@ extern "C" {
 }
 
 #include "voldclient/voldclient.h"
+#include <blkid/blkid.h>
 
 static struct fstab *fstab = NULL;
 
@@ -311,6 +312,13 @@ int ensure_volume_mounted(fstab_rec* v) {
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
                strcmp(v->fs_type, "f2fs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
+
+        char *detected_fs_type = blkid_get_tag_value(NULL, "TYPE", v->blk_device);
+
+        if (detected_fs_type && strcmp(v->fs_type, detected_fs_type) != 0) {
+            v->fs_type = detected_fs_type;
+        }
+
         result = mount(v->blk_device, v->mount_point, v->fs_type,
                        MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
         if (result == 0) return 0;
