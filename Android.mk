@@ -92,7 +92,9 @@ LOCAL_STATIC_LIBRARIES := \
     libselinux \
     libstdc++ \
     libm \
-    libc
+    libc \
+    libext2_blkid \
+    libext2_uuid
 
 # OEMLOCK support requires a device specific liboemlock be supplied.
 # See comments in recovery.cpp for the API.
@@ -109,7 +111,7 @@ endif
 
 LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
 LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
-LOCAL_C_INCLUDES += system/vold
+LOCAL_C_INCLUDES += system/vold external/e2fsprogs/lib
 
 ifneq ($(BOARD_RECOVERY_BLDRMSG_OFFSET),)
     LOCAL_CFLAGS += -DBOARD_RECOVERY_BLDRMSG_OFFSET=$(BOARD_RECOVERY_BLDRMSG_OFFSET)
@@ -220,7 +222,9 @@ LOCAL_STATIC_LIBRARIES += \
     libcutils \
     liblog \
     libm \
-    libc
+    libc \
+    libext2_blkid \
+    libext2_uuid
 
 LOCAL_C_INCLUDES +=         	\
     system/core/fs_mgr/include	\
@@ -231,7 +235,8 @@ LOCAL_C_INCLUDES +=         	\
     external/libtar/listhash    \
     external/openssl/include    \
     external/zlib               \
-    bionic/libc/bionic
+    bionic/libc/bionic          \
+    external/e2fsprogs/lib
 
 
 include $(BUILD_EXECUTABLE)
