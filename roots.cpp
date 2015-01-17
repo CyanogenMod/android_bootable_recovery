@@ -566,8 +566,7 @@ int format_volume(const char* volume, bool force) {
             result = make_ext4fs(v->blk_device, length, volume, sehandle);
         } else {   /* Has to be f2fs because we checked earlier. */
             if (v->key_loc != NULL && strcmp(v->key_loc, "footer") == 0 && length < 0) {
-                LOGE("format_volume: crypt footer + negative length (%zd) not supported on %s\n", length, v->fs_type);
-                return -1;
+                length = CRYPT_FOOTER_OFFSET;
             }
             if (length < 0) {
                 LOGE("format_volume: negative length (%zd) not supported on %s\n", length, v->fs_type);
@@ -579,7 +578,7 @@ int format_volume(const char* volume, bool force) {
                 return -1;
             }
             const char *f2fs_path = "/sbin/mkfs.f2fs";
-            const char* const f2fs_argv[] = {"mkfs.f2fs", "-t", "-d1", v->blk_device, num_sectors, NULL};
+            const char* const f2fs_argv[] = {"mkfs.f2fs", "-t", "-d1", "-r" length, v->blk_device, num_sectors, NULL};
 
             result = exec_cmd(f2fs_path, (char* const*)f2fs_argv);
             free(num_sectors);
