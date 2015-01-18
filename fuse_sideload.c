@@ -149,7 +149,7 @@ static void block_cache_enter(struct fuse_data* fd, uint32_t block)
         int n;
         for (n = fd->curr_block - 1; n != (int)fd->curr_block; --n) {
             if (n < 0) {
-                n = fd->block_size - 1;
+                n = fd->file_blocks - 1;
             }
             if (fd->block_cache[n]) {
                 free(fd->block_cache[n]);
