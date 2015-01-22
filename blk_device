@@ -1,0 +1,6 @@
+roots.cpp:    if (rec != NULL && (strcmp(rec->fs_type, "ext4") == 0 ||
+roots.cpp:                        strcmp(rec->fs_type, "f2fs") == 0 ||
+roots.cpp:                        strcmp(rec->fs_type, "vfat") == 0)) {
+roots.cpp:        char *detected_fs_type = blkid_get_tag_value(NULL, "TYPE", rec->blk_device);
+roots.cpp:               strcmp(rec->fs_type, detected_fs_type) != 0) {
+updater/install.c:        char *detected_fs_type = blkid_get_tag_value(NULL, "TYPE", rec->blk_device);
