@@ -57,6 +57,8 @@ static int totalbaks = 0;
 #include "wipe.h"
 #endif
 
+#define CRYPT_FOOTER_OFFSET 0x4000
+
 void uiPrint(State* state, char* buffer) {
     char* line = strtok(buffer, "\n");
     UpdaterInfo* ui = (UpdaterInfo*)(state->cookie);
@@ -348,13 +350,18 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         result = location;
     } else if (strcmp(fs_type, "f2fs") == 0) {
         char *num_sectors;
+        char bytes_reserved[10] = {0};
         if (asprintf(&num_sectors, "%lld", atoll(fs_size) / 512) <= 0) {
             printf("format_volume: failed to create %s command for %s\n", fs_type, location);
             result = strdup("");
             goto done;
         }
+        if (num_sectors <=0) {
+            snprintf(bytes_reserved, sizeof(bytes_reserved), "%d", CRYPT_FOOTER_OFFSET);
+        }
         const char *f2fs_path = "/sbin/mkfs.f2fs";
-        const char* const f2fs_argv[] = {"mkfs.f2fs", "-t", "-d1", location, num_sectors, NULL};
+        const char* const f2fs_argv[] = {"mkfs.f2fs", "-t", "-d1", "-r", bytes_reserved,
+            location, num_sectors, NULL};
         int status = exec_cmd(f2fs_path, (char* const*)f2fs_argv);
         free(num_sectors);
         if (status != 0) {
