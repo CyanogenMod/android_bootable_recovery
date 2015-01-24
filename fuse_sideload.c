@@ -140,6 +140,8 @@ static int block_cache_fetch(struct fuse_data* fd, uint32_t block)
 static void block_cache_enter(struct fuse_data* fd, uint32_t block)
 {
     struct block_entry* entry;
+    if (!fd->block_cache)
+        return;
     if (fd->block_cache_size == fd->block_cache_max_size) {
         // Evict a block from the cache.  Since the file is typically read
         // sequentially, start looking from the block behind the current
@@ -482,7 +484,7 @@ int run_fuse_sideload(struct provider_vtab* vtab, void* cookie,
         }
         // The cache must be at least 1% of the file size or two blocks,
         // whichever is larger.
-        if (max_size >= fd.block_size/100 && max_size >= 2) {
+        if (max_size >= fd.file_blocks/100 && max_size >= 2) {
             fd.block_cache_max_size = max_size;
             fd.block_cache = (uint8_t**)calloc(fd.file_blocks, sizeof(uint8_t*));
         }
