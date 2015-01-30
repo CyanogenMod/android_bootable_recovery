@@ -179,6 +179,8 @@ static int string_split(char* s, char** fields, int maxfields)
     return n+1;
 }
 
+static RecoveryUI::Icon message_dialog_icon = RecoveryUI::NONE;
+
 static int message_socket_client_event(int fd, uint32_t epevents, void *data)
 {
     MessageSocket* client = (MessageSocket*)data;
@@ -192,14 +194,19 @@ static int message_socket_client_event(int fd, uint32_t epevents, void *data)
     nread = client->Read(buf, sizeof(buf));
     if (nread <= 0) {
         ev_del_fd(fd);
-        self->DialogDismiss();
+        if (message_dialog_icon == RecoveryUI::INFO) {
+            // Automatically dismiss only info dialogs
+            self->DialogDismiss();
+        }
+        message_dialog_icon = RecoveryUI::NONE;
         client->Close();
         delete client;
         return 0;
     }
 
     // Parse the message.  Right now we support:
-    //   dialog show <string>
+    //   dialog info <string>
+    //   dialog error <string>
     //   dialog dismiss
     char* fields[3];
     int nfields;
@@ -207,10 +214,19 @@ static int message_socket_client_event(int fd, uint32_t epevents, void *data)
     if (nfields < 2)
         return 0;
     if (strcmp(fields[0], "dialog") == 0) {
-        if (strcmp(fields[1], "show") == 0 && nfields > 2) {
+        if (strcmp(fields[1], "info") == 0 && nfields > 2) {
+            LOGI("Showing info dialog\n");
+            message_dialog_icon = RecoveryUI::INFO;
             self->DialogShowInfo(fields[2]);
         }
+        if (strcmp(fields[1], "error") == 0 && nfields > 2) {
+            LOGI("Showing error dialog\n");
+            message_dialog_icon = RecoveryUI::ERROR;
+            self->DialogShowError(fields[2]);
+        }
         if (strcmp(fields[1], "dismiss") == 0) {
+            LOGI("Dismissing dialog\n");
+            message_dialog_icon = RecoveryUI::NONE;
             self->DialogDismiss();
         }
     }

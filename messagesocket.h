@@ -18,7 +18,8 @@ public:
     ssize_t Read(void* buf, size_t len);
 
     bool ClientInit();
-    bool Show(const char* message);
+    bool ShowInfo(const char* message);
+    bool ShowError(const char* message);
     bool Dismiss();
 
     void Close();
@@ -30,11 +31,5 @@ private:
 
     int _sock;
 };
-
-extern int dialog_server_init();
-extern int dialog_client_init();
-extern int dialog_accept(int fd);
-extern int dialog_show(int fd);
-extern int dialog_dismiss(int fd);
 
 #endif

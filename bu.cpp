@@ -141,7 +141,7 @@ int update_progress(uint64_t off)
         if (now != last_time && pct != last_pct) {
             char msg[256];
             sprintf(msg, "%s: %d%% complete", curpart->name, pct);
-            ms.Show(msg);
+            ms.ShowInfo(msg);
             last_time = now;
             last_pct = pct;
         }
@@ -323,11 +323,11 @@ int main(int argc, char **argv)
     ms.ClientInit();
 
     if (!strcmp(opname, "backup")) {
-        ms.Show("Backup in progress...");
+        ms.ShowInfo("Backup in progress...");
         rc = do_backup(argc-optidx, &argv[optidx]);
     }
     else if (!strcmp(opname, "restore")) {
-        ms.Show("Restore in progress...");
+        ms.ShowInfo("Restore in progress...");
         rc = do_restore(argc-optidx, &argv[optidx]);
     }
     else {

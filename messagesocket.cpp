@@ -85,10 +85,17 @@ bool MessageSocket::ClientInit()
     return true;
 }
 
-bool MessageSocket::Show(const char* message)
+bool MessageSocket::ShowInfo(const char* message)
 {
     char buf[256];
-    sprintf(buf, "show %s", message);
+    sprintf(buf, "info %s", message);
+    return send_command(buf);
+}
+
+bool MessageSocket::ShowError(const char* message)
+{
+    char buf[256];
+    sprintf(buf, "error %s", message);
     return send_command(buf);
 }
 
