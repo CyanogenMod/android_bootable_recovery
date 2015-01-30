@@ -92,6 +92,13 @@ bool MessageSocket::Show(const char* message)
     return send_command(buf);
 }
 
+bool MessageSocket::Error(const char* message)
+{
+    char buf[256];
+    sprintf(buf, "error %s", message);
+    return send_command(buf);
+}
+
 bool MessageSocket::Dismiss()
 {
     return send_command("dismiss");

@@ -17,8 +17,11 @@ public:
     MessageSocket* Accept();
     ssize_t Read(void* buf, size_t len);
 
+    bool dismissOnClose = true;;
+
     bool ClientInit();
     bool Show(const char* message);
+    bool Error(const char* message);
     bool Dismiss();
 
     void Close();
