@@ -39,6 +39,9 @@ MD5_CTX md5_ctx;
 
 static MessageSocket ms;
 
+// Last logmsg displayed in case of an error
+char* last_msg;
+
 void
 ui_print(const char* format, ...) {
     char buffer[256];
@@ -60,6 +63,9 @@ void logmsg(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
+
+    // Save last (error) message in case of an error
+    last_msg = strdup(msg);
 
     fp = fopen("/tmp/bu.log", "a");
     if (fp) {
@@ -332,10 +338,16 @@ int main(int argc, char **argv)
     }
     else {
         logmsg("Unknown operation %s\n", opname);
-        do_exit(1);
     }
 
-    ms.Dismiss();
+    if(rc) {
+        // TODO: Be more verbose here. Unfortunately messages are currently
+        // limited to one line and a couple of characters by the error dialog.
+        // Messages that are too long are not shown.
+        char msg[38];
+        strncpy(msg, last_msg, sizeof(msg));
+        ms.Error(msg);
+    }
 
     close(adb_ofd);
     close(adb_ifd);
