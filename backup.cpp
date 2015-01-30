@@ -127,7 +127,7 @@ static int do_backup_tree(const String8& path)
         memset(&st, 0, sizeof(st));
         rc = lstat(filepath.string(), &st);
         if (rc != 0) {
-            logmsg("do_backup_tree: path=%s, lstat failed, rc=%d\n", path.string(), rc);
+            snprintf(errmsg, sizeof(errmsg), "Failed to backup \"%s\"", path.string());
             break;
         }
 
@@ -139,19 +139,18 @@ static int do_backup_tree(const String8& path)
         if (S_ISDIR(st.st_mode)) {
             rc = tar_append_file(tar, filepath.string(), filepath.string());
             if (rc != 0) {
-                logmsg("do_backup_tree: path=%s, tar_append_file failed, rc=%d\n", path.string(), rc);
+                snprintf(errmsg, sizeof(errmsg), "Failed to backup dir \"%s\"", path.string());
                 break;
             }
             rc = do_backup_tree(filepath);
             if (rc != 0) {
-                logmsg("do_backup_tree: path=%s, recursion failed, rc=%d\n", path.string(), rc);
                 break;
             }
         }
         else {
             rc = tar_append_file(tar, filepath.string(), filepath.string());
             if (rc != 0) {
-                logmsg("do_backup_tree: path=%s, tar_append_file failed, rc=%d\n", path.string(), rc);
+                snprintf(errmsg, sizeof(errmsg), "Failed to backup file \"%s\"", path.string());
                 break;
             }
         }
@@ -162,18 +161,19 @@ static int do_backup_tree(const String8& path)
 
 static int tar_append_device_contents(TAR* t, const char* devname, const char* savename)
 {
+    int rc = -1;
     struct stat st;
+    int fd;
+
     memset(&st, 0, sizeof(st));
     if (lstat(devname, &st) != 0) {
-        logmsg("tar_append_device_contents: lstat %s failed\n", devname);
-        return -1;
+        goto out;
     }
     st.st_mode = 0644 | S_IFREG;
 
-    int fd = open(devname, O_RDONLY);
+    fd = open(devname, O_RDONLY);
     if (fd < 0) {
-        logmsg("tar_append_device_contents: open %s failed\n", devname);
-        return -1;
+        goto out;
     }
     st.st_size = lseek(fd, 0, SEEK_END);
     close(fd);
@@ -181,14 +181,19 @@ static int tar_append_device_contents(TAR* t, const char* devname, const char* s
     th_set_from_stat(t, &st);
     th_set_path(t, savename);
     if (th_write(t) != 0) {
-        logmsg("tar_append_device_contents: th_write failed\n");
-        return -1;
+        goto out;
     }
     if (tar_append_regfile(t, devname) != 0) {
-        logmsg("tar_append_device_contents: tar_append_regfile %s failed\n", devname);
-        return -1;
+        goto out;
     }
-    return 0;
+
+    rc = 0;
+
+out:
+    if (rc != 0) {
+        snprintf(errmsg, sizeof(errmsg), "Failed to backup \"%s\"", devname);
+    }
+    return rc;
 }
 
 int do_backup(int argc, char **argv)
@@ -214,8 +219,9 @@ int do_backup(int argc, char **argv)
         }
         else {
             if (optidx >= argc) {
-                logmsg("No argument to --%s\n", optname);
-                return -1;
+                snprintf(errmsg, sizeof(errmsg), "No argument to --%s", optname);
+                rc = -1;
+                goto out;
             }
             optval = argv[optidx];
             ++optidx;
@@ -229,8 +235,9 @@ int do_backup(int argc, char **argv)
             logmsg("do_backup: hash=%s\n", opt_hash);
         }
         else {
-            logmsg("do_backup: invalid option name \"%s\"\n", optname);
-            return -1;
+            snprintf(errmsg, sizeof(errmsg), "Invalid option name \"%s\"", optname);
+            rc = -1;
+            goto out;
         }
     }
     for (n = optidx; n < argc; ++n) {
@@ -238,15 +245,16 @@ int do_backup(int argc, char **argv)
         if (*partname == '-')
             ++partname;
         if (part_add(partname) != 0) {
-            logmsg("Failed to add partition %s\n", partname);
-            return -1;
+            snprintf(errmsg, sizeof(errmsg), "Failed to add partition \"%s\"", partname);
+            rc = -1;
+            goto out;
         }
     }
 
     rc = create_tar(adb_ofd, opt_compress, "w");
     if (rc != 0) {
-        logmsg("do_backup: cannot open tar stream\n");
-        return rc;
+        strcpy(errmsg, "Cannot open tar stream");
+        goto out;
     }
 
     append_sod(opt_hash);
@@ -265,12 +273,15 @@ int do_backup(int argc, char **argv)
         }
         else {
             if (ensure_path_mounted(curpart->path) != 0) {
-                logmsg("do_backup: cannot mount %s\n", curpart->path);
-                continue;
+                snprintf(errmsg, sizeof(errmsg), "Cannot mount \"%s\"", curpart->path);
+                goto out;
             }
             String8 path(curpart->path);
             rc = do_backup_tree(path);
             ensure_path_unmounted(curpart->path);
+        }
+        if (rc != 0) {
+            goto out;
         }
     }
 
@@ -284,6 +295,7 @@ int do_backup(int argc, char **argv)
     if (opt_compress)
         gzflush(gzf, Z_FINISH);
 
+out:
     logmsg("backup complete: rc=%d\n", rc);
 
     return rc;

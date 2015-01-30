@@ -27,6 +27,8 @@ using namespace android;
 
 struct selabel_handle *sehandle;
 
+char errmsg[256];
+
 int adb_ifd;
 int adb_ofd;
 TAR* tar;
@@ -335,7 +337,15 @@ int main(int argc, char **argv)
         do_exit(1);
     }
 
-    ms.Dismiss();
+    if (errmsg[0]) {
+        logmsg("%s\n", errmsg);
+        // UI can only display about 40 chars
+        errmsg[40] = '\0';
+        ms.ShowError(errmsg);
+    }
+    else {
+        ms.Dismiss();
+    }
 
     close(adb_ofd);
     close(adb_ifd);

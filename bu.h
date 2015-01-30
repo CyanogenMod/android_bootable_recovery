@@ -26,6 +26,8 @@ extern "C" {
 
 #define PROP_LINE_LEN (PROPERTY_KEY_MAX+1+PROPERTY_VALUE_MAX+1+1)
 
+extern char errmsg[256];
+
 extern int adb_ifd;
 extern int adb_ofd;
 extern TAR* tar;
