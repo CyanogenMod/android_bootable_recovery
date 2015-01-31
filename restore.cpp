@@ -63,6 +63,13 @@ static int verify_sod()
                 if (attr) {
                     *attr = '\0';
                     ++attr;
+
+                    // Only use the part before a slash
+                    char* slash = strchr(name, '/');
+                    if(slash) {
+                        *slash = '\0';
+                    }
+
                     part_add(name);
                     struct partspec* part = part_find(name);
                     if (!strcmp(attr, "size")) {
