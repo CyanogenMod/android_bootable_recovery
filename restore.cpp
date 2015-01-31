@@ -240,7 +240,11 @@ static int do_restore_tree()
                     break;
                 }
                 partspec* curpart = part_find(&cur_mount[1]);
-                part_set(curpart);
+                if(curpart != NULL) {
+                    part_set(curpart);
+                } else {
+                    logmsg("do_restore_tree: failed to find partition for %s\n", &cur_mount[1]);
+                }
             }
         }
         if (!strcmp(pathname, "SOD")) {
@@ -257,7 +261,11 @@ static int do_restore_tree()
             fstab_rec* vol = volume_for_path(mnt);
             if (vol != NULL && vol->fs_type != NULL) {
                 partspec* curpart = part_find(pathname);
-                part_set(curpart);
+                if(curpart != NULL) {
+                    part_set(curpart);
+                } else {
+                    logmsg("do_restore_tree: failed to find partition for %s\n", &cur_mount[1]);
+                }
                 rc = tar_extract_file(tar, vol->blk_device);
             }
             else {
