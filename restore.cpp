@@ -270,7 +270,7 @@ static int do_restore_tree()
         }
         free(pathname);
         if (rc != 0) {
-            logmsg("extract failed, rc=%d\n", rc);
+            logmsg("extract failed, rc=%d (%s)\n", errno, strerror(errno));
             break;
         }
     }
