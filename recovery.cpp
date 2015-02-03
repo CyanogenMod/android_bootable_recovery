@@ -97,6 +97,7 @@ static OemLockOp oem_lock = OEM_LOCK_NONE;
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 'i' },
   { "update_package", required_argument, NULL, 'u' },
+  { "headless", no_argument, NULL, 'h' },
   { "wipe_data", no_argument, NULL, 'w' },
   { "wipe_cache", no_argument, NULL, 'c' },
   { "wipe_media", no_argument, NULL, 'm' },
@@ -1304,6 +1305,7 @@ main(int argc, char **argv) {
     bool show_text = false;
     bool sideload = false;
     bool sideload_auto_reboot = false;
+    bool headless = false;
     bool just_exit = false;
     bool shutdown_after = false;
 
@@ -1312,6 +1314,7 @@ main(int argc, char **argv) {
         switch (arg) {
         case 'i': send_intent = optarg; break;
         case 'u': update_package = optarg; break;
+        case 'h': headless = true; break;
         case 'w': should_wipe_data = true; break;
         case 'c': should_wipe_cache = true; break;
         case 't': show_text = true; break;
@@ -1485,7 +1488,15 @@ main(int argc, char **argv) {
     }
 
     Device::BuiltinAction after = shutdown_after ? Device::SHUTDOWN : Device::REBOOT;
-    if ((status != INSTALL_SUCCESS && !sideload_auto_reboot) || ui->IsTextVisible()) {
+    if (headless) {
+        ui->ShowText(true);
+        ui->SetHeadlessMode();
+        finish_recovery(NULL);
+        for (;;) {
+            pause();
+        }
+    }
+    else if ((status != INSTALL_SUCCESS && !sideload_auto_reboot) || ui->IsTextVisible()) {
         Device::BuiltinAction temp = prompt_and_wait(device, status);
         if (temp != Device::NO_ACTION) {
             after = temp;

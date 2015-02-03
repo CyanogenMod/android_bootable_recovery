@@ -282,6 +282,9 @@ void ScreenRecoveryUI::draw_dialog()
     }
     else {
         draw_background_locked(dialog_icon);
+        if (dialog_icon == HEADLESS) {
+            return;
+        }
     }
     draw_header_icon();
 
@@ -522,6 +525,7 @@ void ScreenRecoveryUI::Init() {
     LoadBitmap("icon_info", &backgroundIcon[D_INFO]);
     LoadBitmap("icon_error", &backgroundIcon[D_ERROR]);
     backgroundIcon[NO_COMMAND] = backgroundIcon[D_ERROR];
+    LoadBitmap("icon_headless", &backgroundIcon[HEADLESS]);
 
     LoadBitmap("progress_empty", &progressBarEmpty);
     LoadBitmap("progress_fill", &progressBarFill);
@@ -798,6 +802,17 @@ void ScreenRecoveryUI::DialogDismiss()
     pthread_mutex_lock(&updateMutex);
     free(dialog_text);
     dialog_text = NULL;
+    update_screen_locked();
+    pthread_mutex_unlock(&updateMutex);
+}
+
+void ScreenRecoveryUI::SetHeadlessMode()
+{
+    pthread_mutex_lock(&updateMutex);
+    free(dialog_text);
+    dialog_text = strdup("");
+    dialog_show_log = false;
+    dialog_icon = HEADLESS;
     update_screen_locked();
     pthread_mutex_unlock(&updateMutex);
 }
