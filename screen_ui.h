@@ -55,6 +55,7 @@ class ScreenRecoveryUI : public RecoveryUI {
     int  DialogShowing() const { return (dialog_text != NULL); }
     bool DialogDismissable() const { return (dialog_icon == ERROR); }
     void DialogDismiss();
+    void SetHeadlessMode();
 
     // menu display
     virtual int MenuItemStart() const { return menu_item_start; }

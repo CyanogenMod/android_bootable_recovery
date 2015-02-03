@@ -144,6 +144,7 @@ class FakeUI : public RecoveryUI {
     virtual int  DialogShowing() const { return 0; }
     bool DialogDismissable() const { return false; }
     virtual void DialogDismiss() {}
+    virtual void SetHeadlessMode() {}
 
     void StartMenu(const char* const * headers, const char* const * items,
                            int initial_selection) { }
