@@ -90,6 +90,7 @@ static OemLockOp oem_lock = OEM_LOCK_NONE;
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 's' },
   { "update_package", required_argument, NULL, 'u' },
+  { "headless", no_argument, NULL, 'h' },
   { "wipe_data", no_argument, NULL, 'w' },
   { "wipe_cache", no_argument, NULL, 'c' },
   { "wipe_media", no_argument, NULL, 'm' },
@@ -1208,6 +1209,7 @@ main(int argc, char **argv) {
     const char *send_intent = NULL;
     const char *update_package = NULL;
     int wipe_data = 0, wipe_cache = 0, wipe_media = 0, show_text = 0, sideload = 0;
+    bool headless = false;
     bool just_exit = false;
     bool shutdown_after = false;
 
@@ -1216,6 +1218,7 @@ main(int argc, char **argv) {
         switch (arg) {
         case 's': send_intent = optarg; break;
         case 'u': update_package = optarg; break;
+        case 'h': headless = true; break;
         case 'w': wipe_data = wipe_cache = 1; break;
         case 'm': wipe_media = 1; break;
         case 'c': wipe_cache = 1; break;
@@ -1358,7 +1361,15 @@ main(int argc, char **argv) {
         ui->SetBackground(RecoveryUI::ERROR);
     }
     Device::BuiltinAction after = shutdown_after ? Device::SHUTDOWN : Device::REBOOT;
-    if (status != INSTALL_SUCCESS || ui->IsTextVisible()) {
+    if (headless) {
+        ui->ShowText(true);
+        ui->SetHeadlessMode();
+        finish_recovery(NULL);
+        for (;;) {
+            pause();
+        }
+    }
+    else if (status != INSTALL_SUCCESS || ui->IsTextVisible()) {
         ui->ShowText(true);
         Device::BuiltinAction temp = prompt_and_wait(device, status);
         if (temp != Device::NO_ACTION) after = temp;
