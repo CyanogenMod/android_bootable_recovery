@@ -410,8 +410,8 @@ int main(int argc, char** argv)
     // On /data we want to convert the file to a block map so that we
     // can read the package without mounting the partition.  On /cache
     // and /sdcard we leave the file alone.
-    if (strncmp(path, "/data/", 6) != 0) {
-        // path does not start with "/data/"; leave it alone.
+    if (!encrypted || strncmp(path, "/data/", 6) != 0) {
+        // not encrypted or path does not start with "/data/"; leave it alone.
         unlink(RECOVERY_COMMAND_FILE_TMP);
     } else {
         ALOGI("writing block map %s", map_file);
