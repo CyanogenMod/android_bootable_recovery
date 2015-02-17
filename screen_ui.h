@@ -52,7 +52,7 @@ class ScreenRecoveryUI : public RecoveryUI {
     void DialogShowInfo(const char* text);
     void DialogShowError(const char* text);
     void DialogShowErrorLog(const char* text);
-    int  DialogShowing() const { return (dialog_text != NULL); }
+    int  DialogShowing() const { return (dialog_lines > 0); }
     bool DialogDismissable() const { return (dialog_icon == ERROR); }
     void DialogDismiss();
     void SetHeadlessMode();
@@ -110,7 +110,9 @@ class ScreenRecoveryUI : public RecoveryUI {
     bool show_text_ever;   // has show_text ever been true?
 
     Icon dialog_icon;
-    char *dialog_text;
+    char *dialog_text[8];
+    size_t dialog_lines;
+    size_t dialog_linelen;
     bool dialog_show_log;
 
     char menu[kMaxMenuRows][kMaxMenuCols];

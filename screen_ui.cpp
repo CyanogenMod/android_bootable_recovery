@@ -34,6 +34,12 @@
 #include "screen_ui.h"
 #include "ui.h"
 
+template <typename T>
+T max(T a, T b)
+{
+    return (a < b) ? b : a;
+}
+
 // There's only (at most) one of these objects, and global callbacks
 // (for pthread_create, and the input event system) need to find it,
 // so use a global variable.
@@ -66,7 +72,8 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     show_text(false),
     show_text_ever(false),
     dialog_icon(NONE),
-    dialog_text(NULL),
+    dialog_lines(0),
+    dialog_linelen(0),
     dialog_show_log(false),
     show_menu(false),
     menu_items(0),
@@ -256,10 +263,11 @@ void ScreenRecoveryUI::draw_dialog()
         }
     }
     draw_header_icon();
+    LOGI("draw_dialog: %u lines\n", (unsigned int)dialog_lines);
 
     int iconHeight = gr_get_height(backgroundIcon[dialog_icon]);
 
-    x = (gr_fb_width()/2 - (char_width*strlen(dialog_text))/2);
+    x = (gr_fb_width()/2 - (char_width*dialog_linelen)/2);
     if (dialog_show_log) {
         y = gr_get_height(headerIcon) + char_height;
     }
@@ -268,8 +276,10 @@ void ScreenRecoveryUI::draw_dialog()
     }
 
     SetColor(ERROR_TEXT);
-    gr_text(x, y, dialog_text, 0);
-    y += char_height+2;
+    for (size_t n = 0; n < dialog_lines; ++n) {
+        gr_text(x, y, dialog_text[n], 0);
+        y += char_height + 2;
+    }
 
     if (dialog_show_log) {
         int cx, cy;
@@ -627,9 +637,26 @@ void ScreenRecoveryUI::ClearLog()
 
 void ScreenRecoveryUI::DialogShowInfo(const char* text)
 {
+    size_t n;
+    LOGI("DialogShowInfo: <%s>\n", text);
     pthread_mutex_lock(&updateMutex);
-    free(dialog_text);
-    dialog_text = strdup(text);
+    for (n = 0; n < dialog_lines; ++n) {
+        free(dialog_text[n]);
+    }
+    dialog_lines = 0;
+    dialog_linelen = 0;
+    while (text) {
+        const char* endp;
+        size_t len;
+        endp = strchr(text, '|');
+        len = endp ? (endp - text) : strlen(text);
+        dialog_text[dialog_lines] = (char*)malloc(len+1);
+        memcpy(dialog_text[dialog_lines], text, len);
+        dialog_text[dialog_lines][len] = '\0';
+        dialog_linelen = max(dialog_linelen, len);
+        ++dialog_lines;
+        text = endp ? endp + 1 : NULL;
+    }
     dialog_show_log = false;
     dialog_icon = INFO;
     update_screen_locked();
@@ -638,9 +665,27 @@ void ScreenRecoveryUI::DialogShowInfo(const char* text)
 
 void ScreenRecoveryUI::DialogShowError(const char* text)
 {
+    size_t n;
+    LOGI("DialogShowError: <%s>\n", text);
     pthread_mutex_lock(&updateMutex);
-    free(dialog_text);
-    dialog_text = strdup(text);
+    for (n = 0; n < dialog_lines; ++n) {
+        free(dialog_text[n]);
+    }
+    dialog_lines = 0;
+    dialog_linelen = 0;
+    while (text) {
+        const char* endp;
+        size_t len;
+        endp = strchr(text, '|');
+        len = endp ? (endp - text) : strlen(text);
+        dialog_text[dialog_lines] = (char*)malloc(len+1);
+        memcpy(dialog_text[dialog_lines], text, len);
+        dialog_text[dialog_lines][len] = '\0';
+        dialog_linelen = max(dialog_linelen, len);
+        ++dialog_lines;
+        text = endp ? endp + 1 : NULL;
+    }
+    LOGI("DialogShowError: dialog_lines=%u, dialog_linelen=%u\n", dialog_lines, dialog_linelen);
     dialog_show_log = false;
     dialog_icon = ERROR;
     update_screen_locked();
@@ -649,9 +694,25 @@ void ScreenRecoveryUI::DialogShowError(const char* text)
 
 void ScreenRecoveryUI::DialogShowErrorLog(const char* text)
 {
+    size_t n;
     pthread_mutex_lock(&updateMutex);
-    free(dialog_text);
-    dialog_text = strdup(text);
+    for (n = 0; n < dialog_lines; ++n) {
+        free(dialog_text[n]);
+    }
+    dialog_lines = 0;
+    dialog_linelen = 0;
+    while (text) {
+        const char* endp;
+        size_t len;
+        endp = strchr(text, '|');
+        len = endp ? (endp - text) : strlen(text);
+        dialog_text[dialog_lines] = (char*)malloc(len+1);
+        memcpy(dialog_text[dialog_lines], text, len);
+        dialog_text[dialog_lines][len] = '\0';
+        dialog_linelen = max(dialog_linelen, len);
+        ++dialog_lines;
+        text = endp ? endp + 1 : NULL;
+    }
     dialog_show_log = true;
     dialog_icon = ERROR;
     update_screen_locked();
@@ -660,9 +721,13 @@ void ScreenRecoveryUI::DialogShowErrorLog(const char* text)
 
 void ScreenRecoveryUI::DialogDismiss()
 {
+    size_t n;
     pthread_mutex_lock(&updateMutex);
-    free(dialog_text);
-    dialog_text = NULL;
+    for (n = 0; n < dialog_lines; ++n) {
+        free(dialog_text[n]);
+    }
+    dialog_lines = 0;
+    dialog_linelen = 0;
     update_screen_locked();
     pthread_mutex_unlock(&updateMutex);
 }
@@ -670,8 +735,9 @@ void ScreenRecoveryUI::DialogDismiss()
 void ScreenRecoveryUI::SetHeadlessMode()
 {
     pthread_mutex_lock(&updateMutex);
-    free(dialog_text);
-    dialog_text = strdup("");
+    dialog_text[0] = strdup("");
+    dialog_lines = 1;
+    dialog_linelen = 0;
     dialog_show_log = false;
     dialog_icon = HEADLESS;
     update_screen_locked();
