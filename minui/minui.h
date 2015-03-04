@@ -108,6 +108,7 @@ int res_create_display_surface(const char* name, gr_surface* pSurface);
 // by row.
 int res_create_multi_display_surface(const char* name,
                                      int* frames, gr_surface** pSurface);
+int cm_res_create_multi_display_surface(int frames, gr_surface** pSurface);
 
 // Load a single alpha surface from a grayscale PNG image.
 int res_create_alpha_surface(const char* name, gr_surface* pSurface);
