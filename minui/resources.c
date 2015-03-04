@@ -278,6 +278,7 @@ int res_create_multi_display_surface(const char* name, int* frames, gr_surface**
         printf("  found frames = %d\n", *frames);
     }
 
+
     if (height % *frames != 0) {
         printf("bad height (%d) for frame count (%d)\n", height, *frames);
         result = -9;
@@ -316,6 +317,71 @@ exit:
     if (result < 0) {
         if (surface) {
             for (i = 0; i < *frames; ++i) {
+                if (surface[i]) free(surface[i]);
+            }
+            free(surface);
+        }
+    }
+    return result;
+}
+
+int cm_res_create_multi_display_surface(int frames, gr_surface** pSurface) {
+    int result = 0;
+    int width, height;
+    int i, j, k;
+    unsigned char* row;
+    int color, step;
+    gr_surface* surface;
+
+    surface = (gr_surface*)malloc(frames * sizeof(gr_surface));
+    if (surface == NULL) {
+        result = -8;
+        goto exit;
+    }
+
+    gr_init();
+    step = gr_fb_width()*0.8/(frames-1);
+    width = step*(frames-1);
+    height = gr_fb_height()/16;
+
+    for (i = 0; i < frames; ++i) {
+        surface[i] = malloc_surface(width * height * 4);
+        if (surface[i] == NULL) {
+            result = -8;
+            goto exit;
+        }
+
+        surface[i]->width = width;
+        surface[i]->height = height;
+        surface[i]->row_bytes = width * 4;
+        surface[i]->pixel_bytes = 4;
+
+        for (k = 0; k < height; k++) {
+            row = surface[i]->data + k * surface[i]->row_bytes;
+
+            for (j = 0; j < width; j++) {
+                if (j/step <= i) {
+                    color = 255;
+                } else {
+                    if ((j%step) < (step * 0.2)) {
+                        color = 0;
+                    } else {
+                        color = 77;
+                    }
+				}
+                *row++ = color;
+                *row++ = color;
+                *row++ = color;
+                *row++ = 0xff;
+            }
+        }
+    }
+    *pSurface = (gr_surface*) surface;
+
+exit:
+    if (result < 0) {
+        if (surface) {
+            for (i = 0; i < frames; ++i) {
                 if (surface[i]) free(surface[i]);
             }
             free(surface);
