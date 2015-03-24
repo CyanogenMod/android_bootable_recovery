@@ -13,8 +13,10 @@ common_additional_dependencies :=
 
 common_whole_static_libraries := libadf
 
+common_cflags += -std=gnu11
+
 ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),ABGR_8888)
-  LOCAL_CFLAGS += -DRECOVERY_ABGR
+  common_cflags += -DRECOVERY_ABGR
 endif
 ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),RGBX_8888)
   common_cflags += -DRECOVERY_RGBX
