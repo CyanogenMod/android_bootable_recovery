@@ -281,7 +281,7 @@ void ScreenRecoveryUI::draw_dialog()
 
         int row;
         for (row = 0; row < log_text_rows; ++row) {
-            gr_text(4, y, text[row], 0);
+            gr_text(0, y, text[row], 0);
             y += cy+2;
         }
         gr_set_font("menu");
@@ -341,7 +341,7 @@ void ScreenRecoveryUI::draw_screen_locked()
             for (int ty = gr_fb_height() - cy, count = 0;
                  ty > y+2 && count < log_text_rows;
                  ty -= (cy+2), ++count) {
-                gr_text(4, ty, text[row], 0);
+                gr_text(0, ty, text[row], 0);
                 --row;
                 if (row < 0) row = log_text_rows-1;
             }
