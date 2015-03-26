@@ -1542,6 +1542,11 @@ Value* RebootNowFn(const char* name, State* state, int argc, Expr* argv[]) {
     property_set(ANDROID_RB_PROPERTY, buffer);
 
     sleep(5);
+    // Attempt to reboot using older methods in case the recovery
+    // that we are updating does not support init reboots
+    android_reboot(ANDROID_RB_RESTART, 0, 0);
+
+    sleep(5);
     free(property);
     ErrorAbort(state, kRebootFailure, "%s() failed to reboot", name);
     return NULL;
