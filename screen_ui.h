@@ -84,6 +84,8 @@ class ScreenRecoveryUI : public RecoveryUI {
     bool rtl_locale;
 
     pthread_mutex_t updateMutex;
+    pthread_cond_t  progressCondition;
+
     GRSurface* headerIcon;
     GRSurface* backgroundIcon[NR_ICONS];
     GRSurface* backgroundText[NR_ICONS];
@@ -146,6 +148,8 @@ class ScreenRecoveryUI : public RecoveryUI {
     int header_height_, header_width_;
     int text_first_row_;
 
+    bool update_waiting;
+
     void draw_background_locked(Icon icon);
     void draw_progress_locked();
     int  draw_header_icon();
@@ -153,7 +157,6 @@ class ScreenRecoveryUI : public RecoveryUI {
     void draw_dialog();
     void draw_screen_locked();
     void update_screen_locked();
-    void update_progress_locked();
 
     static void* ProgressThreadStartRoutine(void* data);
     void ProgressThreadLoop();
