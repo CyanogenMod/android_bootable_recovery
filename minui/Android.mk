@@ -45,11 +45,10 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libminui
-LOCAL_ARM_MODE:= arm
 LOCAL_SRC_FILES := $(common_src_files)
 LOCAL_ADDITIONAL_DEPENDENCIES := $(common_additional_dependencies)
 LOCAL_C_INCLUDES += $(common_c_includes)
-LOCAL_SHARED_LIBRARIES := libpng libpixelflinger
+LOCAL_SHARED_LIBRARIES := libpng
 LOCAL_CFLAGS += $(common_cflags) -DSHARED_MINUI
 LOCAL_WHOLE_STATIC_LIBRARIES := $(common_whole_static_libraries)
 include $(BUILD_SHARED_LIBRARY)
