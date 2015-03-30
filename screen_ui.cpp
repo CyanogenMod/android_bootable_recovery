@@ -168,18 +168,18 @@ void ScreenRecoveryUI::draw_progress_locked()
             if (rtl_locale) {
                 // Fill the progress bar from right to left.
                 if (pos > 0) {
-                    gr_blit(progressBarFill, width-pos, 0, pos, height, dx+width-pos, dy);
+                    gr_blend(progressBarFill, width-pos, 0, pos, height, dx+width-pos, dy);
                 }
                 if (pos < width-1) {
-                    gr_blit(progressBarEmpty, 0, 0, width-pos, height, dx, dy);
+                    gr_blend(progressBarEmpty, 0, 0, width-pos, height, dx, dy);
                 }
             } else {
                 // Fill the progress bar from left to right.
                 if (pos > 0) {
-                    gr_blit(progressBarFill, 0, 0, pos, height, dx, dy);
+                    gr_blend(progressBarFill, 0, 0, pos, height, dx, dy);
                 }
                 if (pos < width-1) {
-                    gr_blit(progressBarEmpty, pos, 0, width-pos, height, dx+pos, dy);
+                    gr_blend(progressBarEmpty, pos, 0, width-pos, height, dx+pos, dy);
                 }
             }
         }
