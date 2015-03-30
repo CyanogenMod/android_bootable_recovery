@@ -146,6 +146,7 @@ class ScreenRecoveryUI : public RecoveryUI {
     int menu_item_start_;
 
     pthread_t progress_thread_;
+    pthread_cond_t progressCondition;
 
     // Number of intro frames and loop frames in the animation.
     int intro_frames;
@@ -172,12 +173,13 @@ class ScreenRecoveryUI : public RecoveryUI {
     int sysbar_height_;
     int text_first_row_;
 
+    bool update_waiting;
+
     int  draw_header_icon();
     void draw_menu_item(int textrow, const char *text, int selected);
     void draw_sysbar();
     void draw_screen_locked();
     void update_screen_locked();
-    void update_progress_locked();
 
     GRSurface* GetCurrentFrame();
     GRSurface* GetCurrentText();

@@ -648,6 +648,9 @@ static bool erase_volume(const char* volume, bool force = false) {
 
     saved_log_file* head = NULL;
 
+    ui->SetBackground(RecoveryUI::ERASING);
+    ui->SetProgressType(RecoveryUI::INDETERMINATE);
+
     if (!force && is_cache) {
         // If we're reformatting /cache, we load any past logs
         // (i.e. "/cache/recovery/last_*") and the current log
@@ -694,9 +697,6 @@ static bool erase_volume(const char* volume, bool force = false) {
     }
 
     ui->Print("Formatting %s...\n", volume);
-
-    ui->SetBackground(RecoveryUI::ERASING);
-    ui->SetProgressType(RecoveryUI::INDETERMINATE);
 
     if (volume[0] == '/') {
         ensure_path_unmounted(volume);
@@ -1290,7 +1290,7 @@ prompt_and_wait(Device* device, int status) {
         switch (status) {
             case INSTALL_SUCCESS:
             case INSTALL_NONE:
-                ui->SetBackground(RecoveryUI::NO_COMMAND);
+                ui->SetBackground(RecoveryUI::NONE);
                 break;
 
             case INSTALL_ERROR:
