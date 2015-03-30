@@ -85,6 +85,8 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     memset(text, 0, sizeof(text));
 
     pthread_mutex_init(&updateMutex, NULL);
+    pthread_cond_init(&progressCondition, NULL);
+
     self = this;
 }
 
@@ -129,6 +131,8 @@ void ScreenRecoveryUI::draw_background_locked(Icon icon)
             }
         }
 
+        LOGV("textX=%d textY=%d iconX=%d iconY=%d", textX, textY, iconX, iconY);
+
         gr_color(255, 255, 255, 255);
         gr_texticon(textX, textY, text_surface);
     }
@@ -139,9 +143,6 @@ void ScreenRecoveryUI::draw_background_locked(Icon icon)
 void ScreenRecoveryUI::draw_progress_locked()
 {
     if (currentIcon == ERROR) return;
-
-    gr_color(0, 0, 0, 255);
-    gr_clear();
 
     if (currentIcon == INSTALLING_UPDATE || currentIcon == ERASING) {
         gr_surface icon = installation[installingFrame];
@@ -154,7 +155,7 @@ void ScreenRecoveryUI::draw_progress_locked()
         int height = gr_get_height(progressBarEmpty);
 
         int dx = (gr_fb_width() - width)/2;
-        int dy = (3*gr_fb_height() + iconHeight - 2*height)/4;
+        int dy = (gr_fb_height() / 2) + (iconHeight / 2);
 
         // Erase behind the progress bar (in case this was a progress-only update)
         SetColor(TEXT_FILL);
@@ -246,14 +247,8 @@ void ScreenRecoveryUI::draw_dialog()
 {
     int x, y, w, h;
 
-    if (dialog_show_log) {
-        draw_background_locked(NONE);
-    }
-    else {
-        draw_background_locked(dialog_icon);
-        if (dialog_icon == HEADLESS) {
-            return;
-        }
+   if (dialog_icon == HEADLESS) {
+       return;
     }
     draw_header_icon();
 
@@ -311,22 +306,16 @@ void ScreenRecoveryUI::draw_dialog()
 // Should only be called with updateMutex locked.
 void ScreenRecoveryUI::draw_screen_locked()
 {
-    if (!show_text) {
-        draw_background_locked(currentIcon);
-        draw_progress_locked();
-    } else {
+    draw_background_locked(currentIcon);
 
-        if (DialogShowing()) {
-            draw_dialog();
-            return;
-        }
-        gr_color(0, 0, 0, 255);
-        gr_clear();
+    if (DialogShowing()) {
+        draw_dialog();
+        return;
+    }
 
-        if (currentIcon == INSTALLING_UPDATE || currentIcon == VIEWING_LOG) {
+    if (show_text) {
+        if (currentIcon == ERASING || currentIcon == INSTALLING_UPDATE || currentIcon == VIEWING_LOG) {
             int y = header_height + 4;
-
-            draw_background_locked(currentIcon);
 
             SetColor(LOG);
             int cx, cy;
@@ -363,18 +352,9 @@ void ScreenRecoveryUI::draw_screen_locked()
 // Should only be called with updateMutex locked.
 void ScreenRecoveryUI::update_screen_locked()
 {
-    draw_screen_locked();
-    LOGV("%s: flip %p\n", __func__, __builtin_return_address(0));
-    gr_flip();
-}
-
-// Updates only the progress bar, if possible, otherwise redraws the screen.
-// Should only be called with updateMutex locked.
-void ScreenRecoveryUI::update_progress_locked()
-{
-    draw_progress_locked();
-    LOGV("%s: flip %p\n", __func__, __builtin_return_address(0));
-    gr_flip();
+    update_waiting = true;
+    pthread_cond_signal(&progressCondition);
+    LOGV("%s: %p\n", __func__, __builtin_return_address(0));
 }
 
 // Keeps the progress bar updated, even when the process is otherwise busy.
@@ -386,17 +366,21 @@ void* ScreenRecoveryUI::progress_thread(void *cookie) {
 void ScreenRecoveryUI::progress_loop() {
     double interval = 1.0 / animation_fps;
     for (;;) {
-        double start = now();
         pthread_mutex_lock(&updateMutex);
+        if (progressBarType == EMPTY && !update_waiting)
+            pthread_cond_wait(&progressCondition, &updateMutex);
 
-        int redraw = 0;
+        bool redraw = false;
+        double start = now();
+
+        LOGV("loop %f show_text=%d progressBarType=%d waiting=%d\n", start, show_text, progressBarType, update_waiting );
 
         // update the installation animation, if active
         // skip this if we have a text overlay (too expensive to update)
         if ((currentIcon == INSTALLING_UPDATE || currentIcon == ERASING) &&
             installing_frames > 0) {
             installingFrame = (installingFrame + 1) % installing_frames;
-            redraw = 1;
+            redraw = true;
         }
 
         // move the progress bar forward on timed intervals, if configured
@@ -407,23 +391,31 @@ void ScreenRecoveryUI::progress_loop() {
             if (p > 1.0) p = 1.0;
             if (p > progress) {
                 progress = p;
-                redraw = 1;
+                redraw = true;
             }
         }
 
-        if (redraw) update_progress_locked();
+        if (update_waiting || !pagesIdentical) {
+            LOGV("call draw_screen_locked\n");
+            draw_screen_locked();
+            if (!update_waiting)
+                pagesIdentical = true;
+        }
 
+        if (redraw) {
+            LOGV("call draw_progress_locked\n");
+            draw_progress_locked();
+        }
+        gr_flip();
+
+        update_waiting = false;
         pthread_mutex_unlock(&updateMutex);
-
-        if (progressBarType == EMPTY)
-            break;
 
         double end = now();
         // minimum of 20ms delay between frames
         double delay = interval - (end-start);
         if (delay < 0.02) delay = 0.02;
         usleep((long)(delay * 1000000));
-
     }
 }
 
@@ -497,6 +489,8 @@ void ScreenRecoveryUI::Init()
     LoadLocalizedBitmap("no_command_text", &backgroundText[NO_COMMAND]);
     LoadLocalizedBitmap("error_text", &backgroundText[ERROR]);
 
+    pthread_create(&progress_t, NULL, progress_thread, NULL);
+
     RecoveryUI::Init();
 }
 
@@ -541,14 +535,12 @@ void ScreenRecoveryUI::SetProgressType(ProgressType type)
     pthread_mutex_lock(&updateMutex);
     if (progressBarType != type) {
         progressBarType = type;
-        if (progressBarType != EMPTY) {
-            pthread_create(&progress_t, NULL, progress_thread, NULL);
-        }
     }
     progressScopeStart = 0;
     progressScopeSize = 0;
     progress = 0;
-    update_progress_locked();
+
+    update_screen_locked();
     pthread_mutex_unlock(&updateMutex);
 }
 
@@ -561,7 +553,8 @@ void ScreenRecoveryUI::ShowProgress(float portion, float seconds)
     progressScopeTime = now();
     progressScopeDuration = seconds;
     progress = 0;
-    update_progress_locked();
+
+    update_screen_locked();
     pthread_mutex_unlock(&updateMutex);
 }
 
@@ -576,7 +569,7 @@ void ScreenRecoveryUI::SetProgress(float fraction)
         float scale = width * progressScopeSize;
         if ((int) (progress * scale) != (int) (fraction * scale)) {
             progress = fraction;
-            update_progress_locked();
+            update_screen_locked();
         }
     }
     pthread_mutex_unlock(&updateMutex);
