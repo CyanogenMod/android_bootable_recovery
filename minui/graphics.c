@@ -314,6 +314,29 @@ void gr_blit(GRSurface* source, int sx, int sy, int w, int h, int dx, int dy) {
     unsigned char* src_p = source->data + sy*source->row_bytes + sx*source->pixel_bytes;
     unsigned char* dst_p = gr_draw->data + dy*gr_draw->row_bytes + dx*gr_draw->pixel_bytes;
 
+    for (int i = 0; i < h; ++i) {
+        memcpy(dst_p, src_p, w * source->pixel_bytes);
+        src_p += source->row_bytes;
+        dst_p += gr_draw->row_bytes;
+    }
+}
+
+void gr_blend(GRSurface* source, int sx, int sy, int w, int h, int dx, int dy) {
+    if (source == NULL) return;
+
+    if (gr_draw->pixel_bytes != source->pixel_bytes) {
+        printf("gr_blit: source has wrong format\n");
+        return;
+    }
+
+    dx += overscan_offset_x;
+    dy += overscan_offset_y;
+
+    if (outside(dx, dy) || outside(dx+w-1, dy+h-1)) return;
+
+    unsigned char* src_p = source->data + sy*source->row_bytes + sx*source->pixel_bytes;
+    unsigned char* dst_p = gr_draw->data + dy*gr_draw->row_bytes + dx*gr_draw->pixel_bytes;
+
     icon_blend_alpha(src_p, source->row_bytes, dst_p, gr_draw->row_bytes, w, h);
 }
 

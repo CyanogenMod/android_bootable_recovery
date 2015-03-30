@@ -60,6 +60,8 @@ int gr_measure(const char *s);
 void gr_font_size(int *x, int *y);
 
 void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy);
+void gr_blend(gr_surface source, int sx, int sy, int w, int h, int dx, int dy);
+
 unsigned int gr_get_width(gr_surface surface);
 unsigned int gr_get_height(gr_surface surface);
 
