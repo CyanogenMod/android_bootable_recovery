@@ -131,9 +131,9 @@ void ScreenRecoveryUI::draw_background_locked(Icon icon)
             }
         }
 
-        LOGV("textX=%d textY=%d iconX=%d iconY=%d", textX, textY, iconX, iconY);
+        LOGI("textX=%d textY=%d iconX=%d iconY=%d", textX, textY, iconX, iconY);
 
-        gr_color(255, 255, 255, 255);
+        SetColor(MENU);
         gr_texticon(textX, textY, text_surface);
     }
 }
@@ -202,7 +202,7 @@ void ScreenRecoveryUI::SetColor(UIElement e) {
             gr_color(106, 103, 102, 255);
             break;
         case LOG:
-            gr_color(76, 76, 76, 255);
+            gr_color(76, 76, 76, 128);
             break;
         case TEXT_FILL:
             gr_color(0, 0, 0, 255);
@@ -234,18 +234,19 @@ void ScreenRecoveryUI::draw_menu_item(int textrow, const char *text, int selecte
         gr_fill(0, (textrow)*char_height,
                 gr_fb_width(), (textrow+3)*char_height-1);
         SetColor(MENU_SEL_FG);
-        gr_text(4, (textrow+1)*char_height-1, text, 0);
+        gr_text(20, (textrow+1)*char_height-1, text, 0);
         SetColor(MENU);
     }
     else {
         SetColor(MENU);
-        gr_text(4, (textrow+1)*char_height-1, text, 0);
+        gr_text(20, (textrow+1)*char_height-1, text, 0);
     }
 }
 
 void ScreenRecoveryUI::draw_dialog()
 {
     int x, y, w, h;
+    LOGI("DIALOG!\n");
 
    if (dialog_icon == HEADLESS) {
        return;
@@ -273,7 +274,7 @@ void ScreenRecoveryUI::draw_dialog()
 
         int row;
         for (row = 0; row < log_text_rows; ++row) {
-            gr_text(2, y, text[row], 0);
+            gr_text(4, y, text[row], 0);
             y += cy+2;
         }
         gr_set_font("menu");
@@ -313,7 +314,15 @@ void ScreenRecoveryUI::draw_screen_locked()
         return;
     }
 
+    SetColor(MENU);
+
+    LOGI("after background, show_text=%d show_menu=%d currentIcon=%d\n", show_text, show_menu, currentIcon);
+
     if (show_text) {
+
+        if (currentIcon != ERASING && currentIcon != INSTALLING_UPDATE)
+            draw_header_icon();
+
         if (currentIcon == ERASING || currentIcon == INSTALLING_UPDATE || currentIcon == VIEWING_LOG) {
             int y = header_height + 4;
 
@@ -327,16 +336,16 @@ void ScreenRecoveryUI::draw_screen_locked()
             for (int ty = gr_fb_height() - cy, count = 0;
                  ty > y+2 && count < log_text_rows;
                  ty -= (cy+2), ++count) {
-                gr_text(0, ty, text[row], 0);
+                gr_text(4, ty, text[row], 0);
                 --row;
                 if (row < 0) row = log_text_rows-1;
             }
-            gr_set_font("menu");
             return;
         }
 
         if (show_menu) {
-            draw_header_icon();
+            gr_set_font("menu");
+
             int nr_items = menu_items - menu_show_start;
             if (nr_items > max_menu_rows)
                 nr_items = max_menu_rows;
@@ -345,6 +354,8 @@ void ScreenRecoveryUI::draw_screen_locked()
                         ((menu_show_start+i) == menu_sel));
             }
         }
+
+
     }
 }
 
@@ -476,7 +487,7 @@ void ScreenRecoveryUI::Init()
     backgroundIcon[ERASING] = backgroundIcon[INSTALLING_UPDATE];
     LoadBitmap("icon_info", &backgroundIcon[INFO]);
     LoadBitmap("icon_error", &backgroundIcon[ERROR]);
-    backgroundIcon[NO_COMMAND] = backgroundIcon[ERROR];
+    backgroundIcon[NO_COMMAND] = NULL;
     LoadBitmap("icon_headless", &backgroundIcon[HEADLESS]);
 
     LoadBitmap("progress_empty", &progressBarEmpty);

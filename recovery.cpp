@@ -814,7 +814,7 @@ static void file_to_ui(const char* fn) {
             // give the user time to glance at the entries
             key = ui->WaitKey();
 
-            if (key == KEY_POWER) {
+            if (key == KEY_POWER || key == KEY_BACK) {
                 break;
             }
 
@@ -840,10 +840,12 @@ static void file_to_ui(const char* fn) {
 
     // If the user didn't abort, then give the user time to glance at
     // the end of the log, sorry, no rewind here
-    if (key != KEY_POWER) {
+    if (key != KEY_POWER && key != KEY_BACK) {
         ui->Print("\n--END-- (press any key)\n");
         ui->WaitKey();
     }
+
+    ui->SetBackground(RecoveryUI::NO_COMMAND);
 
     redirect_stdio(TEMPORARY_LOG_FILE);
     fclose(fp);
@@ -886,9 +888,11 @@ static void choose_recovery_file(Device* device) {
 
     title_headers = prepend_title((const char**)headers);
 
+    ui->SetBackground(RecoveryUI::NO_COMMAND);
+
     while(1) {
         int chosen_item = get_menu_selection(title_headers, entries, 1, 0, device);
-        if (chosen_item == 0) break;
+        if (chosen_item == 0 || chosen_item == Device::kGoBack) break;
         file_to_ui(entries[chosen_item]);
     }
 
@@ -1053,14 +1057,12 @@ prompt_and_wait(Device* device, int status) {
         finish_recovery(NULL);
         ui_root_menu = 1;
         switch (status) {
-            case INSTALL_SUCCESS:
-            case INSTALL_NONE:
-                ui->SetBackground(RecoveryUI::NONE);
-                break;
-
             case INSTALL_ERROR:
             case INSTALL_CORRUPT:
                 ui->SetBackground(RecoveryUI::ERROR);
+                break;
+            default:
+                ui->SetBackground(RecoveryUI::NO_COMMAND);
                 break;
         }
         ui->SetProgressType(RecoveryUI::EMPTY);
@@ -1349,7 +1351,7 @@ main(int argc, char **argv) {
         ui->SetStage(st_cur, st_max);
     }
 
-    ui->SetBackground(RecoveryUI::NONE);
+    ui->SetBackground(RecoveryUI::NO_COMMAND);
     if (show_text) ui->ShowText(true);
 
     /*enable the backlight*/
