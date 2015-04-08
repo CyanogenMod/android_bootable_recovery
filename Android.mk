@@ -136,11 +136,11 @@ LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
 LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
 LOCAL_C_INCLUDES += system/vold
 
-#ifeq ($(TARGET_RECOVERY_UI_LIB),)
+ifeq ($(TARGET_RECOVERY_UI_LIB),)
   LOCAL_SRC_FILES += default_device.cpp
-#else
-#  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
-#endif
+else
+  LOCAL_STATIC_LIBRARIES += $(TARGET_RECOVERY_UI_LIB)
+endif
 
 ifeq ($(BOARD_CACHEIMAGE_PARTITION_SIZE),)
 LOCAL_REQUIRED_MODULES := recovery-persist recovery-refresh
