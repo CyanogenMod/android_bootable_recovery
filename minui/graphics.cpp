@@ -39,15 +39,14 @@
 #include "minui.h"
 #include "graphics.h"
 
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 #endif
 
-typedef struct {
+struct font_item {
     char        name[80];
     GRFont*     font;
-} font_item;
+};
 
 static font_item gr_fonts[] = {
     { "menu", NULL },
@@ -356,10 +355,7 @@ unsigned int gr_get_height(GRSurface* surface) {
 
 static void gr_init_one_font(int idx)
 {
-    char name[80];
-    GRFont* gr_font = calloc(sizeof(*gr_font), 1);
-    snprintf(name, sizeof(name), "font_%s", gr_fonts[idx].name);
-    gr_fonts[idx].font = gr_font;
+    gr_font = reinterpret_cast<GRFont*>(calloc(sizeof(*gr_font), 1));
 
     int res = res_create_alpha_surface(name, &(gr_font->texture));
     if (res == 0) {
@@ -372,14 +368,14 @@ static void gr_init_one_font(int idx)
         printf("failed to read font: res=%d\n", res);
 
         // fall back to the compiled-in font.
-        gr_font->texture = malloc(sizeof(*gr_font->texture));
+        gr_font->texture = reinterpret_cast<GRSurface*>(malloc(sizeof(*gr_font->texture)));
         gr_font->texture->width = font.width;
         gr_font->texture->height = font.height;
         gr_font->texture->row_bytes = font.width;
         gr_font->texture->pixel_bytes = 1;
 
-        unsigned char* bits = malloc(font.width * font.height);
-        gr_font->texture->data = (void*) bits;
+        unsigned char* bits = reinterpret_cast<unsigned char*>(malloc(font.width * font.height));
+        gr_font->texture->data = reinterpret_cast<unsigned char*>(bits);
 
         unsigned char data;
         unsigned char* in = font.rundata;

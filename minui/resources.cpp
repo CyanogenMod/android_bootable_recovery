@@ -40,7 +40,8 @@ extern char* locale;
 #define SURFACE_DATA_ALIGNMENT 8
 
 static gr_surface malloc_surface(size_t data_size) {
-    unsigned char* temp = malloc(sizeof(GRSurface) + data_size + SURFACE_DATA_ALIGNMENT);
+    size_t size = sizeof(GRSurface) + data_size + SURFACE_DATA_ALIGNMENT;
+    unsigned char* temp = reinterpret_cast<unsigned char*>(malloc(size));
     if (temp == NULL) return NULL;
     gr_surface surface = (gr_surface) temp;
     surface->data = temp + sizeof(GRSurface) +
@@ -53,6 +54,8 @@ static int open_png(const char* name, png_structp* png_ptr, png_infop* info_ptr,
     char resPath[256] = {0};
     unsigned char header[8] = {0};
     int result = 0;
+    int color_type, bit_depth;
+    size_t bytesRead;
 
     if(*name != '/') {
         snprintf(resPath, sizeof(resPath), "/res/images/%s.png", name);
@@ -66,7 +69,7 @@ static int open_png(const char* name, png_structp* png_ptr, png_infop* info_ptr,
         goto exit;
     }
 
-    size_t bytesRead = fread(header, 1, sizeof(header), fp);
+    bytesRead = fread(header, 1, sizeof(header), fp);
     if (bytesRead != sizeof(header)) {
         result = -2;
         goto exit;
@@ -98,7 +101,6 @@ static int open_png(const char* name, png_structp* png_ptr, png_infop* info_ptr,
     png_set_sig_bytes(*png_ptr, sizeof(header));
     png_read_info(*png_ptr, *info_ptr);
 
-    int color_type, bit_depth;
     png_get_IHDR(*png_ptr, *info_ptr, width, height, &bit_depth,
             &color_type, NULL, NULL, NULL);
 
@@ -222,6 +224,8 @@ int res_create_display_surface(const char* name, gr_surface* pSurface) {
     png_infop info_ptr = NULL;
     png_uint_32 width, height;
     png_byte channels;
+    unsigned char* p_row;
+    unsigned int y;
 
     *pSurface = NULL;
 
@@ -238,8 +242,7 @@ int res_create_display_surface(const char* name, gr_surface* pSurface) {
     png_set_bgr(png_ptr);
 #endif
 
-    unsigned char* p_row = malloc(width * 4);
-    unsigned int y;
+    p_row = reinterpret_cast<unsigned char*>(malloc(width * 4));
     for (y = 0; y < height; ++y) {
         png_read_row(png_ptr, p_row, NULL);
         transform_rgb_to_draw(p_row, surface->data + y * surface->row_bytes, channels, width);
@@ -262,6 +265,10 @@ int res_create_multi_display_surface(const char* name, int* frames, gr_surface**
     png_uint_32 width, height;
     png_byte channels;
     int i;
+    png_textp text;
+    int num_text;
+    unsigned char* p_row;
+    unsigned int y;
 
     *pSurface = NULL;
     *frames = -1;
@@ -270,8 +277,6 @@ int res_create_multi_display_surface(const char* name, int* frames, gr_surface**
     if (result < 0) return result;
 
     *frames = 1;
-    png_textp text;
-    int num_text;
     if (png_get_text(png_ptr, info_ptr, &text, &num_text)) {
         for (i = 0; i < num_text; ++i) {
             if (text[i].key && strcmp(text[i].key, "Frames") == 0 && text[i].text) {
@@ -288,7 +293,7 @@ int res_create_multi_display_surface(const char* name, int* frames, gr_surface**
         goto exit;
     }
 
-    surface = malloc(*frames * sizeof(gr_surface));
+    surface = reinterpret_cast<gr_surface*>(malloc(*frames * sizeof(gr_surface)));
     if (surface == NULL) {
         result = -8;
         goto exit;
@@ -305,8 +310,7 @@ int res_create_multi_display_surface(const char* name, int* frames, gr_surface**
     png_set_bgr(png_ptr);
 #endif
 
-    unsigned char* p_row = malloc(width * 4);
-    unsigned int y;
+    p_row = reinterpret_cast<unsigned char*>(malloc(width * 4));
     for (y = 0; y < height; ++y) {
         png_read_row(png_ptr, p_row, NULL);
         int frame = y % *frames;
@@ -405,6 +409,8 @@ int res_create_localized_alpha_surface(const char* name,
     png_infop info_ptr = NULL;
     png_uint_32 width, height;
     png_byte channels;
+    unsigned char* row;
+    png_uint_32 y;
 
     *pSurface = NULL;
 
@@ -425,8 +431,7 @@ int res_create_localized_alpha_surface(const char* name,
         goto exit;
     }
 
-    unsigned char* row = malloc(width);
-    png_uint_32 y;
+    row = reinterpret_cast<unsigned char*>(malloc(width));
     for (y = 0; y < height; ++y) {
         png_read_row(png_ptr, row, NULL);
         int w = (row[1] << 8) | row[0];

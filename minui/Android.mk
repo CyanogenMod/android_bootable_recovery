@@ -4,10 +4,10 @@ common_cflags :=
 
 common_src_files := \
 	events.cpp \
-	graphics.c \
-	graphics_adf.c \
-	graphics_fbdev.c \
-	resources.c
+	graphics.cpp \
+	graphics_adf.cpp \
+	graphics_fbdev.cpp \
+	resources.cpp
 
 common_c_includes := \
     external/libpng\

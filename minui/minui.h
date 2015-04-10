@@ -19,23 +19,19 @@
 
 #include <sys/types.h>
 
-#include <stdbool.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <functional>
 
 //
 // Graphics.
 //
 
-typedef struct {
+struct GRSurface {
     int width;
     int height;
     int row_bytes;
     int pixel_bytes;
     unsigned char* data;
-} GRSurface;
+};
 
 typedef struct {
     GRSurface* texture;
@@ -45,13 +41,13 @@ typedef struct {
 
 typedef GRSurface* gr_surface;
 
-int gr_init(void);
-void gr_exit(void);
+int gr_init();
+void gr_exit();
 
-int gr_fb_width(void);
-int gr_fb_height(void);
+int gr_fb_width();
+int gr_fb_height();
 
-void gr_flip(void);
+void gr_flip();
 void gr_fb_blank(bool blank);
 
 void gr_clear();  // clear entire surface to current color
@@ -75,15 +71,16 @@ unsigned int gr_get_height(gr_surface surface);
 
 struct input_event;
 
+// TODO: move these over to std::function.
 typedef int (*ev_callback)(int fd, uint32_t epevents, void* data);
 typedef int (*ev_set_key_callback)(int code, int value, void* data);
 
 int ev_init(ev_callback input_cb, void* data);
-void ev_exit(void);
+void ev_exit();
 int ev_add_fd(int fd, ev_callback cb, void* data);
 int ev_del_fd(int fd);
 int ev_sync_key_state(ev_set_key_callback set_key_cb, void* data);
-void ev_iterate_available_keys(ev_key_callback cb, void* data);
+void ev_iterate_available_keys(std::function<void(int)> f);
 
 /* timeout has the same semantics as for poll
  *    0 : don't block
@@ -92,9 +89,9 @@ void ev_iterate_available_keys(ev_key_callback cb, void* data);
  */
 int ev_wait(int timeout);
 
-int ev_get_input(int fd, uint32_t epevents, struct input_event *ev);
-void ev_dispatch(void);
-int ev_get_epollfd(void);
+int ev_get_input(int fd, uint32_t epevents, input_event* ev);
+void ev_dispatch();
+int ev_get_epollfd();
 
 //
 // Resources
@@ -136,16 +133,5 @@ int res_create_localized_alpha_surface(const char* name, const char* locale,
 // functions.
 void res_free_surface(gr_surface surface);
 void gr_text_blend(int x,int y, GRFont* pfont);
-
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef __cplusplus
-
-#include <functional>
-void ev_iterate_available_keys(std::function<void(int)> f);
-
-#endif
 
 #endif
