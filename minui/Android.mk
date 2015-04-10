@@ -2,7 +2,11 @@ LOCAL_PATH := $(call my-dir)
 
 common_cflags :=
 
-common_src_files := graphics.c graphics_adf.c graphics_fbdev.c events.c \
+common_src_files := \
+	events.cpp \
+	graphics.c \
+	graphics_adf.c \
+	graphics_fbdev.c \
 	resources.c
 
 common_c_includes := \
@@ -10,6 +14,8 @@ common_c_includes := \
     external/zlib
 
 common_additional_dependencies :=
+
+LOCAL_CLANG := true
 
 common_whole_static_libraries := libadf
 
