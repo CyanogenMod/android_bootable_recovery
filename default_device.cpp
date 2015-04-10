@@ -22,12 +22,18 @@
 
 #include "roots.h"
 
-static const char* HEADERS[] = { "Swipe up/down to change selections;",
+static const char* REGULAR_HEADERS[] = { "Swipe up/down to change selections;",
                                  "swipe right to select, or left to go back.",
                                  "",
                                  NULL };
 
-static const char* ITEMS[] =  {"Reboot system now",
+// I know it's not ideal, but for now, let's assume that if they need to longpress a button, they're not using a touchscreen-enabled device.
+static const char* LONG_PRESS_HEADERS[] = { "Any button cycles highlight.",
+				 "Long-press activates.",
+				 "",
+				 NULL };
+
+static const char* MENU_ITEMS[] =  {"Reboot system now",
                                "Apply update",
                                "Wipe data/factory reset",
                                "Wipe cache partition",
@@ -118,8 +124,13 @@ class DefaultDevice : public Device {
         return ACTIONS[menu_position];
     }
 
-    const char* const* GetMenuHeaders() { return HEADERS; }
-    const char* const* GetMenuItems() { return ITEMS; }
+    const char* const* GetMenuHeaders() { 
+	return ui_->HasThreeButtons() ? REGULAR_HEADERS : LONG_PRESS_HEADERS; 
+    }
+
+    const char* const* GetMenuItems() { 
+	return MENU_ITEMS; 
+    }
 
   private:
     RecoveryUI* ui;

@@ -65,7 +65,7 @@ class Device {
     //   - invoke the highlighted item (kInvokeItem)
     //   - do nothing (kNoAction)
     //   - invoke a specific action (a menu position: any non-negative number)
-    virtual int HandleMenuKey(int key, int visible) = 0;
+    virtual int HandleMenuKey(int key, int visible);
 
     enum BuiltinAction { NO_ACTION, REBOOT, APPLY_UPDATE,
                          WIPE_DATA, WIPE_CACHE, WIPE_MEDIA,
