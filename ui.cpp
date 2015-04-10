@@ -236,7 +236,10 @@ RecoveryUI::RecoveryUI() :
     enable_reboot(true),
     consecutive_power_keys(0),
     consecutive_alternate_keys(0),
-    last_key(-1) {
+    last_key(-1),
+    has_power_key(false),
+    has_up_key(false),
+    has_down_key(false) {
     pthread_mutex_init(&key_queue_mutex, NULL);
     pthread_cond_init(&key_queue_cond, NULL);
 
@@ -244,23 +247,30 @@ RecoveryUI::RecoveryUI() :
     memset(key_pressed, 0, sizeof(key_pressed));
 }
 
+void RecoveryUI::OnKeyDetected(int key_code) {
+    if (key_code == KEY_POWER) {
+        has_power_key = true;
+    } else if (key_code == KEY_DOWN || key_code == KEY_VOLUMEDOWN) {
+        has_down_key = true;
+    } else if (key_code == KEY_UP || key_code == KEY_VOLUMEUP) {
+        has_up_key = true;
+    }
+}
+
 void RecoveryUI::Init() {
     calibrate_swipe();
     ev_init(input_callback, NULL);
-    message_socket.ServerInit();
-    ev_add_fd(message_socket.fd(), message_socket_listen_event, &message_socket);
+    using namespace std::placeholders;
+    ev_iterate_available_keys(std::bind(&RecoveryUI::OnKeyDetected, this, _1));
     pthread_create(&input_t, NULL, input_thread, NULL);
 }
-
 
 int RecoveryUI::input_callback(int fd, uint32_t epevents, void* data)
 {
     struct input_event ev;
-    int ret;
-
-    ret = ev_get_input(fd, epevents, &ev);
-    if (ret)
+    if (ev_get_input(fd, epevents, &ev) == -1) {
         return -1;
+    }
 
     show_event(fd, &ev);
 
@@ -352,8 +362,7 @@ void RecoveryUI::process_key(input_device* dev, int key_code, int updown) {
     pthread_mutex_unlock(&key_queue_mutex);
 
     if (register_key) {
-        NextCheckKeyIsLong(long_press);
-        switch (CheckKey(key_code)) {
+        switch (CheckKey(key_code, long_press)) {
           case RecoveryUI::IGNORE:
             break;
 
@@ -819,23 +828,47 @@ bool RecoveryUI::IsKeyPressed(int key)
     return pressed;
 }
 
+bool RecoveryUI::IsLongPress() {
+    pthread_mutex_lock(&key_queue_mutex);
+    bool result = key_long_press;
+    pthread_mutex_unlock(&key_queue_mutex);
+    return result;
+}
+
 void RecoveryUI::FlushKeys() {
     pthread_mutex_lock(&key_queue_mutex);
     key_queue_len = 0;
     pthread_mutex_unlock(&key_queue_mutex);
 }
 
-// The default CheckKey implementation assumes the device has power,
-// volume up, and volume down keys.
-//
 // - Hold power and press vol-up to toggle display.
 // - Press power seven times in a row to reboot.
 // - Alternate vol-up and vol-down seven times to mount /system.
-RecoveryUI::KeyAction RecoveryUI::CheckKey(int key) {
-    if (IsKeyPressed(KEY_POWER) && key == KEY_VOLUMEUP) {
-        return TOGGLE;
+RecoveryUI::KeyAction RecoveryUI::CheckKey(int key, bool is_long_press) {
+    pthread_mutex_lock(&key_queue_mutex);
+    key_long_press = false;
+    pthread_mutex_unlock(&key_queue_mutex);
+
+    // If we have power and volume up keys, that chord is the signal to toggle the text display.
+    if (has_power_key && has_up_key) {
+        if (key == KEY_VOLUMEUP && IsKeyPressed(KEY_POWER)) {
+            return TOGGLE;
+        }
+    } else {
+        // Otherwise long press of any button toggles to the text display,
+        // and there's no way to toggle back (but that's pretty useless anyway).
+        if (is_long_press && !IsTextVisible()) {
+            return TOGGLE;
+        }
+
+        // Also, for button-limited devices, a long press is translated to KEY_ENTER.
+        if (is_long_press && IsTextVisible()) {
+            EnqueueKey(KEY_ENTER);
+            return IGNORE;
+        }
     }
 
+    // Press power seven times in a row to reboot.
     if (key == KEY_POWER) {
         pthread_mutex_lock(&key_queue_mutex);
         bool reboot_enabled = enable_reboot;
@@ -864,14 +897,10 @@ RecoveryUI::KeyAction RecoveryUI::CheckKey(int key) {
         consecutive_alternate_keys = 0;
     }
     last_key = key;
-
-    return ENQUEUE;
+    return IsTextVisible() ? ENQUEUE : IGNORE;
 }
 
-void RecoveryUI::NextCheckKeyIsLong(bool is_long_press) {
-}
-
-void RecoveryUI::KeyLongPress(int key) {
+void RecoveryUI::KeyLongPress(int) {
 }
 
 void RecoveryUI::SetEnableReboot(bool enabled) {
