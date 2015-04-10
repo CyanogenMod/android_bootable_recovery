@@ -110,14 +110,16 @@ void ScreenRecoveryUI::draw_background_locked(Icon icon)
         int textWidth = gr_get_width(text_surface);
         int textHeight = gr_get_height(text_surface);
         int stageHeight = gr_get_height(stageMarkerEmpty);
+        int availableHeight = icon == INSTALLING_UPDATE && !DialogShowing() && show_text
+                ? 3 * gr_fb_height() / 4 : gr_fb_height();
 
         int sh = (max_stage >= 0) ? stageHeight : 0;
 
         iconX = (gr_fb_width() - iconWidth) / 2;
-        iconY = (gr_fb_height() - (iconHeight+textHeight+40+sh)) / 2;
+        iconY = (availableHeight - (iconHeight+textHeight+40+sh)) / 2;
 
         int textX = (gr_fb_width() - textWidth) / 2;
-        int textY = ((gr_fb_height() - (iconHeight+textHeight+40+sh)) / 2) + iconHeight + 40;
+        int textY = ((availableHeight - (iconHeight+textHeight+40+sh)) / 2) + iconHeight + 40;
 
         gr_blit(surface, 0, 0, iconWidth, iconHeight, iconX, iconY);
         if (stageHeight > 0) {
@@ -154,8 +156,11 @@ void ScreenRecoveryUI::draw_progress_locked()
         int width = gr_get_width(progressBarEmpty);
         int height = gr_get_height(progressBarEmpty);
 
-        int dx = (gr_fb_width() - width)/2;
-        int dy = (gr_fb_height() / 2) + (iconHeight / 2);
+        int bottomOfUsableHeight = show_text ? 3 * gr_fb_height() / 4 : gr_fb_height();
+        int bottomOfIcon = bottomOfUsableHeight / 2 + iconHeight / 2;
+
+        int dx = (gr_fb_width() - width) / 2;
+        int dy = bottomOfIcon + (bottomOfUsableHeight - bottomOfIcon) / 2 - height / 2;
 
         // Erase behind the progress bar (in case this was a progress-only update)
         SetColor(TEXT_FILL);
@@ -324,7 +329,7 @@ void ScreenRecoveryUI::draw_screen_locked()
             draw_header_icon();
 
         if (currentIcon == ERASING || currentIcon == INSTALLING_UPDATE || currentIcon == VIEWING_LOG) {
-            int y = header_height + 4;
+            int y = currentIcon == INSTALLING_UPDATE ? gr_fb_height() / 4 : header_height + 4;
 
             SetColor(LOG);
             int cx, cy;
