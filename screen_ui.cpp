@@ -207,7 +207,7 @@ void ScreenRecoveryUI::SetColor(UIElement e) {
             gr_color(106, 103, 102, 255);
             break;
         case LOG:
-            gr_color(76, 76, 76, 128);
+            gr_color(76, 76, 76, 255);
             break;
         case TEXT_FILL:
             gr_color(0, 0, 0, 255);
