@@ -142,7 +142,7 @@ LOCAL_C_INCLUDES += system/extras/ext4_utils
 LOCAL_C_INCLUDES += external/openssl/include
 
 # Symlinks
-RECOVERY_LINKS := busybox getprop reboot sdcard setup_adbd setprop start stop vdc
+RECOVERY_LINKS := busybox getprop make_ext4fs minizip reboot sdcard setup_adbd setprop start stop vdc
 
 RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
 
