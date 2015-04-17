@@ -106,7 +106,7 @@ endif
 #ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
     LOCAL_CFLAGS += -DUSE_EXT4
     LOCAL_C_INCLUDES += system/extras/ext4_utils system/vold
-    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz
+    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz liblz4-static
 #endif
 
 LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
@@ -205,7 +205,7 @@ LOCAL_CFLAGS += -Wno-unused-parameter
 #ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
     LOCAL_CFLAGS += -DUSE_EXT4
     LOCAL_C_INCLUDES += system/extras/ext4_utils
-    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz
+    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz liblz4-static
 #endif
 LOCAL_STATIC_LIBRARIES += \
     libsparse_static \

@@ -26,7 +26,8 @@ LOCAL_C_INCLUDES += system/extras/ext4_utils
 LOCAL_STATIC_LIBRARIES += \
     libext4_utils_static \
     libsparse_static \
-    libz
+    libz \
+    liblz4-static
 #endif
 
 LOCAL_C_INCLUDES += external/e2fsprogs/lib
