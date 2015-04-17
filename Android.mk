@@ -94,7 +94,8 @@ LOCAL_STATIC_LIBRARIES := \
     libm \
     libc \
     libext2_blkid \
-    libext2_uuid
+    libext2_uuid \
+    liblz4-static
 
 # OEMLOCK support requires a device specific liboemlock be supplied.
 # See comments in recovery.cpp for the API.
@@ -224,7 +225,8 @@ LOCAL_STATIC_LIBRARIES += \
     libm \
     libc \
     libext2_blkid \
-    libext2_uuid
+    libext2_uuid \
+    liblz4-static
 
 LOCAL_C_INCLUDES +=         	\
     system/core/fs_mgr/include	\

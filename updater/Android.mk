@@ -25,6 +25,7 @@ LOCAL_CFLAGS += -Wno-unused-parameter
 LOCAL_C_INCLUDES += system/extras/ext4_utils
 LOCAL_STATIC_LIBRARIES += \
     libext4_utils_static \
+    liblz4-static \
     libsparse_static \
     libz
 #endif
