@@ -133,7 +133,7 @@ void ScreenRecoveryUI::draw_background_locked(Icon icon)
             }
         }
 
-        LOGI("textX=%d textY=%d iconX=%d iconY=%d", textX, textY, iconX, iconY);
+        LOGV("textX=%d textY=%d iconX=%d iconY=%d", textX, textY, iconX, iconY);
 
         SetColor(MENU);
         gr_texticon(textX, textY, text_surface);
@@ -251,7 +251,6 @@ void ScreenRecoveryUI::draw_menu_item(int textrow, const char *text, int selecte
 void ScreenRecoveryUI::draw_dialog()
 {
     int x, y, w, h;
-    LOGI("DIALOG!\n");
 
    if (dialog_icon == HEADLESS) {
        return;
@@ -321,8 +320,6 @@ void ScreenRecoveryUI::draw_screen_locked()
 
     SetColor(MENU);
 
-    LOGI("after background, show_text=%d show_menu=%d currentIcon=%d\n", show_text, show_menu, currentIcon);
-
     if (show_text) {
 
         if (currentIcon != ERASING && currentIcon != INSTALLING_UPDATE)
@@ -359,8 +356,6 @@ void ScreenRecoveryUI::draw_screen_locked()
                         ((menu_show_start+i) == menu_sel));
             }
         }
-
-
     }
 }
 
