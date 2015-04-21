@@ -49,11 +49,6 @@ int format_volume(const char* volume, bool force = false);
 // mounted (/tmp and /cache) are mounted.  Returns 0 on success.
 int setup_install_mounts();
 
-// Conditionally wipes the /persistent partition if it's marked
-// to wipe. Returns -1 on failure, 1 if the partition was wiped
-// and 0 if the partition was not wiped.
-int erase_persistent_partition();
-
 char* get_android_secure_path();
 int get_num_volumes();
 
