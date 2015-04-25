@@ -7,6 +7,10 @@ updater_src_files := \
 	blockimg.c \
 	updater.c
 
+ifeq ($(BOARD_SUPPRESS_EMMC_WIPE),true)
+    LOCAL_CFLAGS += -DBOARD_SUPPRESS_BLOCK_DISCARD
+endif
+
 #
 # Build a statically-linked binary to include in OTA packages
 #
