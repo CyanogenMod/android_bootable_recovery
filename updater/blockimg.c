@@ -730,8 +730,12 @@ Value* BlockImageUpdateFn(const char* name, State* state, int argc, Expr* argv[]
                     range[1] = (tgt->pos[i*2+1] - tgt->pos[i*2]) * (uint64_t)BLOCKSIZE;
 
                     if (ioctl(fd, BLKDISCARD, &range) < 0) {
+#ifndef BOARD_SUPPRESS_BLOCK_DISCARD
                         ErrorAbort(state, "    blkdiscard failed: %s\n", strerror(errno));
                         goto done;
+#else
+                        printf("    blkdiscard failed, ignoring: %s\n", strerror(errno));
+#endif
                     }
                 }
 
