@@ -12,6 +12,10 @@ updater_src_files := \
 #
 include $(CLEAR_VARS)
 
+ifeq ($(BOARD_SUPPRESS_EMMC_WIPE),true)
+    LOCAL_CFLAGS += -DBOARD_SUPPRESS_BLOCK_DISCARD
+endif
+
 # Build only in eng, so we don't end up with a copy of this in /system
 # on user builds.  (TODO: find a better way to build device binaries
 # needed only for OTA packages.)
