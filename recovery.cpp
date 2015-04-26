@@ -1045,7 +1045,7 @@ out:
 
 int ui_root_menu = 0;
 
-// Return REBOOT, SHUTDOWN, or REBOOT_BOOTLOADER.  Returning NO_ACTION
+// Return REBOOT, SHUTDOWN, or REBOOT_BOOTLOADER / DOWNLOAD_MODE.  Returning NO_ACTION
 // means to take the default, which is to reboot or shutdown depending
 // on if the --shutdown_after flag was passed to recovery.
 static Device::BuiltinAction
@@ -1083,7 +1083,11 @@ prompt_and_wait(Device* device, int status) {
 
                 case Device::REBOOT:
                 case Device::SHUTDOWN:
+#ifndef BOARD_HAS_DOWNLOAD_MODE
                 case Device::REBOOT_BOOTLOADER:
+#else
+                case Device::REBOOT_DOWNLOAD:
+#endif
                     return chosen_action;
 
                 case Device::WIPE_DATA:
@@ -1476,11 +1480,17 @@ main(int argc, char **argv) {
             ui->Print("Shutting down...\n");
             property_set(ANDROID_RB_PROPERTY, "shutdown,");
             break;
-
+#ifndef BOARD_HAS_DOWNLOAD_MODE
         case Device::REBOOT_BOOTLOADER:
             ui->Print("Rebooting to bootloader...\n");
             property_set(ANDROID_RB_PROPERTY, "reboot,bootloader");
             break;
+#else
+        case Device::REBOOT_DOWNLOAD:
+            ui->Print("Rebooting to download mode...\n");
+            property_set(ANDROID_RB_PROPERTY, "reboot,download");
+            break;
+#endif
 
         default:
             ui->Print("Rebooting...\n");

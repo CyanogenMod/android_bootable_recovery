@@ -32,7 +32,11 @@ static const char* ITEMS[] =  {"Reboot system now",
                                "Wipe data/factory reset",
                                "Wipe cache partition",
                                "Wipe media",
+#ifndef BOARD_HAS_DOWNLOAD_MODE
                                "Reboot to bootloader",
+#else
+                               "Reboot to download mode",
+#endif
                                "Power down",
                                "View recovery logs",
                                NULL };
@@ -43,7 +47,11 @@ static Device::BuiltinAction ACTIONS[] = {
     Device::WIPE_DATA,
     Device::WIPE_CACHE,
     Device::WIPE_MEDIA,
+#ifndef BOARD_HAS_DOWNLOAD_MODE
     Device::REBOOT_BOOTLOADER,
+#else
+    Device::REBOOT_DOWNLOAD,
+#endif
     Device::SHUTDOWN,
     Device::READ_RECOVERY_LASTLOG,
     Device::NO_ACTION
