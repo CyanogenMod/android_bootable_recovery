@@ -18,7 +18,11 @@
 
 static const char* MENU_ITEMS[] = {
     "Reboot system now",
+#ifdef DOWNLOAD_MODE
+    "Reboot to download mode",
+#else
     "Reboot to bootloader",
+#endif
     "Apply update",
     "Wipe data/factory reset",
     "Wipe cache partition",
