@@ -1478,8 +1478,13 @@ main(int argc, char **argv) {
             break;
 
         case Device::REBOOT_BOOTLOADER:
+#ifdef DOWNLOAD_MODE
+            ui->Print("Rebooting to download mode...\n");
+            property_set(ANDROID_RB_PROPERTY, "reboot,download");
+#else
             ui->Print("Rebooting to bootloader...\n");
             property_set(ANDROID_RB_PROPERTY, "reboot,bootloader");
+#endif
             break;
 
         default:
