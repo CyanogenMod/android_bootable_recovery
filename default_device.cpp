@@ -32,7 +32,11 @@ static const char* ITEMS[] =  {"Reboot system now",
                                "Wipe data/factory reset",
                                "Wipe cache partition",
                                "Wipe media",
+#ifndef BOARD_HAS_DOWNLOAD_MODE
                                "Reboot to bootloader",
+#else
+                               "Reboot to download mode",
+#endif
                                "Power down",
                                "View recovery logs",
                                NULL };
