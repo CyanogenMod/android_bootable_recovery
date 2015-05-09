@@ -1334,10 +1334,12 @@ static int PerformCommandErase(CommandParameters& params) {
             // length in bytes
             blocks[1] = (tgt.pos[i * 2 + 1] - tgt.pos[i * 2]) * (uint64_t) BLOCKSIZE;
 
+#ifndef SUPPRESS_EMMC_WIPE
             if (ioctl(params.fd, BLKDISCARD, &blocks) == -1) {
                 fprintf(stderr, "BLKDISCARD ioctl failed: %s\n", strerror(errno));
                 return -1;
             }
+#endif
         }
     }
 
