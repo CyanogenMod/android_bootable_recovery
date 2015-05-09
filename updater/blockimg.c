@@ -729,10 +729,12 @@ Value* BlockImageUpdateFn(const char* name, State* state, int argc, Expr* argv[]
                     // len in bytes
                     range[1] = (tgt->pos[i*2+1] - tgt->pos[i*2]) * (uint64_t)BLOCKSIZE;
 
+#ifndef SUPPRESS_EMMC_WIPE
                     if (ioctl(fd, BLKDISCARD, &range) < 0) {
                         ErrorAbort(state, "    blkdiscard failed: %s\n", strerror(errno));
                         goto done;
                     }
+#endif
                 }
 
                 free(tgt);
