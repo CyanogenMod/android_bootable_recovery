@@ -475,6 +475,25 @@ int format_volume(const char* volume, bool force) {
         ensure_path_unmounted("/data");
         return rc;
     }
+    if (strcmp(volume, "sdcard") == 0) {
+        storage_item* items = get_storage_items();
+        int rc = 0;
+        for (int n = 0; items[n].label; ++n) {
+            if (!strncmp(items[n].label, "sdcard", 6)) {
+                if (ensure_volume_unmounted(items[n].vol) != 0) {
+                    LOGE("format_volume failed to unmount %s", items[n].vol);
+                    rc = -1;
+                    continue;
+                }
+                if (vold_format_auto_volume(items[n].label, 1) != 0) {
+                    LOGE("format_volume failed to format %s", items[n].vol);
+                    rc = -1;
+                }
+            }
+        }
+        free_storage_items(items);
+        return rc;
+    }
 
     fstab_rec* v = volume_for_path(volume);
     if (v == NULL) {

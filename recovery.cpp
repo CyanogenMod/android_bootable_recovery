@@ -94,7 +94,8 @@ static const struct option OPTIONS[] = {
   { "headless", no_argument, NULL, 'h' },
   { "wipe_data", no_argument, NULL, 'w' },
   { "wipe_cache", no_argument, NULL, 'c' },
-  { "wipe_media", no_argument, NULL, 'm' },
+  { "wipe_media", no_argument, NULL, 'M' },
+  { "wipe_sdcard", no_argument, NULL, 'S' },
   { "show_text", no_argument, NULL, 't' },
   { "just_exit", no_argument, NULL, 'x' },
   { "locale", required_argument, NULL, 'l' },
@@ -1297,7 +1298,9 @@ main(int argc, char **argv) {
 
     const char *send_intent = NULL;
     const char *update_package = NULL;
-    int wipe_data = 0, wipe_cache = 0, wipe_media = 0, show_text = 0, sideload = 0;
+    int wipe_data = 0, wipe_cache = 0;
+    int wipe_media = 0, wipe_sdcard = 0;
+    int show_text = 0, sideload = 0;
     bool headless = false;
     bool just_exit = false;
     bool shutdown_after = false;
@@ -1309,8 +1312,9 @@ main(int argc, char **argv) {
         case 'u': update_package = optarg; break;
         case 'h': headless = true; break;
         case 'w': wipe_data = wipe_cache = 1; break;
-        case 'm': wipe_media = 1; break;
         case 'c': wipe_cache = 1; break;
+        case 'M': wipe_media = 1; break;
+        case 'S': wipe_sdcard = 1; break;
         case 't': show_text = 1; break;
         case 'x': just_exit = true; break;
         case 'l': locale = optarg; break;
@@ -1427,17 +1431,18 @@ main(int argc, char **argv) {
                 ui->ShowText(true);
             }
         }
-    } else if (wipe_data) {
-        if (device->WipeData()) status = INSTALL_ERROR;
-        if (erase_volume("/data", wipe_media)) status = INSTALL_ERROR;
+    } else if (wipe_cache || wipe_data || wipe_media || wipe_sdcard) {
+        // Wipe one or more partitions.
+        if (wipe_data) {
+            if (device->WipeData()) status = INSTALL_ERROR;
+            if (erase_volume("/data", wipe_media)) status = INSTALL_ERROR;
+        }
+        else if (wipe_media) {
+            if (erase_volume("media")) status = INSTALL_ERROR;
+        }
+        if (wipe_sdcard && erase_volume("sdcard")) status = INSTALL_ERROR;
         if (wipe_cache && erase_volume("/cache")) status = INSTALL_ERROR;
         if (status != INSTALL_SUCCESS) ui->Print("Data wipe failed.\n");
-    } else if (wipe_cache) {
-        if (wipe_cache && erase_volume("/cache")) status = INSTALL_ERROR;
-        if (status != INSTALL_SUCCESS) ui->Print("Cache wipe failed.\n");
-    } else if (wipe_media) {
-        if (erase_volume("media")) status = INSTALL_ERROR;
-        if (status != INSTALL_SUCCESS) ui->Print("Media wipe failed.\n");
     } else if (sideload) {
         status = enter_sideload_mode(&wipe_cache, device);
     } else if (!just_exit) {

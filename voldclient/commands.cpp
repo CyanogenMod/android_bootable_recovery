@@ -172,6 +172,14 @@ int vold_format_volume(const char* path, bool wait) {
     return vold_command(3, cmd, wait);
 }
 
+int vold_format_auto_volume(const char* label, bool wait) {
+
+    char path[80];
+    sprintf(path, "/storage/%s", label);
+    const char* cmd[3] = { "volume", "format", path };
+    return vold_command(3, cmd, wait);
+}
+
 const char* volume_state_to_string(int state) {
     if (state == Volume::State_Init)
         return "Initializing";
