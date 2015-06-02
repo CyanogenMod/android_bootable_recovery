@@ -23,6 +23,8 @@
 
 #define PATHNAME_RC "/tmp/burc"
 
+#define PATHNAME_XCOMP_ENABLE "/sys/fs/xcomp/enable"
+
 using namespace android;
 
 struct selabel_handle *sehandle;
@@ -66,6 +68,37 @@ void logmsg(const char *fmt, ...)
         fprintf(fp, "[%d] %s", getpid(), msg);
         fclose(fp);
     }
+}
+
+static int xcomp_enable_get(void)
+{
+    int val = 0;
+    int fd;
+    char buf[12+1+1];
+
+    fd = open(PATHNAME_XCOMP_ENABLE, O_RDONLY);
+    if (fd < 0)
+        return 0;
+    memset(buf, 0, sizeof(buf));
+    if (read(fd, buf, sizeof(buf)) > 0) {
+        val = atoi(buf);
+    }
+    close(fd);
+    return val;
+}
+
+static void xcomp_enable_set(int val)
+{
+    int fd;
+    char buf[12+1+1];
+    int len;
+
+    fd = open(PATHNAME_XCOMP_ENABLE, O_RDWR);
+    if (fd < 0)
+        return;
+    len = sprintf(buf, "%d\n", val);
+    write(fd, buf, len);
+    close(fd);
 }
 
 static partspec partlist[MAX_PART];
@@ -294,6 +327,7 @@ int main(int argc, char **argv)
 {
     int n;
     int rc = 1;
+    int xcomp_enable;
 
     const char* logfile = "/tmp/recovery.log";
     adb_ifd = dup(STDIN_FILENO);
@@ -317,6 +351,9 @@ int main(int argc, char **argv)
     };
     sehandle = selabel_open(SELABEL_CTX_FILE, seopts, 1);
 
+    xcomp_enable = xcomp_enable_get();
+    xcomp_enable_set(0);
+
     load_volume_table();
 //    vold_client_start(&v_callbacks, 1);
 
@@ -332,10 +369,12 @@ int main(int argc, char **argv)
     }
     else {
         logmsg("Unknown operation %s\n", opname);
-        do_exit(1);
+        rc = 1;
     }
 
     ms.Dismiss();
+
+    xcomp_enable_set(xcomp_enable);
 
     close(adb_ofd);
     close(adb_ifd);
