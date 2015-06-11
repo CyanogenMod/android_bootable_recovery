@@ -269,7 +269,8 @@ really_install_package(const char *path, int* wipe_cache, bool needs_mount)
     else {
         err = VERIFY_FAILURE;
     }
-
+    signal(SIGBUS, SIG_DFL);
+    
     /* Try to open the package.
      */
     ZipArchive zip;
