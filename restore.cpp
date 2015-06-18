@@ -234,7 +234,7 @@ static int do_restore_tree()
                     logmsg("do_restore_tree: cannot format %s\n", cur_mount);
                     break;
                 }
-                rc = ensure_path_mounted(cur_mount);
+                rc = ensure_path_mounted(cur_mount, true);
                 if (rc != 0) {
                     logmsg("do_restore_tree: cannot mount %s\n", cur_mount);
                     break;
@@ -242,8 +242,12 @@ static int do_restore_tree()
                 partspec* curpart = part_find(&cur_mount[1]);
                 part_set(curpart);
             }
+            rc = tar_extract_file(tar, pathname);
+            if (rc != 0) {
+                logmsg("do_restore_tree: failed to restore %s", pathname);
+            }
         }
-        if (!strcmp(pathname, "SOD")) {
+        else if (!strcmp(pathname, "SOD")) {
             rc = verify_sod();
             logmsg("do_restore_tree: tar_verify_sod returned %d\n", rc);
         }
@@ -251,9 +255,9 @@ static int do_restore_tree()
             rc = verify_eod(save_hash_datalen, &save_sha_ctx, &save_md5_ctx);
             logmsg("do_restore_tree: tar_verify_eod returned %d\n", rc);
         }
-        else if (!strcmp(pathname, "boot") || !strcmp(pathname, "recovery")) {
-            char mnt[20];
-            sprintf(mnt, "/%s", pathname);
+        else {
+            char mnt[PATH_MAX];
+            snprintf(mnt, sizeof(mnt), "/%s", pathname);
             fstab_rec* vol = volume_for_path(mnt);
             if (vol != NULL && vol->fs_type != NULL) {
                 partspec* curpart = part_find(pathname);
@@ -263,10 +267,6 @@ static int do_restore_tree()
             else {
                 logmsg("do_restore_tree: cannot find volume for %s\n", mnt);
             }
-        }
-        else {
-            uint64_t len = th_get_size(tar);
-            rc = tar_extract_file(tar, pathname);
         }
         free(pathname);
         if (rc != 0) {

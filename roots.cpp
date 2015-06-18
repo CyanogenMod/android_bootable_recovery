@@ -222,6 +222,25 @@ void free_storage_items(storage_item* items) {
     free(items);
 }
 
+bool volume_is_mountable(fstab_rec *v)
+{
+    return (fs_mgr_is_voldmanaged(v) ||
+            !strcmp(v->fs_type, "yaffs2") ||
+            !strcmp(v->fs_type, "ext4") ||
+            !strcmp(v->fs_type, "f2fs") ||
+            !strcmp(v->fs_type, "vfat"));
+}
+
+bool volume_is_readonly(fstab_rec *v)
+{
+    return (v->flags & MS_RDONLY);
+}
+
+bool volume_is_verity(fstab_rec *v)
+{
+    return fs_mgr_is_verified(v);
+}
+
 fstab_rec* volume_for_path(const char* path) {
     fstab_rec *rec = fs_mgr_get_entry_for_mount_point(fstab, path);
 
@@ -257,7 +276,7 @@ fstab_rec* volume_for_label(const char* label) {
     return NULL;
 }
 
-int ensure_path_mounted(const char* path) {
+int ensure_path_mounted(const char* path, bool force_rw) {
     fstab_rec* v;
     if (memcmp(path, "/storage/", 9) == 0) {
         char label[PATH_MAX];
@@ -279,10 +298,10 @@ int ensure_path_mounted(const char* path) {
         LOGE("unknown volume for path [%s]\n", path);
         return -1;
     }
-    return ensure_volume_mounted(v);
+    return ensure_volume_mounted(v, force_rw);
 }
 
-int ensure_volume_mounted(fstab_rec* v) {
+int ensure_volume_mounted(fstab_rec* v, bool force_rw) {
     if (v == NULL) {
         LOGE("cannot mount unknown volume\n");
         return -1;
@@ -330,8 +349,13 @@ int ensure_volume_mounted(fstab_rec* v) {
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
                strcmp(v->fs_type, "f2fs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
-        result = mount(v->blk_device, v->mount_point, v->fs_type,
-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
+        unsigned long mntflags = MS_NOATIME | MS_NODEV | MS_NODIRATIME;
+        if (!force_rw) {
+            if ((v->flags & MS_RDONLY) || fs_mgr_is_verified(v)) {
+                mntflags |= MS_RDONLY;
+            }
+        }
+        result = mount(v->blk_device, v->mount_point, v->fs_type, mntflags, "");
         if (result == 0) return 0;
 
         LOGE("failed to mount %s (%s)\n", v->mount_point, strerror(errno));

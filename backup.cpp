@@ -39,28 +39,31 @@ static int append_sod(const char* opt_hash)
         partspec* part = part_get(i);
         if (!part)
             break;
-        const char* fstype = part->vol->fs_type;
-        uint64_t size, used;
-        if (!strcmp(fstype, "mtd") || !strcmp(fstype, "bml") || !strcmp(fstype, "emmc")) {
+        if (!volume_is_mountable(part->vol) ||
+                volume_is_readonly(part->vol) ||
+                volume_is_verity(part->vol)) {
             int fd = open(part->vol->blk_device, O_RDONLY);
             part->size = part->used = lseek(fd, 0, SEEK_END);
             close(fd);
         }
         else {
-            struct statfs stfs;
-            memset(&stfs, 0, sizeof(stfs));
-            if (ensure_path_mounted(part->path) != 0) {
-                logmsg("append_sod: failed to mount %s\n", part->path);
-                continue;
-            }
-            if (statfs(part->path, &stfs) == 0) {
-                part->size = (stfs.f_blocks) * stfs.f_bsize;
-                part->used = (stfs.f_blocks - stfs.f_bfree) * stfs.f_bsize;
+            if (ensure_path_mounted(part->path) == 0) {
+                struct statfs stfs;
+                memset(&stfs, 0, sizeof(stfs));
+                if (statfs(part->path, &stfs) == 0) {
+                    part->size = (stfs.f_blocks) * stfs.f_bsize;
+                    part->used = (stfs.f_blocks - stfs.f_bfree) * stfs.f_bsize;
+                }
+                else {
+                    logmsg("Failed to statfs %s: %s\n", part->path, strerror(errno));
+                }
+                ensure_path_unmounted(part->path);
             }
             else {
-                logmsg("Failed to statfs %s: %s\n", part->path, strerror(errno));
+                int fd = open(part->vol->blk_device, O_RDONLY);
+                part->size = part->used = lseek(fd, 0, SEEK_END);
+                close(fd);
             }
-            ensure_path_unmounted(part->path);
         }
         p += sprintf(p, "fs.%s.size=%llu\n", part->name, part->size);
         p += sprintf(p, "fs.%s.used=%llu\n", part->name, part->used);
@@ -259,14 +262,18 @@ int do_backup(int argc, char **argv)
             break;
 
         part_set(curpart);
-        const char* fstype = curpart->vol->fs_type;
-        if (!strcmp(fstype, "mtd") || !strcmp(fstype, "bml") || !strcmp(fstype, "emmc")) {
+        if (!volume_is_mountable(curpart->vol) ||
+                volume_is_readonly(curpart->vol) ||
+                volume_is_verity(curpart->vol)) {
             rc = tar_append_device_contents(tar, curpart->vol->blk_device, curpart->name);
         }
         else {
             if (ensure_path_mounted(curpart->path) != 0) {
-                logmsg("do_backup: cannot mount %s\n", curpart->path);
-                continue;
+                rc = tar_append_device_contents(tar, curpart->vol->blk_device, curpart->name);
+                if (rc != 0) {
+                    logmsg("do_backup: cannot backup %s\n", curpart->path);
+                    continue;
+                }
             }
             String8 path(curpart->path);
             rc = do_backup_tree(path);
