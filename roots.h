@@ -32,8 +32,8 @@ fstab_rec* volume_for_path(const char* path);
 
 // Make sure that the volume 'path' is on is mounted.  Returns 0 on
 // success (volume is mounted).
-int ensure_volume_mounted(fstab_rec* v);
-int ensure_path_mounted(const char* path);
+int ensure_volume_mounted(fstab_rec* v, bool force_rw=false);
+int ensure_path_mounted(const char* path, bool force_rw=false);
 
 // Make sure that the volume 'path' is on is mounted.  Returns 0 on
 // success (volume is unmounted);
@@ -61,6 +61,10 @@ struct storage_item {
 int is_data_media();
 storage_item* get_storage_items();
 void free_storage_items(storage_item* items);
+
+bool volume_is_mountable(fstab_rec *v);
+bool volume_is_readonly(fstab_rec *v);
+bool volume_is_verity(fstab_rec *v);
 
 #ifdef __cplusplus
 }
