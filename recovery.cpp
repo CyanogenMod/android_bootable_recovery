@@ -583,6 +583,7 @@ get_menu_selection(const char* const * headers, const char* const * items,
     ui->StartMenu(headers, items, initial_selection);
     int selected = initial_selection;
     int chosen_item = -1;
+    int wrap_count = 0;
 
     while (chosen_item < 0 && chosen_item != Device::kGoBack && chosen_item != Device::kRefresh) {
         int key = ui->WaitKey();
