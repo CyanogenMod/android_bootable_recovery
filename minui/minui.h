@@ -128,6 +128,8 @@ int res_create_localized_alpha_surface(const char* name, const char* locale,
 void res_free_surface(gr_surface surface);
 void gr_text_blend(int x,int y, GRFont* pfont);
 
+void set_rainbow_mode(int enabled);
+
 #ifdef __cplusplus
 }
 #endif
