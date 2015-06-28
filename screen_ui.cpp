@@ -97,7 +97,11 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
 void ScreenRecoveryUI::draw_background_locked(Icon icon)
 {
     pagesIdentical = false;
-    SetColor(TEXT_FILL);
+    if(rainbow) {
+        SetColor(RAINBOW_CLEAR);
+    } else {
+        SetColor(TEXT_FILL);
+    }
     gr_clear();
 
     if (icon) {
@@ -217,6 +221,12 @@ void ScreenRecoveryUI::SetColor(UIElement e) {
         case ERROR_TEXT:
             gr_color(255, 0, 0, 255);
             break;
+	case RAINBOW:
+	    gr_color(102,205,170,255);
+	    break;
+	case RAINBOW_CLEAR:
+	    gr_color(176,48,96,255);
+	    break;
         default:
             gr_color(255, 255, 255, 255);
             break;
@@ -237,8 +247,12 @@ int ScreenRecoveryUI::draw_header_icon()
 void ScreenRecoveryUI::draw_menu_item(int textrow, const char *text, int selected)
 {
     if (selected) {
-        SetColor(MENU_SEL_BG);
-        gr_fill(0, (textrow)*char_height,
+	if(rainbow) {
+		SetColor(RAINBOW);
+	} else {
+		SetColor(MENU_SEL_BG);
+        }
+	gr_fill(0, (textrow)*char_height,
                 gr_fb_width(), (textrow+3)*char_height-1);
         SetColor(MENU_SEL_FG);
         gr_text(20, (textrow+1)*char_height-1, text, 0);

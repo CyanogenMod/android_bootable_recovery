@@ -67,7 +67,7 @@ class ScreenRecoveryUI : public RecoveryUI {
 
     void Redraw();
 
-    enum UIElement { HEADER, MENU, TOP, MENU_SEL_BG, MENU_SEL_FG, LOG, TEXT_FILL, ERROR_TEXT };
+    enum UIElement { HEADER, MENU, TOP, MENU_SEL_BG, MENU_SEL_FG, LOG, TEXT_FILL, ERROR_TEXT, RAINBOW, RAINBOW_CLEAR };
     virtual void SetColor(UIElement e);
 
   private:
