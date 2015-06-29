@@ -711,7 +711,7 @@ void ScreenRecoveryUI::StartMenu(const char* const * headers, const char* const 
 }
 
 int ScreenRecoveryUI::SelectMenu(int sel, bool abs) {
-    int wrapped = 0;
+    bool wrapped = false;
     pthread_mutex_lock(&updateMutex);
     if (abs) {
         sel += menu_show_start;
@@ -719,19 +719,12 @@ int ScreenRecoveryUI::SelectMenu(int sel, bool abs) {
     if (show_menu > 0) {
         int old_sel = menu_sel;
         menu_sel = sel;
-        if (rainbow) {
-            if (menu_sel > old_sel) {
-                move_rainbow(1);
-            } else if (menu_sel < old_sel) {
-                move_rainbow(-1);
-            }
-        }
         if (menu_sel < 0) {
-            wrapped = -1;
+            wrapped = true;
             menu_sel = menu_items + menu_sel;
         }
         if (menu_sel >= menu_items) {
-            wrapped = 1;
+            wrapped = true;
             menu_sel = menu_sel - menu_items;
         }
         if (menu_sel < menu_show_start && menu_show_start > 0) {
@@ -741,13 +734,9 @@ int ScreenRecoveryUI::SelectMenu(int sel, bool abs) {
             menu_show_start = menu_sel - max_menu_rows + 1;
         }
         sel = menu_sel;
-        if (wrapped != 0) {
-            if (wrap_count / wrapped > 0) {
-                wrap_count += wrapped;
-            } else {
-                wrap_count = wrapped;
-            }
-            if (wrap_count / wrapped >= 5) {
+        if (wrapped) {
+            wrap_count++;
+            if (wrap_count >= 5) {
                 wrap_count = 0;
                 ToggleRainbowMode();
             }
