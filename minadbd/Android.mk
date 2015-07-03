@@ -25,6 +25,10 @@ LOCAL_CFLAGS := -O2 -g -DADB_HOST=0 -Wall -Wno-unused-parameter
 LOCAL_CFLAGS += -D_XOPEN_SOURCE -D_GNU_SOURCE
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/..
 
+ifeq ($(strip $(BOARD_FUNCTIONFS_HAS_SS_COUNT)),true)
+LOCAL_CFLAGS += -DFUNCTIONFS_HAS_SS_COUNT=1
+endif
+
 LOCAL_MODULE := libminadbd
 
 LOCAL_STATIC_LIBRARIES := libfusesideload libcutils libc
