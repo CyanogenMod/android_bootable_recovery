@@ -501,7 +501,7 @@ int WriteToPartition(unsigned char* data, size_t len,
                 }
 
                 if (start == len) {
-                    printf("verification read succeeded (attempt %d)\n", attempt+1);
+                    printf("verification read succeeded (attempt %zu)\n", attempt+1);
                     success = true;
                     break;
                 }
@@ -697,7 +697,7 @@ static void print_short_sha1(const uint8_t sha1[SHA_DIGEST_SIZE]) {
 //   entries in <patch_sha1_str>, the corresponding patch from
 //   <patch_data> (which must be a VAL_BLOB) is applied to produce a
 //   new file (the type of patch is automatically detected from the
-//   blob daat).  If that new file has sha1 hash <target_sha1_str>,
+//   blob data).  If that new file has sha1 hash <target_sha1_str>,
 //   moves it to replace <target_filename>, and exits successfully.
 //   Note that if <source_filename> and <target_filename> are not the
 //   same, <source_filename> is NOT deleted on success.
@@ -803,6 +803,72 @@ int applypatch(const char* source_filename,
     free(copy_file.data);
 
     return result;
+}
+
+/*
+ * This function flashes a given image to the target partition. It verifies
+ * the target cheksum first, and will return if target has the desired hash.
+ * It checks the checksum of the given source image before flashing, and
+ * verifies the target partition afterwards. The function is idempotent.
+ * Returns zero on success.
+ */
+int applypatch_flash(const char* source_filename, const char* target_filename,
+                     const char* target_sha1_str, size_t target_size) {
+    printf("flash %s: ", target_filename);
+
+    uint8_t target_sha1[SHA_DIGEST_SIZE];
+    if (ParseSha1(target_sha1_str, target_sha1) != 0) {
+        printf("failed to parse tgt-sha1 \"%s\"\n", target_sha1_str);
+        return 1;
+    }
+
+    FileContents source_file;
+    source_file.data = NULL;
+
+    if (!(strncmp(target_filename, "MTD:", 4) == 0 ||
+        strncmp(target_filename, "EMMC:", 5) == 0)) {
+        printf("invalid target name \"%s\"\n", target_filename);
+        return 1;
+    }
+
+    char target_str[256];
+    snprintf(target_str, 256, "%s:%d:%s", target_filename, target_size, target_sha1_str);
+
+    // Load the target into the source_file object to see if already applied.
+    if (LoadPartitionContents(target_str, &source_file) == 0) {
+        if (memcmp(source_file.sha1, target_sha1, SHA_DIGEST_SIZE) == 0) {
+            // The early-exit case: the image was already applied, this partition
+            // has the desired hash, nothing for us to do.
+            printf("already ");
+            print_short_sha1(target_sha1);
+            putchar('\n');
+            free(source_file.data);
+            return 0;
+        }
+    }
+
+    if (LoadFileContents(source_filename, &source_file) == 0) {
+        if (memcmp(source_file.sha1, target_sha1, SHA_DIGEST_SIZE) != 0) {
+            // The source doesn't have desired checksum.
+            printf("source \"%s\" doesn't have expected sha1 sum\n", source_filename);
+            printf("expected: ");
+            print_short_sha1(target_sha1);
+            printf("found: ");
+            print_short_sha1(source_file.sha1);
+            putchar('\n');
+            free(source_file.data);
+            return 1;
+        }
+    }
+
+    if (WriteToPartition(source_file.data, target_size, target_filename) != 0) {
+        printf("write of copied data to %s failed\n", target_filename);
+        free(source_file.data);
+        return 1;
+    }
+
+    free(source_file.data);
+    return 0;
 }
 
 static int GenerateTarget(FileContents* source_file,
