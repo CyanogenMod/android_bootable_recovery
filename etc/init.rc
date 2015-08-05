@@ -125,6 +125,7 @@ service adbd /sbin/adbd --root_seclabel=u:r:su:s0 --device_banner=recovery
 service vold /sbin/minivold
     socket vold stream 0660 root mount
     ioprio be 2
+    setenv BLKID_FILE /tmp/vold_blkid.tab
     seclabel u:r:vold:s0
 
 # setup_adbd will start adb once it has checked the keys
