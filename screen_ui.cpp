@@ -39,6 +39,7 @@
 #include "minui/minui.h"
 #include "screen_ui.h"
 #include "ui.h"
+#include "cutils/properties.h"
 
 // Return the current time as a double (including fractions of a second).
 static double now() {
@@ -422,6 +423,7 @@ void ScreenRecoveryUI::OMGRainbows()
 {
     rainbow = rainbow ? false : true;
     set_rainbow_mode(rainbow);
+    property_set("sys.rainbow.recovery", rainbow ? "1" : "0");
 }
 
 void ScreenRecoveryUI::ProgressThreadLoop() {
