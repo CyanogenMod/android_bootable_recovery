@@ -33,6 +33,7 @@
 #include "minui/minui.h"
 #include "screen_ui.h"
 #include "ui.h"
+#include "cutils/properties.h"
 
 // There's only (at most) one of these objects, and global callbacks
 // (for pthread_create, and the input event system) need to find it,
@@ -380,6 +381,7 @@ void ScreenRecoveryUI::ToggleRainbowMode()
 {
     rainbow = rainbow ? false : true;
     set_rainbow_mode(rainbow);
+    property_set("sys.rainbow.recovery", rainbow ? "1" : "0");
 }
 
 void ScreenRecoveryUI::progress_loop() {
