@@ -106,6 +106,8 @@ static const struct option OPTIONS[] = {
 };
 
 #define LAST_LOG_FILE "/cache/recovery/last_log"
+#define POWER_SUPPLY_SYSFS_PATH "/sys/class/power_supply/"
+#define MINIMAL_BATTERY_LEVEL_ALLOWED	50
 
 static const char *CACHE_LOG_DIR = "/cache/recovery";
 static const char *COMMAND_FILE = "/cache/recovery/command";
@@ -1237,6 +1239,91 @@ static struct vold_callbacks v_callbacks = {
     .disk_removed = handle_volume_hotswap,
 };
 
+//
+// Replace '\n' or '\r' with '\0'
+//
+static void term_string(char *s)
+{
+    if (s == NULL)
+        return;
+    while (*s != '\0') {
+        if (*s == '\r' || *s == '\n') {
+            *s = '\0';
+            break;
+        }
+        s++;
+    }
+}
+
+static bool is_battery_low()
+{
+    bool is_low = false;
+
+    DIR* dir = opendir(POWER_SUPPLY_SYSFS_PATH);
+    // return okay if there is no power_supply in sysfile
+    if (dir == NULL) {
+        gCurrentUI->Print("Can't open  %s\n", POWER_SUPPLY_SYSFS_PATH);
+        return false;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir))) {
+        FILE *fp;
+        char buf[128];
+        char dir_path[256];
+        char file_path[256];
+        const char* name = entry->d_name;
+
+        // Ignore "." and ".." files
+        if (!strcmp(name, ".") || !strcmp(name, ".."))
+            continue;
+
+        strcpy(dir_path, POWER_SUPPLY_SYSFS_PATH);
+        strcpy(dir_path + strlen(POWER_SUPPLY_SYSFS_PATH), name);
+
+        // Look for "type" file in each subdirectory
+        strcpy(file_path, dir_path);
+        strcpy(file_path + strlen(dir_path), "/type");
+        fp = fopen(file_path, "r");
+        if (fp == NULL)
+            continue;
+        fread(buf, 1, sizeof(buf), fp);
+        fclose(fp);
+        term_string(buf);
+        // Ignore non-battery power supply
+        if (strcmp(buf, "Battery"))
+            continue;
+
+        // Ignore if the battery is not present (wrong sysfile etc.)
+        strcpy(file_path, dir_path);
+        strcpy(file_path + strlen(dir_path), "/present");
+        fp = fopen(file_path, "r");
+        if (fp == NULL)
+            continue;
+        fread(buf, 1, sizeof(buf), fp);
+        fclose(fp);
+        term_string(buf);
+        if (strcmp(buf, "1"))
+            continue;
+
+        // check if battery is low
+        strcpy(file_path, dir_path);
+        strcpy(file_path + strlen(dir_path), "/capacity");
+        fp = fopen(file_path, "r");
+        if (fp == NULL)
+            continue;
+        fread(buf, 1, sizeof(buf), fp);
+        fclose(fp);
+        term_string(buf);
+        int capacity = atoi(buf);
+        if (capacity < MINIMAL_BATTERY_LEVEL_ALLOWED)
+            is_low = true;
+    }
+
+    closedir(dir);
+    return is_low;
+}
+
 int
 main(int argc, char **argv) {
     time_t start = time(NULL);
@@ -1355,6 +1442,22 @@ main(int argc, char **argv) {
 
     /*enable the backlight*/
     write_file("/sys/class/leds/lcd-backlight/brightness", "128");
+
+    /* If recovery is not launched by end user (vol down + power) */
+    if (argc > 1 && is_battery_low()) {
+        ui->ShowText(true);
+        ui->Print("Error: battery is low, please charge and retry");
+        ui->DialogShowErrorLog("Error: battery is low, please charge and retry");
+        ui->WaitKey();
+
+        /* Save logs and clean up before rebooting or shutting down. */
+        finish_recovery(send_intent);
+        vold_unmount_all();
+        sync();
+        property_set(ANDROID_RB_PROPERTY, "reboot,");
+        sleep(50); // should reboot before this finishes
+        return 0;
+    }
 
     struct selinux_opt seopts[] = {
       { SELABEL_OPT_PATH, "/file_contexts" }
