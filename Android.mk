@@ -95,6 +95,10 @@ endif
 
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 
+ifeq ($(TARGET_USE_MDTP), true)
+    LOCAL_CFLAGS += -DUSE_MDTP
+endif
+
 ifeq ($(TARGET_RECOVERY_UI_LIB),)
   LOCAL_SRC_FILES += default_device.cpp
 else
