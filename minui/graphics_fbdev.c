@@ -43,6 +43,8 @@ static GRSurface* gr_draw = NULL;
 static int displayed_buffer;
 
 static struct fb_var_screeninfo vi;
+static struct fb_fix_screeninfo fi;
+
 static int fb_fd = -1;
 
 static minui_backend my_backend = {
@@ -81,8 +83,6 @@ static void set_displayed_framebuffer(unsigned n)
 static gr_surface fbdev_init(minui_backend* backend) {
     int fd;
     void *bits;
-
-    struct fb_fix_screeninfo fi;
 
     fd = open("/dev/graphics/fb0", O_RDWR);
     if (fd < 0) {
@@ -139,10 +139,20 @@ static gr_surface fbdev_init(minui_backend* backend) {
     gr_framebuffer[0].data = bits;
     memset(gr_framebuffer[0].data, 0, gr_framebuffer[0].height * gr_framebuffer[0].row_bytes);
 
-    /* check if we can use double buffering */
-    if (vi.yres * fi.line_length * 2 <= fi.smem_len) {
-        double_buffered = true;
+#if defined(RECOVERY_TRUST_FBINFO)
+    // Most of the fbdev implementation happily assumes four bytes per pixel.
+    // Keep it at that, we'll reorder and cut down things when we get to displaying.
+    // Sorry pal, no double buffering in that case.
 
+    double_buffered = false;
+    gr_framebuffer[0].row_bytes = (fi.line_length * 32 / vi.bits_per_pixel);
+    gr_framebuffer[0].pixel_bytes = 4;
+#else
+    /* check if we can use double buffering */
+    double_buffered = (vi.yres * fi.line_length * 2 <= fi.smem_len);
+#endif
+
+    if (double_buffered) {
         memcpy(gr_framebuffer+1, gr_framebuffer, sizeof(GRSurface));
         gr_framebuffer[1].data = gr_framebuffer[0].data +
             gr_framebuffer[0].height * gr_framebuffer[0].row_bytes;
@@ -150,8 +160,6 @@ static gr_surface fbdev_init(minui_backend* backend) {
         gr_draw = gr_framebuffer+1;
 
     } else {
-        double_buffered = false;
-
         // Without double-buffering, we allocate RAM for a buffer to
         // draw in, and then "flipping" the buffer consists of a
         // memcpy from the buffer we allocated to the framebuffer.
@@ -177,6 +185,63 @@ static gr_surface fbdev_init(minui_backend* backend) {
     return gr_draw;
 }
 
+#if defined(RECOVERY_TRUST_FBINFO)
+
+static void gr_pack_pixels(unsigned char* dst, uint32_t* src)
+{
+    // Possible alignment problems? We malloc'ed the source, so there we should be fine.
+
+    unsigned char r_mask = (1 << (vi.red.length)) - 1;
+    unsigned char g_mask = (1 << (vi.green.length)) - 1;
+    unsigned char b_mask = (1 << (vi.blue.length)) - 1;
+    unsigned char a_mask = (1 << (vi.transp.length)) - 1;
+
+    unsigned int y;
+    unsigned int x;
+    for(y = 0; y < vi.yres; ++y)
+    {
+        unsigned char* dst_line = (unsigned char* ) (dst + fi.line_length * y);
+        uint32_t* src_line = src + gr_framebuffer[0].row_bytes * y;
+        for(x = 0; x < vi.xres; ++x)
+        {
+            // get the uppermost bits of each channel and move them in place
+            // for the output
+            uint32_t dstpp =
+               ((*src >> (8  - vi.red.length))    & r_mask) << vi.red.offset |
+               ((*src >> (16 - vi.green.length))  & g_mask) << vi.green.offset |
+               ((*src >> (24 - vi.blue.length))   & b_mask) << vi.blue.offset |
+               ((*src >> (32 - vi.transp.length)) & a_mask) << vi.transp.offset;
+            ++src;
+
+// Of course, if we do typecasting and write into uint16_t*'s for example, we'd be
+// endianness-agnostic, but we could get into trouble with alignments.
+#if BYTE_ORDER == LITTLE_ENDIAN
+            // if(vi.bits_per_pixel >  0)
+                *dst++ =  dstpp        & 0xFF;
+            if(vi.bits_per_pixel >  8)
+                *dst++ = (dstpp >>  8) & 0xFF;
+            if(vi.bits_per_pixel > 16)
+                *dst++ = (dstpp >> 16) & 0xFF;
+            if(vi.bits_per_pixel > 24)
+                *dst++ = (dstpp >> 24) & 0xFF;
+#elif BYTE_ORDER == BIG_ENDIAN
+            if(vi.bits_per_pixel > 24)
+                *dst++ = (dstpp >> 24) & 0xFF;
+            if(vi.bits_per_pixel > 16)
+                *dst++ = (dstpp >> 16) & 0xFF;
+            if(vi.bits_per_pixel >  8)
+                *dst++ = (dstpp >>  8) & 0xFF;
+            // if(vi.bits_per_pixel >  0)
+                *dst++ =  dstpp        & 0xFF;
+#else
+#error "Unknown/wierd byte ordering on target platform, please extend here"
+#endif
+        }
+     }
+}
+
+#endif
+
 static gr_surface fbdev_flip(minui_backend* backend __unused) {
     if (double_buffered) {
 #if defined(RECOVERY_BGRA)
@@ -197,9 +262,15 @@ static gr_surface fbdev_flip(minui_backend* backend __unused) {
         gr_draw = gr_framebuffer + displayed_buffer;
         set_displayed_framebuffer(1-displayed_buffer);
     } else {
-        // Copy from the in-memory surface to the framebuffer.
-        memcpy(gr_framebuffer[0].data, gr_draw->data,
-               gr_draw->height * gr_draw->row_bytes);
+#if defined(RECOVERY_TRUST_FBINFO)
+            // Do the slow agonizing task of packing the RGBA pixels into the output
+            // format the framebuffer wishes to have.
+            gr_pack_pixels(gr_framebuffer[0].data, (uint32_t *) gr_draw->data);
+#else
+            // Simply copy from the in-memory surface to the framebuffer.
+            memcpy(gr_framebuffer[0].data, gr_draw->data,
+                   gr_draw->height * gr_draw->row_bytes);
+#endif
     }
     return gr_draw;
 }

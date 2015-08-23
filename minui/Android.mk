@@ -25,6 +25,9 @@ endif
 ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),BGRA_8888)
   common_cflags += -DRECOVERY_BGRA
 endif
+ifeq ($(subst ",,$(TARGET_RECOVERY_PIXEL_FORMAT)),FBINFO)
+  common_cflags += -DRECOVERY_TRUST_FBINFO
+endif
 
 ifneq ($(TARGET_RECOVERY_OVERSCAN_PERCENT),)
   common_cflags += -DOVERSCAN_PERCENT=$(TARGET_RECOVERY_OVERSCAN_PERCENT)
