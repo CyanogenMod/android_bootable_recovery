@@ -1110,8 +1110,10 @@ main(int argc, char **argv) {
             break;
 
         default:
+            char reason[PROPERTY_VALUE_MAX];
+            snprintf(reason, PROPERTY_VALUE_MAX, "reboot,%s", device->GetRebootReason());
             ui->Print("Rebooting...\n");
-            property_set(ANDROID_RB_PROPERTY, "reboot,");
+            property_set(ANDROID_RB_PROPERTY, reason);
             break;
     }
     sleep(5); // should reboot before this finishes

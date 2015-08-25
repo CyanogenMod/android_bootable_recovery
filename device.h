@@ -102,6 +102,9 @@ class Device {
     virtual bool PreWipeData() { return true; }
     virtual bool PostWipeData() { return true; }
 
+    // Called before reboot
+    virtual char const* GetRebootReason() { return ""; }
+
   private:
     RecoveryUI* ui_;
 };
