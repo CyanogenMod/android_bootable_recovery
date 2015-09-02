@@ -141,7 +141,7 @@ ifeq ($(BOARD_USES_BML_OVER_MTD),true)
 LOCAL_STATIC_LIBRARIES += libbml_over_mtd
 endif
 
-LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils liblog
+LOCAL_STATIC_LIBRARIES += libminui libpixelflinger_static libpng libcutils liblog libutils
 LOCAL_STATIC_LIBRARIES += libstdc++ libc
 
 LOCAL_STATIC_LIBRARIES += libselinux
