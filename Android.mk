@@ -81,6 +81,7 @@ LOCAL_STATIC_LIBRARIES := \
     libselinux \
     libm \
     libc \
+    libc++_static \
     libz
 
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
