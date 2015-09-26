@@ -32,6 +32,9 @@ else
   common_cflags += -DOVERSCAN_PERCENT=0
 endif
 
+ifneq ($(BOARD_RECOVERY_NEEDS_FBIOPAN_DISPLAY),)
+  common_cflags += -DBOARD_RECOVERY_NEEDS_FBIOPAN_DISPLAY
+endif
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libminui
