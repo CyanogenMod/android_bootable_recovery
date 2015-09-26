@@ -37,6 +37,10 @@ else
   LOCAL_CFLAGS += -DOVERSCAN_PERCENT=0
 endif
 
+ifneq ($(BOARD_RECOVERY_NEEDS_FBIOPAN_DISPLAY),)
+  LOCAL_CFLAGS += -DBOARD_RECOVERY_NEEDS_FBIOPAN_DISPLAY
+endif
+
 include $(BUILD_STATIC_LIBRARY)
 
 # Used by OEMs for factory test images.
