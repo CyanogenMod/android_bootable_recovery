@@ -62,6 +62,7 @@ inc := $(call intermediates-dir-for,PACKAGING,updater_extensions,,,32)/register.
 else
 inc := $(call intermediates-dir-for,PACKAGING,updater_extensions)/register.inc
 endif
+
 # Encode the value of TARGET_RECOVERY_UPDATER_LIBS into the filename of the dependency.
 # So if TARGET_RECOVERY_UPDATER_LIBS is changed, a new dependency file will be generated.
 # Note that we have to remove any existing depency files before creating new one,
