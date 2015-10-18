@@ -83,15 +83,10 @@ LOCAL_STATIC_LIBRARIES := \
     liblog \
     libselinux \
     libm \
-    libc
+    libc \
+    libz
 
 LOCAL_HAL_STATIC_LIBRARIES := libhealthd
-
-ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
-    LOCAL_CFLAGS += -DUSE_EXT4
-    LOCAL_C_INCLUDES += system/extras/ext4_utils
-    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz
-endif
 
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 
