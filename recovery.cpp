@@ -1470,6 +1470,9 @@ main(int argc, char **argv) {
 
     sync();
 
+    write_file("/sys/class/leds/lcd-backlight/brightness", "0");
+    gr_fb_blank(true);
+
     switch (after) {
         case Device::SHUTDOWN:
             ui->Print("Shutting down...\n");
