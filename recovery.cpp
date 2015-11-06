@@ -74,6 +74,7 @@ static const struct option OPTIONS[] = {
   { "retry_count", required_argument, NULL, 'n' },
   { "wipe_data", no_argument, NULL, 'w' },
   { "wipe_cache", no_argument, NULL, 'c' },
+  { "wipe_media", no_argument, NULL, 'm' },
   { "show_text", no_argument, NULL, 't' },
   { "sideload", no_argument, NULL, 's' },
   { "sideload_auto_reboot", no_argument, NULL, 'a' },
@@ -614,7 +615,9 @@ static bool erase_volume(const char* volume) {
 
     ui->Print("Formatting %s...\n", volume);
 
-    ensure_path_unmounted(volume);
+    if (volume[0] == '/') {
+        ensure_path_unmounted(volume);
+    }
 
     int result;
 
@@ -836,7 +839,7 @@ static bool yes_no(Device* device, const char* question1, const char* question2)
 }
 
 // Return true on success.
-static bool wipe_data(int should_confirm, Device* device) {
+static bool wipe_data(int should_confirm, Device* device, bool force = false) {
     if (should_confirm && !yes_no(device, "Wipe all user data?", "  THIS CAN NOT BE UNDONE!")) {
         return false;
     }
@@ -846,10 +849,26 @@ static bool wipe_data(int should_confirm, Device* device) {
     ui->Print("\n-- Wiping data...\n");
     bool success =
         device->PreWipeData() &&
-        erase_volume("/data") &&
+        erase_volume("/data", force) &&
         (has_cache ? erase_volume("/cache") : true) &&
         device->PostWipeData();
     ui->Print("Data wipe %s.\n", success ? "complete" : "failed");
+    return success;
+}
+
+static bool wipe_media(int should_confirm, Device* device) {
+    if (should_confirm && !yes_no(device, "Wipe all user media?", "  THIS CAN NOT BE UNDONE!")) {
+        return false;
+    }
+
+    modified_flash = true;
+
+    ui->Print("\n-- Wiping media...\n");
+    bool success =
+        device->PreWipeMedia() &&
+        erase_volume("media") &&
+        device->PostWipeMedia();
+    ui->Print("Media wipe %s.\n", success ? "complete" : "failed");
     return success;
 }
 
@@ -1156,6 +1175,11 @@ prompt_and_wait(Device* device, int status) {
 
                 case Device::WIPE_CACHE:
                     wipe_cache(ui->IsTextVisible(), device);
+                    if (!ui->IsTextVisible()) return Device::NO_ACTION;
+                    break;
+
+                case Device::WIPE_MEDIA:
+                    wipe_media(ui->IsTextVisible(), device);
                     if (!ui->IsTextVisible()) return Device::NO_ACTION;
                     break;
 
@@ -1520,6 +1544,7 @@ int main(int argc, char **argv) {
     const char *update_package = NULL;
     bool should_wipe_data = false;
     bool should_wipe_cache = false;
+    bool should_wipe_media = false;
     bool show_text = false;
     bool sideload = false;
     bool sideload_auto_reboot = false;
@@ -1689,11 +1714,15 @@ int main(int argc, char **argv) {
             }
         }
     } else if (should_wipe_data) {
-        if (!wipe_data(false, device)) {
+        if (!wipe_data(false, device, should_wipe_media)) {
             status = INSTALL_ERROR;
         }
     } else if (should_wipe_cache) {
         if (!wipe_cache(false, device)) {
+            status = INSTALL_ERROR;
+        }
+    } else if (should_wipe_media) {
+        if (!wipe_media(false, device)) {
             status = INSTALL_ERROR;
         }
     } else if (sideload) {

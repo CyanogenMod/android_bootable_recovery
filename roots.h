@@ -56,8 +56,6 @@ int setup_install_mounts();
 
 int get_num_volumes();
 
-int is_data_media();
-
 bool volume_is_mountable(Volume *v);
 bool volume_is_readonly(Volume *v);
 bool volume_is_verity(Volume *v);
