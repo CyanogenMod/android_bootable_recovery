@@ -255,6 +255,15 @@ int RecoveryUI::WaitKey() {
     return key;
 }
 
+void RecoveryUI::CancelWaitKey()
+{
+    pthread_mutex_lock(&key_queue_mutex);
+    key_queue[key_queue_len] = -2;
+    key_queue_len++;
+    pthread_cond_signal(&key_queue_cond);
+    pthread_mutex_unlock(&key_queue_mutex);
+}
+
 bool RecoveryUI::IsUsbConnected() {
     int fd = open("/sys/class/android_usb/android0/state", O_RDONLY);
     if (fd < 0) {

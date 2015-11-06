@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <setjmp.h>
 #include <sys/mount.h>
 
 #include <chrono>
@@ -105,6 +106,12 @@ static void read_source_target_build(ZipArchive* zip, std::vector<std::string>& 
             }
         }
     }
+}
+
+static jmp_buf jb;
+static void sig_bus(int sig)
+{
+    longjmp(jb, 1);
 }
 
 // If the package contains an update binary, extract it and run it.
@@ -385,9 +392,22 @@ really_install_package(const char *path, bool* wipe_cache, bool needs_mount,
     // Verify package.
     ui->Print("Verifying update package...\n");
     auto t0 = std::chrono::system_clock::now();
-    int err = verify_file(map.addr, map.length, loadedKeys);
-    std::chrono::duration<double> duration = std::chrono::system_clock::now() - t0;
-    ui->Print("Update package verification took %.1f s (result %d).\n", duration.count(), err);
+
+    int err;
+
+    // Because we mmap() the update file which is backed by FUSE, we get
+    // SIGBUS when the host aborts the transfer.  We handle this by using
+    // setjmp/longjmp.
+    signal(SIGBUS, sig_bus);
+    if (setjmp(jb) == 0) {
+        err = verify_file(map.addr, map.length, loadedKeys, numKeys);
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - t0;
+        ui->Print("Update package verification took %.1f s (result %d).\n", duration.count(), err);
+    } else {
+        err = VERIFY_FAILURE;
+    }
+    signal(SIGBUS, SIG_DFL);
+
     if (err != VERIFY_SUCCESS) {
         LOGE("signature verification failed\n");
         log_buffer.push_back(android::base::StringPrintf("error: %d", kZipVerificationFailure));
