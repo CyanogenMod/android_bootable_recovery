@@ -616,8 +616,8 @@ get_menu_selection(const char* const * headers, const char* const * items,
                 ui->EndMenu();
                 return 0; // XXX fixme
             }
-        } else if (key == -2) { // we are returning from ui_cancel_wait_key(): trigger a GO_BACK
-            return Device::kGoBack;
+        } else if (key == -2) { // we are returning from ui_cancel_wait_key(): no action
+            return Device::kNoAction;
         }
         else if (key == -6) {
             return Device::kRefresh;
@@ -918,7 +918,18 @@ refresh:
             break;
         }
         if (chosen == item_sideload) {
-            status = apply_from_adb(ui, &wipe_cache, TEMPORARY_INSTALL_FILE);
+            static const char* headers[] = {  "ADB Sideload",
+                                        "",
+                                        NULL
+            };
+            static const char* list[] = { "Cancel sideload", NULL };
+
+            start_sideload(ui, &wipe_cache, TEMPORARY_INSTALL_FILE);
+            int item = get_menu_selection(headers, list, 0, 0, device);
+            if (item != Device::kNoAction) {
+                stop_sideload();
+            }
+            status = wait_sideload();
         }
         else {
             std::string id = volumes[chosen - 1].mId;
@@ -991,14 +1002,16 @@ prompt_and_wait(Device* device, int status) {
                             }
                         }
 
-                        if (status != INSTALL_SUCCESS) {
-                            ui->SetBackground(RecoveryUI::ERROR);
-                            ui->Print("Installation aborted.\n");
-                            copy_logs();
-                        } else if (!ui->IsTextVisible()) {
-                            return Device::NO_ACTION;  // reboot if logs aren't visible
-                        } else {
-                            ui->Print("\nInstall complete.\n");
+                        if (status >= 0 && status != INSTALL_NONE) {
+                            if (status != INSTALL_SUCCESS) {
+                                ui->SetBackground(RecoveryUI::ERROR);
+                                ui->Print("Installation aborted.\n");
+                                copy_logs();
+                            } else if (!ui->IsTextVisible()) {
+                                return Device::NO_ACTION;  // reboot if logs aren't visible
+                            } else {
+                                ui->Print("\nInstall complete.\n");
+                        }
                     }
                     break;
                 }
@@ -1338,7 +1351,8 @@ main(int argc, char **argv) {
         if (!sideload_auto_reboot) {
             ui->ShowText(true);
         }
-        status = apply_from_adb(ui, &should_wipe_cache, TEMPORARY_INSTALL_FILE);
+        start_sideload(ui, &should_wipe_cache, TEMPORARY_INSTALL_FILE);
+        status = wait_sideload();
         if (status == INSTALL_SUCCESS && should_wipe_cache) {
             if (!wipe_cache(false, device)) {
                 status = INSTALL_ERROR;
