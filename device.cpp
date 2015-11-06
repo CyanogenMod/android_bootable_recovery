@@ -22,6 +22,7 @@ static const char* MENU_ITEMS[] = {
     "Apply update",
     "Wipe data/factory reset",
     "Wipe cache partition",
+    "Wipe media",
     "Mount /system",
     "View recovery logs",
     "Run graphics test",
@@ -42,10 +43,11 @@ Device::BuiltinAction Device::InvokeMenuItem(int menu_position) {
     case 2: return APPLY_UPDATE;
     case 3: return WIPE_DATA;
     case 4: return WIPE_CACHE;
-    case 5: return MOUNT_SYSTEM;
-    case 6: return VIEW_RECOVERY_LOGS;
-    case 7: return RUN_GRAPHICS_TEST;
-    case 8: return SHUTDOWN;
+    case 5: return WIPE_MEDIA;
+    case 6: return MOUNT_SYSTEM;
+    case 7: return VIEW_RECOVERY_LOGS;
+    case 8: return RUN_GRAPHICS_TEST;
+    case 9: return SHUTDOWN;
     default: return NO_ACTION;
   }
 }
