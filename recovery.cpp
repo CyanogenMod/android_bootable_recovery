@@ -68,6 +68,39 @@ extern "C" {
 
 struct selabel_handle *sehandle;
 
+#ifdef HAVE_OEMLOCK
+
+/*
+ * liboemlock must supply the following C symbols:
+ *
+ *   - int oemlock_get()
+ *
+ *     Returns the current state of the OEM lock, if available.
+ *       -1: Not available and/or error
+ *        0: Unlocked
+ *        1: Locked
+ *
+ *  - int oemlock_set(int lock)
+ *
+ *      Sets the state of the OEM lock.  The "lock" parameter will be set
+ *      to 0 for unlock and 1 for lock.
+ *
+ *      Returns 0 on success, -1 on error
+ */
+extern "C" {
+int oemlock_get();
+int oemlock_set(int lock);
+}
+
+enum OemLockOp {
+    OEM_LOCK_NONE,
+    OEM_LOCK_UNLOCK
+};
+
+static OemLockOp oem_lock = OEM_LOCK_NONE;
+
+#endif
+
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 'i' },
   { "update_package", required_argument, NULL, 'u' },
@@ -325,6 +358,14 @@ get_args(int *argc, char ***argv) {
             (*argv)[0] = strdup(arg);
             for (*argc = 1; *argc < MAX_ARGS; ++*argc) {
                 if ((arg = strtok(NULL, "\n")) == NULL) break;
+                // Arguments that may only be passed in BCB
+#ifdef HAVE_OEMLOCK
+                if (strcmp(arg, "--oemunlock") == 0) {
+                    oem_lock = OEM_LOCK_UNLOCK;
+                    --*argc;
+                    continue;
+                }
+#endif
                 (*argv)[*argc] = strdup(arg);
             }
             LOGI("Got arguments from boot message\n");
@@ -559,7 +600,7 @@ typedef struct _saved_log_file {
     struct _saved_log_file* next;
 } saved_log_file;
 
-static bool erase_volume(const char* volume) {
+static bool erase_volume(const char* volume, bool force = false) {
     bool is_cache = (strcmp(volume, CACHE_ROOT) == 0);
     bool is_data = (strcmp(volume, DATA_ROOT) == 0);
 
@@ -568,7 +609,7 @@ static bool erase_volume(const char* volume) {
 
     saved_log_file* head = NULL;
 
-    if (is_cache) {
+    if (!force && is_cache) {
         // If we're reformatting /cache, we load any past logs
         // (i.e. "/cache/recovery/last_*") and the current log
         // ("/cache/recovery/log") into memory, so we can restore them after
@@ -638,10 +679,10 @@ static bool erase_volume(const char* volume) {
         remove(CONVERT_FBE_FILE);
         rmdir(CONVERT_FBE_DIR);
     } else {
-        result = format_volume(volume);
+        result = format_volume(volume, force);
     }
 
-    if (is_cache) {
+    if (!force && is_cache) {
         while (head) {
             FILE* f = fopen_path(head->name, "wb");
             if (f) {
@@ -1659,6 +1700,17 @@ int main(int argc, char **argv) {
 
     int status = INSTALL_SUCCESS;
 
+#ifdef HAVE_OEMLOCK
+    if (oem_lock == OEM_LOCK_UNLOCK) {
+        if (device->WipeData()) status = INSTALL_ERROR;
+        if (erase_volume("/data", true)) status = INSTALL_ERROR;
+        if (wipe_cache && erase_volume("/cache", true)) status = INSTALL_ERROR;
+        if (status != INSTALL_SUCCESS) ui->Print("Data wipe failed.\n");
+        if (oemlock_set(0)) status = INSTALL_ERROR;
+        // Force reboot regardless of actual status
+        status = INSTALL_SUCCESS;
+    } else
+#endif
     if (update_package != NULL) {
         // It's not entirely true that we will modify the flash. But we want
         // to log the update attempt since update_package is non-NULL.

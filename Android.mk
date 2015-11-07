@@ -107,6 +107,13 @@ LOCAL_STATIC_LIBRARIES := \
 
 LOCAL_HAL_STATIC_LIBRARIES := libhealthd
 
+# OEMLOCK support requires a device specific liboemlock be supplied.
+# See comments in recovery.cpp for the API.
+ifeq ($(TARGET_HAVE_OEMLOCK), true)
+    LOCAL_CFLAGS += -DHAVE_OEMLOCK
+    LOCAL_STATIC_LIBRARIES += liboemlock
+endif
+
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 
 ifeq ($(TARGET_USE_MDTP), true)
