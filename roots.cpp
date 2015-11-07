@@ -346,7 +346,7 @@ static int rmtree_except(const char* path, const char* except)
     return rc;
 }
 
-int format_volume(const char* volume, const char* directory) {
+int format_volume(const char* volume, const char* directory, bool force) {
     if (strcmp(volume, "media") == 0) {
         if (!vdc->isEmulatedStorage()) {
             return 0;
@@ -376,7 +376,7 @@ int format_volume(const char* volume, const char* directory) {
         return -1;
     }
 
-    if (strcmp(volume, "/data") == 0 && vdc->isEmulatedStorage()) {
+    if (!force && strcmp(volume, "/data") == 0 && vdc->isEmulatedStorage()) {
         if (ensure_path_mounted("/data") == 0) {
             // Preserve .layout_version to avoid "nesting bug"
             LOGI("Preserving layout version\n");
@@ -495,8 +495,8 @@ int format_volume(const char* volume, const char* directory) {
     return -1;
 }
 
-int format_volume(const char* volume) {
-    return format_volume(volume, NULL);
+int format_volume(const char* volume, bool force) {
+    return format_volume(volume, NULL, force);
 }
 
 int setup_install_mounts() {

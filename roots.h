@@ -42,13 +42,13 @@ int ensure_path_unmounted(const char* path, bool detach=false);
 // Reformat the given volume (must be the mount point only, eg
 // "/cache"), no paths permitted.  Attempts to unmount the volume if
 // it is mounted.
-int format_volume(const char* volume);
+int format_volume(const char* volume, bool force = false);
 
 // Reformat the given volume (must be the mount point only, eg
 // "/cache"), no paths permitted.  Attempts to unmount the volume if
 // it is mounted.
 // Copies 'directory' to root of the newly formatted volume
-int format_volume(const char* volume, const char* directory);
+int format_volume(const char* volume, const char* directory, bool force = false);
 
 // Ensure that all and only the volumes that packages expect to find
 // mounted (/tmp and /cache) are mounted.  Returns 0 on success.
