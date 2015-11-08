@@ -74,6 +74,7 @@ LOCAL_STATIC_LIBRARIES := \
     libext4_utils_static \
     libmake_ext4fs_static \
     libminizip_static \
+    libminiunz_static \
     libsparse_static \
     libfsck_msdos \
     libminipigz \
@@ -139,7 +140,7 @@ LOCAL_ADDITIONAL_DEPENDENCIES += toybox_recovery_links
 
 # Set up the static symlinks
 RECOVERY_TOOLS := \
-    gunzip gzip make_ext4fs minizip reboot setup_adbd sh start stop toybox
+    gunzip gzip make_ext4fs reboot setup_adbd sh start stop toybox unzip zip
 LOCAL_POST_INSTALL_CMD := \
 	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
 
@@ -183,6 +184,18 @@ LOCAL_SRC_FILES := \
     ../../external/zlib/src/contrib/minizip/ioapi.c \
     ../../external/zlib/src/contrib/minizip/minizip.c \
     ../../external/zlib/src/contrib/minizip/zip.c
+include $(BUILD_STATIC_LIBRARY)
+
+# Miniunz static library
+include $(CLEAR_VARS)
+LOCAL_MODULE := libminiunz_static
+LOCAL_MODULE_TAGS := optional
+LOCAL_CFLAGS := -Dmain=miniunz_main -D__ANDROID__ -DIOAPI_NO_64
+LOCAL_C_INCLUDES := external/zlib
+LOCAL_SRC_FILES := \
+    ../../external/zlib/src/contrib/minizip/ioapi.c \
+    ../../external/zlib/src/contrib/minizip/miniunz.c \
+    ../../external/zlib/src/contrib/minizip/unzip.c
 include $(BUILD_STATIC_LIBRARY)
 
 # Reboot static library
