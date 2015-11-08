@@ -136,26 +136,24 @@ ifneq ($(TARGET_RECOVERY_DEVICE_MODULES),)
 endif
 endif
 
-# Now let's do recovery symlinks
+TOYBOX_INSTLIST := $(HOST_OUT_EXECUTABLES)/toybox-instlist
+LOCAL_ADDITIONAL_DEPENDENCIES += toybox_recovery_links
+
+# Set up the static symlinks
 RECOVERY_TOOLS := \
     gunzip gzip make_ext4fs reboot setup_adbd sh start stop toybox unzip zip
 LOCAL_POST_INSTALL_CMD := \
-	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);) 
-LOCAL_REQUIRED_MODULES += install_toybox_symlinks
+	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
+
 include $(BUILD_EXECUTABLE)
 
-# Install toybox links
-include $(CLEAR_VARS)
-LOCAL_MODULE := install_toybox_symlinks
-intermediates := $(call intermediates-dir-for,ETC,$(LOCAL_MODULE),,COMMON)
-LOCAL_BUILT_MODULE := $(intermediates)/stamp
-
-toybox-instlist := $(HOST_OUT_EXECUTABLES)/toybox-instlist
-$(LOCAL_BUILT_MODULE): PRIVATE_INSTLIST := $(toybox-instlist)
-$(LOCAL_BUILT_MODULE): TOYBOX_BINARY := toybox
-$(LOCAL_BUILT_MODULE): $(toybox-instlist)
-	@echo "Symlink: $@ -> $(TOYBOX_BINARY)"
-	$(hide) ln -sf $(TOYBOX_BINARY) $@
+# Run toybox-instlist and generate the rest of the symlinks
+toybox_recovery_links: $(TOYBOX_INSTLIST)
+toybox_recovery_links: TOY_LIST=$(shell $(TOYBOX_INSTLIST))
+toybox_recovery_links: TOYBOX_BINARY := $(TARGET_RECOVERY_ROOT_OUT)/sbin/toybox
+toybox_recovery_links:
+	@echo -e ${CL_CYN}"Generate Toybox links:"${CL_RST} $(TOY_LIST)
+	$(hide) $(foreach t,$(TOY_LIST),ln -sf toybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
 
 # mkshrc
 include $(CLEAR_VARS)
