@@ -127,7 +127,8 @@ LOCAL_ADDITIONAL_DEPENDENCIES += \
     mount.exfat_static \
     recovery_e2fsck \
     recovery_mke2fs \
-    recovery_tune2fs 
+    recovery_tune2fs \
+    recovery_mkshrc
 
 ifneq ($(TARGET_RECOVERY_DEVICE_MODULES),)
     LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_RECOVERY_DEVICE_MODULES)
@@ -135,17 +136,25 @@ endif
 endif
 
 # Now let's do recovery symlinks
-LOCAL_REQUIRED_MODULES += toybox-instlist recovery_mkshrc
-
 RECOVERY_TOOLS := \
     gunzip gzip make_ext4fs minizip reboot setup_adbd sh start stop toybox
-
-# Install the symlinks.
 LOCAL_POST_INSTALL_CMD := \
-	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);) \
-	$(foreach t,$(shell toybox-instlist),ln -sf toybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
-
+	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);) 
+LOCAL_REQUIRED_MODULES += install_toybox_symlinks
 include $(BUILD_EXECUTABLE)
+
+# Install toybox links
+include $(CLEAR_VARS)
+LOCAL_MODULE := install_toybox_symlinks
+intermediates := $(call intermediates-dir-for,ETC,$(LOCAL_MODULE),,COMMON)
+LOCAL_BUILT_MODULE := $(intermediates)/stamp
+
+toybox-instlist := $(HOST_OUT_EXECUTABLES)/toybox-instlist
+$(LOCAL_BUILT_MODULE): PRIVATE_INSTLIST := $(toybox-instlist)
+$(LOCAL_BUILT_MODULE): TOYBOX_BINARY := toybox
+$(LOCAL_BUILT_MODULE): $(toybox-instlist)
+	@echo "Symlink: $@ -> $(TOYBOX_BINARY)"
+	$(hide) ln -sf $(TOYBOX_BINARY) $@
 
 # mkshrc
 include $(CLEAR_VARS)
