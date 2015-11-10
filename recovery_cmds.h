@@ -31,11 +31,6 @@ int pigz_main(int argc, char **argv);
 int start_main(int argc, char **argv);
 int stop_main(int argc, char **argv);
 int mksh_main(int argc, char **argv);
-#ifdef USE_F2FS
-int make_f2fs_main(int argc, char **argv);
-int fsck_f2fs_main(int argc, char **argv);
-int fibmap_main(int argc, char **argv);
-#endif
 
 int toybox_driver(int argc, char **argv);
 
@@ -59,11 +54,6 @@ static const struct recovery_cmd recovery_cmds[] = {
     { "start",          start_main },
     { "stop",           stop_main },
     { "sh",             mksh_main },
-#ifdef USE_F2FS
-    { "mkfs.f2fs",      make_f2fs_main },
-    { "fsck.f2fs",      fsck_f2fs_main },
-    { "fibmap.f2fs",    fibmap_main },
-#endif
     { NULL, NULL },
 };
 
