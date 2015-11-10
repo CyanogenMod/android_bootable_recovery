@@ -48,7 +48,8 @@ static void write_fstab_entry(Volume *v, FILE *file)
 
         fprintf(file, "%s ", v->blk_device);
         fprintf(file, "%s ", v->mount_point);
-        fprintf(file, "%s defaults\n", v->fs_type);
+        fprintf(file, "%s ", v->fs_type);
+        fprintf(file, "%s 0 0\n", v->fs_options == NULL ? "defaults" : v->fs_options);
     }
 }
 
