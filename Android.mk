@@ -122,15 +122,9 @@ endif
 LOCAL_C_INCLUDES += system/extras/ext4_utils
 LOCAL_C_INCLUDES += external/boringssl/include
 
-# Symlinks
-RECOVERY_SYMLINKS := $(addprefix $(TARGET_RECOVERY_ROOT_OUT)/sbin/,$(RECOVERY_LINKS))
-
 ifeq ($(ONE_SHOT_MAKEFILE),)
 LOCAL_ADDITIONAL_DEPENDENCIES += \
-    mount.exfat_static \
-    recovery_e2fsck \
-    recovery_mke2fs \
-    recovery_tune2fs \
+    fstools \
     recovery_mkshrc
 
 endif
@@ -147,11 +141,12 @@ LOCAL_POST_INSTALL_CMD := \
 include $(BUILD_EXECUTABLE)
 
 # Run toybox-instlist and generate the rest of the symlinks
-toybox_recovery_links: $(TOYBOX_INSTLIST)
+toybox_recovery_links: $(TOYBOX_INSTLIST) recovery
 toybox_recovery_links: TOY_LIST=$(shell $(TOYBOX_INSTLIST))
 toybox_recovery_links: TOYBOX_BINARY := $(TARGET_RECOVERY_ROOT_OUT)/sbin/toybox
 toybox_recovery_links:
 	@echo -e ${CL_CYN}"Generate Toybox links:"${CL_RST} $(TOY_LIST)
+	@mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/sbin
 	$(hide) $(foreach t,$(TOY_LIST),ln -sf toybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
 
 # mkshrc
@@ -250,6 +245,7 @@ include $(LOCAL_PATH)/minui/Android.mk \
     $(LOCAL_PATH)/otafault/Android.mk \
     $(LOCAL_PATH)/updater/Android.mk \
     $(LOCAL_PATH)/update_verifier/Android.mk \
-    $(LOCAL_PATH)/applypatch/Android.mk
+    $(LOCAL_PATH)/applypatch/Android.mk \
+    $(LOCAL_PATH)/fstools/Android.mk
 
 endif
