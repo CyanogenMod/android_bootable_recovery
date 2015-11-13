@@ -161,8 +161,12 @@ LOCAL_ADDITIONAL_DEPENDENCIES += \
     minivold \
     recovery_e2fsck \
     recovery_mke2fs \
-    recovery_tune2fs \
+    recovery_tune2fs
+
+ifeq ($(TARGET_USES_EXFAT),true)
+LOCAL_ADDITIONAL_DEPENDENCIES += \
     mount.exfat_static
+endif
 
 LOCAL_ADDITIONAL_DEPENDENCIES += \
     bu_recovery
