@@ -121,6 +121,25 @@ void load_volume_table()
     printf("\n");
 }
 
+bool volume_is_mountable(Volume *v)
+{
+    return (fs_mgr_is_voldmanaged(v) ||
+            !strcmp(v->fs_type, "yaffs2") ||
+            !strcmp(v->fs_type, "ext4") ||
+            !strcmp(v->fs_type, "f2fs") ||
+            !strcmp(v->fs_type, "vfat"));
+}
+
+bool volume_is_readonly(Volume *v)
+{
+    return (v->flags & MS_RDONLY);
+}
+
+bool volume_is_verity(Volume *v)
+{
+    return fs_mgr_is_verified(v);
+}
+
 Volume* volume_for_path(const char* path) {
     return fs_mgr_get_entry_for_mount_point(fstab, path);
 }
@@ -137,7 +156,7 @@ Volume* volume_for_label(const char* label) {
 }
 
 // Mount the volume specified by path at the given mount_point.
-int ensure_path_mounted_at(const char* path, const char* mount_point) {
+int ensure_path_mounted_at(const char* path, const char* mount_point, bool force_rw) {
     Volume* v = volume_for_path(path);
     if (v == NULL) {
         LOGE("unknown volume for path [%s]\n", path);
@@ -184,8 +203,14 @@ int ensure_path_mounted_at(const char* path, const char* mount_point) {
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
                strcmp(v->fs_type, "squashfs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
+        unsigned long mntflags = v->flags;
+        if (!force_rw) {
+            if ((v->flags & MS_RDONLY) || fs_mgr_is_verified(v)) {
+                mntflags |= MS_RDONLY;
+            }
+        }
         result = mount(v->blk_device, mount_point, v->fs_type,
-                       v->flags, v->fs_options);
+                       mntflags, v->fs_options);
         if (result == 0) return 0;
 
         LOGE("failed to mount %s (%s)\n", mount_point, strerror(errno));
@@ -196,17 +221,17 @@ int ensure_path_mounted_at(const char* path, const char* mount_point) {
     return -1;
 }
 
-int ensure_volume_mounted(Volume* v) {
+int ensure_volume_mounted(Volume* v, bool force_rw) {
     if (v == NULL) {
         LOGE("cannot mount unknown volume\n");
         return -1;
     }
-    return ensure_path_mounted_at(v->mount_point, nullptr);
+    return ensure_path_mounted_at(v->mount_point, nullptr, force_rw);
 }
 
-int ensure_path_mounted(const char* path) {
+int ensure_path_mounted(const char* path, bool force_rw) {
     // Mount at the default mount point.
-    return ensure_path_mounted_at(path, nullptr);
+    return ensure_path_mounted_at(path, nullptr, force_rw);
 }
 
 int ensure_path_unmounted(const char* path, bool detach /* = false */) {

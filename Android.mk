@@ -139,6 +139,9 @@ LOCAL_ADDITIONAL_DEPENDENCIES += \
 
 endif
 
+LOCAL_ADDITIONAL_DEPENDENCIES += \
+    bu_recovery
+
 TOYBOX_INSTLIST := $(HOST_OUT_EXECUTABLES)/toybox-instlist
 LOCAL_ADDITIONAL_DEPENDENCIES += toybox_recovery_links
 
@@ -168,6 +171,56 @@ LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/etc
 LOCAL_SRC_FILES := etc/mkshrc
 LOCAL_MODULE_STEM := mkshrc
 include $(BUILD_PREBUILT)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := bu_recovery
+LOCAL_MODULE_STEM := bu
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_FORCE_STATIC_EXECUTABLE := true
+LOCAL_SRC_FILES := \
+    bu.cpp \
+    backup.cpp \
+    restore.cpp \
+    roots.cpp \
+    voldclient.cpp
+LOCAL_CFLAGS += -DMINIVOLD
+LOCAL_CFLAGS += -Wno-unused-parameter
+ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
+    LOCAL_CFLAGS += -DUSE_EXT4
+    LOCAL_C_INCLUDES += system/extras/ext4_utils
+    LOCAL_STATIC_LIBRARIES += libext4_utils_static libz
+endif
+LOCAL_STATIC_LIBRARIES += \
+    libsparse_static \
+    libz \
+    libmtdutils \
+    libminadbd \
+    libminui \
+    libfs_mgr \
+    libtar \
+    libcrypto_static \
+    libselinux \
+    libutils \
+    libcutils \
+    liblog \
+    libm \
+    libc
+
+LOCAL_C_INCLUDES +=         	\
+    system/core/fs_mgr/include	\
+    system/core/include     	\
+    system/core/libcutils       \
+    system/vold                 \
+    external/libtar             \
+    external/libtar/listhash    \
+    external/openssl/include    \
+    external/zlib               \
+    bionic/libc/bionic
+
+
+include $(BUILD_EXECUTABLE)
 
 # make_ext4fs
 include $(CLEAR_VARS)
