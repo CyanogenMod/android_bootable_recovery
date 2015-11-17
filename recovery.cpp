@@ -1116,6 +1116,28 @@ ui_print(const char* format, ...) {
 
 extern "C" int toybox_driver(int argc, char **argv);
 
+static int write_file(const char *path, const char *value)
+{
+    int fd, ret, len;
+
+    fd = open(path, O_WRONLY|O_CREAT, 0622);
+    if (fd < 0)
+        return -errno;
+
+    len = strlen(value);
+
+    do {
+        ret = write(fd, value, len);
+    } while (ret < 0 && errno == EINTR);
+
+    close(fd);
+    if (ret < 0) {
+        return -errno;
+    } else {
+        return 0;
+    }
+}
+
 int
 main(int argc, char **argv) {
     // If this binary is started with the single argument "--adbd",
@@ -1234,6 +1256,9 @@ main(int argc, char **argv) {
 
     ui->SetBackground(RecoveryUI::NONE);
     if (show_text) ui->ShowText(true);
+
+    /*enable the backlight*/
+    write_file("/sys/class/leds/lcd-backlight/brightness", "128");
 
     struct selinux_opt seopts[] = {
       { SELABEL_OPT_PATH, "/file_contexts" }
