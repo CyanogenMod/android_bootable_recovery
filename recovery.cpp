@@ -1726,9 +1726,10 @@ int main(int argc, char **argv) {
 
 #ifdef HAVE_OEMLOCK
     if (oem_lock == OEM_LOCK_UNLOCK) {
-        if (device->WipeData()) status = INSTALL_ERROR;
+        device->PreWipeData();
         if (erase_volume("/data", true)) status = INSTALL_ERROR;
-        if (wipe_cache && erase_volume("/cache", true)) status = INSTALL_ERROR;
+        if (should_wipe_cache && erase_volume("/cache", true)) status = INSTALL_ERROR;
+        device->PostWipeData();
         if (status != INSTALL_SUCCESS) ui->Print("Data wipe failed.\n");
         if (oemlock_set(0)) status = INSTALL_ERROR;
         // Force reboot regardless of actual status
