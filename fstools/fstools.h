@@ -22,6 +22,7 @@
 
 int e2fsck_main(int argc, char **argv);
 int mke2fs_main(int argc, char **argv);
+int resize2fs_main(int argc, char **argv);
 int tune2fs_main(int argc, char **argv);
 
 #ifdef HAVE_EXFAT
@@ -50,6 +51,7 @@ struct fstools_cmd {
 static const struct fstools_cmd fstools_cmds[] = {
     { "e2fsck",         e2fsck_main },
     { "mke2fs",         mke2fs_main },
+    { "resize2fs",      resize2fs_main },
     { "tune2fs",        tune2fs_main },
     { "fsck.ext4",      e2fsck_main },
     { "mkfs.ext4",      mke2fs_main },

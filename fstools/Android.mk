@@ -24,6 +24,7 @@ LOCAL_WHOLE_STATIC_LIBRARIES += \
 	libext2fs \
 	libe2fsck_static \
 	libmke2fs_static \
+	libresize2fs_static \
 	libtune2fs
 
 LOCAL_WHOLE_STATIC_LIBRARIES += \
@@ -47,7 +48,7 @@ LOCAL_STATIC_LIBRARIES := \
 	libm
 
 FSTOOLS_LINKS := \
-	e2fsck mke2fs tune2fs fsck.ext4 mkfs.ext4 \
+	e2fsck mke2fs resize2fs tune2fs fsck.ext4 mkfs.ext4 \
 	fsck.ntfs mkfs.ntfs mount.ntfs \
 	mkfs.f2fs fsck.f2fs
 
