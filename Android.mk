@@ -49,7 +49,6 @@ LOCAL_SRC_FILES := \
 
 # External tools
 LOCAL_SRC_FILES += \
-    ../../system/core/toolbox/newfs_msdos.c \
     ../../system/core/toolbox/start.c \
     ../../system/core/toolbox/stop.c \
     ../../system/vold/vdc.c
@@ -57,8 +56,6 @@ LOCAL_SRC_FILES += \
 LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
-
-LOCAL_REQUIRED_MODULES := mkfs.f2fs
 
 RECOVERY_API_VERSION := 3
 RECOVERY_FSTAB_VERSION := 2
@@ -78,7 +75,6 @@ LOCAL_STATIC_LIBRARIES := \
     libminizip_static \
     libminiunz_static \
     libsparse_static \
-    libfsck_msdos \
     libminipigz_static \
     libzopfli \
     libreboot_static \
@@ -133,7 +129,7 @@ ifneq ($(BOARD_RECOVERY_BLDRMSG_OFFSET),)
 endif
 
 LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
-LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
+LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include
 LOCAL_C_INCLUDES += system/vold
 
 ifeq ($(TARGET_RECOVERY_UI_LIB),)
