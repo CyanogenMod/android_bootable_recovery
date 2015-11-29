@@ -26,8 +26,6 @@ int miniunz_main(int argc, char **argv);
 int make_ext4fs_main(int argc, char **argv);
 int reboot_main(int argc, char **argv);
 int poweroff_main(int argc, char **argv);
-int fsck_msdos_main(int argc, char **argv);
-int newfs_msdos_main(int argc, char **argv);
 int pigz_main(int argc, char **argv);
 int start_main(int argc, char **argv);
 int stop_main(int argc, char **argv);
@@ -47,8 +45,6 @@ static const struct recovery_cmd recovery_cmds[] = {
     { "make_ext4fs",    make_ext4fs_main },
     { "reboot",         reboot_main },
     { "poweroff",       reboot_main },
-    { "fsck_msdos",     fsck_msdos_main },
-    { "newfs_msdos",    newfs_msdos_main },
     { "pigz",           pigz_main },
     { "gzip",           pigz_main },
     { "gunzip",         pigz_main },

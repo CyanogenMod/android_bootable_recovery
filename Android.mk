@@ -49,7 +49,6 @@ LOCAL_SRC_FILES := \
 
 # External tools
 LOCAL_SRC_FILES += \
-    ../../system/core/toolbox/newfs_msdos.c \
     ../../system/core/toolbox/start.c \
     ../../system/core/toolbox/stop.c \
     ../../system/vold/vdc.c
@@ -77,7 +76,6 @@ LOCAL_STATIC_LIBRARIES := \
     libminizip_static \
     libminiunz_static \
     libsparse_static \
-    libfsck_msdos \
     libminipigz_static \
     libzopfli \
     libreboot_static \
@@ -145,7 +143,7 @@ ifeq ($(TARGET_BUILD_VARIANT),user)
 endif
 
 LOCAL_CFLAGS += -DUSE_EXT4 -DMINIVOLD
-LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external/fsck_msdos
+LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include
 LOCAL_C_INCLUDES += system/vold
 
 ifeq ($(TARGET_RECOVERY_UI_LIB),)

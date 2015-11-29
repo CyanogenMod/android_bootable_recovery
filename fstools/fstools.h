@@ -36,7 +36,9 @@ int mount_ntfs3g_main(int argc, char **argv);
 
 int mkfs_f2fs_main(int argc, char **argv);
 int fsck_f2fs_main(int argc, char **argv);
-int fibmap_main(int argc, char **argv);
+
+int fsck_msdos_main(int argc, char **argv);
+int newfs_msdos_main(int argc, char **argv);
 
 int sgdisk_main(int argc, char **argv);
 
@@ -62,6 +64,8 @@ static const struct fstools_cmd fstools_cmds[] = {
     { "mkfs.f2fs",      mkfs_f2fs_main },
     { "fsck.f2fs",      fsck_f2fs_main },
     { "sgdisk",         sgdisk_main },
+    { "fsck_msdos",     fsck_msdos_main },
+    { "newfs_msdos",    newfs_msdos_main },
     { NULL, NULL },
 };
 
