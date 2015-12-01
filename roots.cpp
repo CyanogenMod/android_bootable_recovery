@@ -224,6 +224,7 @@ int ensure_path_mounted_at(const char* path, const char* mount_point, bool force
         }
         return mtd_mount_partition(partition, mount_point, v->fs_type, 0);
     } else if (strcmp(v->fs_type, "ext4") == 0 ||
+               strcmp(v->fs_type, "f2fs") == 0 ||
                strcmp(v->fs_type, "squashfs") == 0 ||
                strcmp(v->fs_type, "vfat") == 0) {
         unsigned long mntflags = v->flags;
