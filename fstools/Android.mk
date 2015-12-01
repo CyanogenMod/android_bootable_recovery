@@ -36,6 +36,9 @@ LOCAL_WHOLE_STATIC_LIBRARIES += \
 	libf2fs_fsck_static \
 	libf2fs_mkfs_static
 
+LOCAL_WHOLE_STATIC_LIBRARIES += \
+	libsgdisk_static
+
 LOCAL_STATIC_LIBRARIES := \
 	libext2_blkid \
 	libext2_uuid \
@@ -44,7 +47,8 @@ LOCAL_STATIC_LIBRARIES := \
 	libext2_com_err \
 	libext2_e2p \
 	libc++_static \
-	libc
+	libc \
+	libm
 
 FSTOOLS_LINKS := \
 	e2fsck mke2fs tune2fs fsck.ext4 mkfs.ext4 \

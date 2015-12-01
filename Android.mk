@@ -149,8 +149,7 @@ ifeq ($(ONE_SHOT_MAKEFILE),)
 LOCAL_ADDITIONAL_DEPENDENCIES += \
     fstools \
     recovery_mkshrc \
-    minivold \
-    recovery_sgdisk
+    minivold
 
 endif
 
