@@ -56,6 +56,9 @@ FSTOOLS_LINKS := \
 	fsck.ntfs mkfs.ntfs mount.ntfs \
 	mkfs.f2fs fsck.f2fs
 
+FSTOOLS_LINKS += \
+	sgdisk
+
 LOCAL_POST_INSTALL_CMD := \
     $(hide) $(foreach t,$(FSTOOLS_LINKS),ln -sf fstools $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
 include $(BUILD_EXECUTABLE)
