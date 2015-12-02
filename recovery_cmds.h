@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
+int vold_main(int argc, char **argv);
 int minizip_main(int argc, char **argv);
 int miniunz_main(int argc, char **argv);
 int make_ext4fs_main(int argc, char **argv);
@@ -41,6 +42,7 @@ struct recovery_cmd {
 };
 
 static const struct recovery_cmd recovery_cmds[] = {
+    { "minivold",       vold_main },
     { "minizip",        minizip_main },
     { "make_ext4fs",    make_ext4fs_main },
     { "reboot",         reboot_main },
