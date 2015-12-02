@@ -73,6 +73,7 @@ LOCAL_C_INCLUDES += \
     external/e2fsprogs/lib
 
 LOCAL_STATIC_LIBRARIES := \
+    libminivold_static \
     libext4_utils_static \
     libmake_ext4fs_static \
     libminizip_static \
@@ -93,11 +94,20 @@ LOCAL_STATIC_LIBRARIES := \
     libfusesideload \
     libminui \
     libpng \
+    libf2fs_sparseblock \
+    libdiskconfig \
+    libsysutils \
     libfs_mgr \
+    libsquashfs_utils \
     libbase \
     libcutils \
+    libutils \
     liblog \
+    liblogwrap \
     libselinux \
+    libcrypto_static \
+    libscrypt_static \
+    libnl \
     libc++_static \
     libm \
     libc \
@@ -148,8 +158,7 @@ LOCAL_C_INCLUDES += external/boringssl/include
 ifeq ($(ONE_SHOT_MAKEFILE),)
 LOCAL_ADDITIONAL_DEPENDENCIES += \
     fstools \
-    recovery_mkshrc \
-    minivold
+    recovery_mkshrc
 
 endif
 
@@ -161,7 +170,7 @@ LOCAL_ADDITIONAL_DEPENDENCIES += toybox_recovery_links
 
 # Set up the static symlinks
 RECOVERY_TOOLS := \
-    gunzip gzip make_ext4fs reboot setup_adbd sh start stop toybox unzip vdc zip
+    gunzip gzip make_ext4fs minivold reboot setup_adbd sh start stop toybox unzip vdc zip
 LOCAL_POST_INSTALL_CMD := \
 	$(hide) $(foreach t,$(RECOVERY_TOOLS),ln -sf recovery $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
 
