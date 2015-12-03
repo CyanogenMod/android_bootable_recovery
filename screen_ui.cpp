@@ -502,7 +502,7 @@ void ScreenRecoveryUI::Init() {
     log_text_rows_ = gr_fb_height() / log_char_height_;
     log_text_cols_ = gr_fb_width() / log_char_width_;
 
-    text_ = Alloc2d(text_rows_, text_cols_ + 1);
+    text_ = Alloc2d(log_text_rows_, log_text_cols_ + 1);
     file_viewer_text_ = Alloc2d(text_rows_, text_cols_ + 1);
     menu_ = Alloc2d(text_rows_, text_cols_ + 1);
 
@@ -681,8 +681,8 @@ void ScreenRecoveryUI::ClearText() {
     text_col_ = 0;
     text_row_ = 0;
     text_top_ = 1;
-    for (size_t i = 0; i < text_rows_; ++i) {
-        memset(text_[i], 0, text_cols_ + 1);
+    for (size_t i = 0; i < log_text_rows_; ++i) {
+        memset(text_[i], 0, log_text_cols_ + 1);
     }
     pthread_mutex_unlock(&updateMutex);
 }
