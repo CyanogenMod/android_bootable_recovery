@@ -78,8 +78,8 @@ int ev_init(ev_callback input_cb, void* data) {
                 continue;
             }
 
-            // We assume that only EV_KEY, EV_REL, and EV_SW event types are ever needed.
-            if (!test_bit(EV_KEY, ev_bits) && !test_bit(EV_REL, ev_bits) && !test_bit(EV_SW, ev_bits)) {
+            // We assume that only EV_KEY, EV_REL, EV_SW, and EV_ABS event types are ever needed.
+            if (!test_bit(EV_KEY, ev_bits) && !test_bit(EV_REL, ev_bits) && !test_bit(EV_SW, ev_bits) && !test_bit(EV_ABS, ev_bits)) {
                 close(fd);
                 continue;
             }
