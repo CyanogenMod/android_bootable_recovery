@@ -16,42 +16,119 @@
 
 #include "device.h"
 
-static const char* MENU_ITEMS[] = {
-    "Reboot system now",
+enum menu_action_type {
+    ACTION_NONE,
+    ACTION_SUBMENU,
+    ACTION_INVOKE
+};
+
+struct menu_entry;
+struct menu {
+    const char**        names;
+    const menu_entry*   entries;
+};
+
+union menu_action {
+    const menu*                 submenu;
+    Device::BuiltinAction       action;
+};
+
+struct menu_entry {
+    menu_action_type    action_type;
+    const menu_action   action;
+};
+
+static const char* WIPE_MENU_NAMES[] = {
+    "System reset (keep media)",
+    "Full factory reset",
+    "Wipe cache partition",
+    nullptr
+};
+static const menu_entry WIPE_MENU_ENTRIES[] = {
+    { ACTION_INVOKE, { .action = Device::WIPE_DATA } },
+    { ACTION_INVOKE, { .action = Device::WIPE_FULL } },
+    { ACTION_INVOKE, { .action = Device::WIPE_CACHE } },
+    { ACTION_NONE, { .action = Device::NO_ACTION } }
+};
+static const menu WIPE_MENU = {
+    WIPE_MENU_NAMES,
+    WIPE_MENU_ENTRIES
+};
+
+static const char* ADVANCED_MENU_NAMES[] = {
+    "Reboot recovery",
 #ifdef DOWNLOAD_MODE
     "Reboot to download mode",
 #else
     "Reboot to bootloader",
 #endif
-    "Apply update",
-    "Wipe data/factory reset",
-    "Wipe cache partition",
-    "Wipe media",
     "Mount /system",
     "View recovery logs",
     "Power off",
-    NULL
+    nullptr
+};
+static const menu_entry ADVANCED_MENU_ENTRIES[] = {
+    { ACTION_INVOKE, { .action = Device::REBOOT_RECOVERY } },
+#ifdef DOWNLOAD_MODE
+    { ACTION_INVOKE, { .action = Device::REBOOT_BOOTLOADER } },
+#else
+    { ACTION_INVOKE, { .action = Device::REBOOT_BOOTLOADER } },
+#endif
+    { ACTION_INVOKE, { .action = Device::MOUNT_SYSTEM } },
+    { ACTION_INVOKE, { .action = Device::VIEW_RECOVERY_LOGS } },
+    { ACTION_INVOKE, { .action = Device::SHUTDOWN } },
+    { ACTION_NONE, { .action = Device::NO_ACTION } }
+};
+static const menu ADVANCED_MENU = {
+    ADVANCED_MENU_NAMES,
+    ADVANCED_MENU_ENTRIES
 };
 
-extern int ui_root_menu;
+static const char* MAIN_MENU_NAMES[] = {
+    "Reboot system now",
+    "Apply update",
+    "Factory reset",
+    "Advanced",
+    nullptr
+};
+static const menu_entry MAIN_MENU_ENTRIES[] = {
+    { ACTION_INVOKE, { .action = Device::REBOOT } },
+    { ACTION_INVOKE, { .action = Device::APPLY_UPDATE } },
+    { ACTION_SUBMENU, { .submenu = &WIPE_MENU } },
+    { ACTION_SUBMENU, { .submenu = &ADVANCED_MENU } },
+    { ACTION_NONE, { .action = Device::NO_ACTION } }
+};
+static const menu MAIN_MENU = {
+    MAIN_MENU_NAMES,
+    MAIN_MENU_ENTRIES
+};
+
+Device::Device(RecoveryUI* ui) :
+        ui_(ui) {
+    menu_stack.push(&MAIN_MENU);
+}
 
 const char* const* Device::GetMenuItems() {
-  return MENU_ITEMS;
+    const menu* m = menu_stack.top();
+    return m->names;
 }
 
 Device::BuiltinAction Device::InvokeMenuItem(int menu_position) {
-  switch (menu_position) {
-    case 0: return REBOOT;
-    case 1: return REBOOT_BOOTLOADER;
-    case 2: return APPLY_UPDATE;
-    case 3: return WIPE_DATA;
-    case 4: return WIPE_CACHE;
-    case 5: return WIPE_MEDIA;
-    case 6: return MOUNT_SYSTEM;
-    case 7: return VIEW_RECOVERY_LOGS;
-    case 8: return SHUTDOWN;
-    default: return NO_ACTION;
+  if (menu_position < 0) {
+    if (menu_position == Device::kGoBack) {
+        if (menu_stack.size() > 1) {
+            menu_stack.pop();
+        }
+    }
+    return NO_ACTION;
   }
+  const menu* m = menu_stack.top();
+  const menu_entry* entry = m->entries + menu_position;
+  if (entry->action_type == ACTION_SUBMENU) {
+      menu_stack.push(entry->action.submenu);
+      return NO_ACTION;
+  }
+  return entry->action.action;
 }
 
 int Device::HandleMenuKey(int key, int visible) {
@@ -86,8 +163,7 @@ int Device::HandleMenuKey(int key, int visible) {
 
     case KEY_BACKSPACE:
     case KEY_BACK:
-      if (!ui_root_menu)
-        return kGoBack;
+      return kGoBack;
 
     default:
       // If you have all of the above buttons, any other buttons
