@@ -24,9 +24,11 @@ int e2fsck_main(int argc, char **argv);
 int mke2fs_main(int argc, char **argv);
 int tune2fs_main(int argc, char **argv);
 
+#ifdef HAVE_EXFAT
 int fsck_exfat_main(int argc, char **argv);
 int mkfs_exfat_main(int argc, char **argv);
 int mount_exfat_main(int argc, char **argv);
+#endif
 
 int fsck_ntfs3g_main(int argc, char **argv);
 int mkfs_ntfs3g_main(int argc, char **argv);
@@ -49,9 +51,11 @@ static const struct fstools_cmd fstools_cmds[] = {
     { "tune2fs",        tune2fs_main },
     { "fsck.ext4",      e2fsck_main },
     { "mkfs.ext4",      mke2fs_main },
+#ifdef HAVE_EXFAT
     { "fsck.exfat",     fsck_exfat_main },
     { "mkfs.exfat",     mkfs_exfat_main },
     { "mount.exfat",    mount_exfat_main },
+#endif
     { "fsck.ntfs",      fsck_ntfs3g_main },
     { "mkfs.ntfs",      mkfs_ntfs3g_main },
     { "mount.ntfs",     mount_ntfs3g_main },

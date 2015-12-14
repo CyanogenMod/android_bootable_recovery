@@ -14,12 +14,6 @@ LOCAL_WHOLE_STATIC_LIBRARIES += \
 	libfuse_static
 
 LOCAL_WHOLE_STATIC_LIBRARIES += \
-	libexfat_static \
-	libexfat_fsck_static \
-	libexfat_mkfs_static \
-	libexfat_mount_static 
-
-LOCAL_WHOLE_STATIC_LIBRARIES += \
 	libntfs-3g_static \
 	libntfs3g_fsck_static \
 	libntfs3g_mkfs_main \
@@ -52,9 +46,19 @@ LOCAL_STATIC_LIBRARIES := \
 
 FSTOOLS_LINKS := \
 	e2fsck mke2fs tune2fs fsck.ext4 mkfs.ext4 \
-	fsck.exfat mkfs.exfat mount.exfat \
 	fsck.ntfs mkfs.ntfs mount.ntfs \
 	mkfs.f2fs fsck.f2fs
+
+ifeq ($(TARGET_USES_EXFAT),true)
+LOCAL_CFLAGS += -DHAVE_EXFAT
+LOCAL_WHOLE_STATIC_LIBRARIES += \
+	libexfat_static \
+	libexfat_fsck_static \
+	libexfat_mkfs_static \
+	libexfat_mount_static
+FSTOOLS_LINKS += \
+	fsck.exfat mkfs.exfat mount.exfat
+endif
 
 FSTOOLS_LINKS += \
 	sgdisk
