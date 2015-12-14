@@ -156,15 +156,13 @@ LOCAL_C_INCLUDES += external/boringssl/include
 ifeq ($(ONE_SHOT_MAKEFILE),)
 LOCAL_ADDITIONAL_DEPENDENCIES += \
     fstools \
-    recovery_mkshrc
+    recovery_mkshrc \
+    bu_recovery \
+    toybox_recovery_links
 
 endif
 
-LOCAL_ADDITIONAL_DEPENDENCIES += \
-    bu_recovery
-
 TOYBOX_INSTLIST := $(HOST_OUT_EXECUTABLES)/toybox-instlist
-LOCAL_ADDITIONAL_DEPENDENCIES += toybox_recovery_links
 
 # Set up the static symlinks
 RECOVERY_TOOLS := \
@@ -179,7 +177,7 @@ endif
 include $(BUILD_EXECUTABLE)
 
 # Run toybox-instlist and generate the rest of the symlinks
-toybox_recovery_links: $(TOYBOX_INSTLIST) recovery
+toybox_recovery_links: $(TOYBOX_INSTLIST)
 toybox_recovery_links: TOY_LIST=$(shell $(TOYBOX_INSTLIST))
 toybox_recovery_links: TOYBOX_BINARY := $(TARGET_RECOVERY_ROOT_OUT)/sbin/toybox
 toybox_recovery_links:
