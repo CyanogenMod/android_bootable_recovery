@@ -1172,8 +1172,15 @@ static const char *key_dest = "/adb_keys";
 static void
 setup_adbd() {
     struct stat f;
+    int i;
+
     // Mount /data and copy adb_keys to root if it exists
-    ensure_path_mounted("/data");
+    for (i = 0; i < 10; i++) {
+        if (!ensure_path_mounted("/data"))
+            break;
+        usleep(10 * 100);
+    }
+
     if (stat(key_src, &f) == 0) {
         FILE *file_src = fopen(key_src, "r");
         if (file_src == NULL) {
