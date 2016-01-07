@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <selinux/selinux.h>
 
 #include <fs_mgr.h>
 #include "mtdutils/mtdutils.h"
@@ -356,9 +357,11 @@ static int rmtree_except(const char* path, const char* except)
             rc = rmtree_except(pathbuf, NULL);
             if (rc != 0)
                 break;
+            lsetfilecon(pathbuf, "u:object_r:app_data_file:s0");
             rc = rmdir(pathbuf);
         }
         else {
+            lsetfilecon(pathbuf, "u:object_r:app_data_file:s0");
             rc = unlink(pathbuf);
         }
         if (rc != 0) {
