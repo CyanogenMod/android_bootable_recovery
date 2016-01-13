@@ -253,6 +253,32 @@ int ensure_volume_mounted(Volume* v, bool force_rw) {
     return ensure_path_mounted_at(v->mount_point, nullptr, force_rw);
 }
 
+int remount_for_wipe(const char* path) {
+    int ret;
+
+    char *old_fs_options;
+    char *new_fs_options;
+
+    char se_context[] = ",context=u:object_r:app_data_file:s0";
+    Volume *v;
+
+    // Backup original mount options
+    v = volume_for_path(path);
+    old_fs_options = v->fs_options;
+
+    // Add SELinux mount override
+    asprintf(&new_fs_options, "%s%s", v->fs_options, se_context);
+
+    ensure_path_unmounted(path);
+    ret = ensure_path_mounted(path);
+
+    // Restore original mount options
+    v->fs_options = old_fs_options;
+    free(new_fs_options);
+
+    return ret;
+}
+
 int ensure_path_mounted(const char* path, bool force_rw) {
     // Mount at the default mount point.
     return ensure_path_mounted_at(path, nullptr, force_rw);
@@ -379,6 +405,7 @@ int format_volume(const char* volume, bool force) {
             LOGE("format_volume failed to mount /data\n");
             return -1;
         }
+        remount_for_wipe("/data");
         int rc = 0;
         rc = rmtree_except("/data/media", NULL);
         ensure_path_unmounted("/data");
@@ -402,6 +429,7 @@ int format_volume(const char* volume, bool force) {
 
     if (!force && strcmp(volume, "/data") == 0 && vdc->isEmulatedStorage()) {
         if (ensure_path_mounted("/data") == 0) {
+            remount_for_wipe("/data");
             // Preserve .layout_version to avoid "nesting bug"
             LOGI("Preserving layout version\n");
             unsigned char layout_buf[256];
