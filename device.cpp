@@ -68,6 +68,7 @@ static const char* ADVANCED_MENU_NAMES[] = {
 #endif
 #ifndef RELEASE_BUILD
     "Mount /system",
+    "Wipe system partition",
 #endif
     "View recovery logs",
     "Power off",
@@ -82,6 +83,7 @@ static const menu_entry ADVANCED_MENU_ENTRIES[] = {
 #endif
 #ifndef RELEASE_BUILD
     { ACTION_INVOKE, { .action = Device::MOUNT_SYSTEM } },
+    { ACTION_INVOKE, { .action = Device::WIPE_SYSTEM } },
 #endif
     { ACTION_INVOKE, { .action = Device::VIEW_RECOVERY_LOGS } },
     { ACTION_INVOKE, { .action = Device::SHUTDOWN } },
