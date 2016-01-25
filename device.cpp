@@ -63,6 +63,7 @@ static const char* ADVANCED_MENU_NAMES[] = {
     "Reboot to bootloader",
 #endif
     "Mount /system",
+    "Wipe system partition",
     "View recovery logs",
     "Power off",
     nullptr
@@ -75,6 +76,7 @@ static const menu_entry ADVANCED_MENU_ENTRIES[] = {
     { ACTION_INVOKE, { .action = Device::REBOOT_BOOTLOADER } },
 #endif
     { ACTION_INVOKE, { .action = Device::MOUNT_SYSTEM } },
+    { ACTION_INVOKE, { .action = Device::WIPE_SYSTEM } },
     { ACTION_INVOKE, { .action = Device::VIEW_RECOVERY_LOGS } },
     { ACTION_INVOKE, { .action = Device::SHUTDOWN } },
     { ACTION_NONE, { .action = Device::NO_ACTION } }

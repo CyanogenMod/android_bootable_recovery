@@ -887,6 +887,20 @@ static bool wipe_cache(bool should_confirm, Device* device) {
     return success;
 }
 
+// Return true on success.
+static bool wipe_system(Device* device) {
+    if (!yes_no(device, "Wipe system?", "  THIS CAN NOT BE UNDONE!")) {
+        return false;
+    }
+
+    modified_flash = true;
+
+    ui->Print("\n-- Wiping system...\n");
+    bool success = erase_volume("/system");
+    ui->Print("System wipe %s.\n", success ? "complete" : "failed");
+    return success;
+}
+
 static void choose_recovery_file(Device* device) {
     // "Back" + KEEP_LOG_COUNT * 2 + terminating nullptr entry
     char* entries[1 + KEEP_LOG_COUNT * 2 + 1];
@@ -1138,6 +1152,10 @@ prompt_and_wait(Device* device, int status) {
                         }
                     }
 
+                    break;
+
+                case Device::WIPE_SYSTEM:
+                    wipe_system(device);
                     break;
             }
             if (status == Device::kRefresh) {
