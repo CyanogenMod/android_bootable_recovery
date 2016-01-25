@@ -71,6 +71,7 @@ class Device : public VoldWatcher {
         SHUTDOWN = 9,
         VIEW_RECOVERY_LOGS = 10,
         MOUNT_SYSTEM = 11,
+        WIPE_SYSTEM = 12,
     };
 
     // Return the list of menu items (an array of strings,

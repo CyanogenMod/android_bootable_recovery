@@ -27,6 +27,7 @@ static const char* MENU_ITEMS[] = {
     "Wipe data/factory reset",
     "Wipe cache partition",
     "Wipe media",
+    "Wipe system partition",
     "Mount /system",
     "View recovery logs",
     "Power off",
@@ -47,9 +48,10 @@ Device::BuiltinAction Device::InvokeMenuItem(int menu_position) {
     case 3: return WIPE_DATA;
     case 4: return WIPE_CACHE;
     case 5: return WIPE_MEDIA;
-    case 6: return MOUNT_SYSTEM;
-    case 7: return VIEW_RECOVERY_LOGS;
-    case 8: return SHUTDOWN;
+    case 6: return WIPE_SYSTEM;
+    case 7: return MOUNT_SYSTEM;
+    case 8: return VIEW_RECOVERY_LOGS;
+    case 9: return SHUTDOWN;
     default: return NO_ACTION;
   }
 }
