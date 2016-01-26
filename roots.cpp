@@ -428,8 +428,10 @@ int format_volume(const char* volume, bool force) {
             ensure_path_unmounted(volume);
 
             return rc;
+        } else {
+            LOGE("format_volume failed to mount /data, use Factory Reset instead\n");
+            return -1;
         }
-        LOGE("format_volume failed to mount /data, formatting instead\n");
     }
 
     if (ensure_path_unmounted(volume) != 0) {
