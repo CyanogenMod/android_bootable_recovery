@@ -837,11 +837,19 @@ static bool wipe_data(int should_confirm, Device* device, bool force = false) {
     modified_flash = true;
 
     ui->Print("\n-- Wiping data...\n");
-    bool success =
+    bool success;
+retry:
+    success =
         device->PreWipeData() &&
         erase_volume("/data", force) &&
         erase_volume("/cache") &&
         device->PostWipeData();
+    if (!success && !force) {
+        if (!should_confirm || yes_no(device, "Wipe failed, format instead?", "  THIS CAN NOT BE UNDONE!")) {
+            force = true;
+            goto retry;
+        }
+    }
     ui->Print("Data wipe %s.\n", success ? "complete" : "failed");
     return success;
 }
