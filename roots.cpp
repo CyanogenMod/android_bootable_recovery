@@ -268,6 +268,7 @@ int remount_for_wipe(const char* path) {
 
     // Add SELinux mount override
     asprintf(&new_fs_options, "%s%s", v->fs_options, se_context);
+    v->fs_options = new_fs_options;
 
     ensure_path_unmounted(path);
     ret = ensure_path_mounted(path);
