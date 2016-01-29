@@ -456,7 +456,10 @@ int format_volume(const char* volume, const char* directory, bool force) {
 
             return rc;
         }
-        LOGE("format_volume failed to mount /data, formatting instead\n");
+        else {
+            LOGE("format_volume failed to mount /data\n");
+            return -1;
+        }
     }
 
     if (ensure_path_unmounted(volume) != 0) {
