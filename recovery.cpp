@@ -1317,6 +1317,7 @@ main(int argc, char **argv) {
         case 'h': headless = true; break;
         case 'w': should_wipe_data = true; break;
         case 'c': should_wipe_cache = true; break;
+        case 'm': should_wipe_media = true; break;
         case 't': show_text = true; break;
         case 's': sideload = true; break;
         case 'a': sideload = true; sideload_auto_reboot = true; break;
