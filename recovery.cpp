@@ -649,6 +649,11 @@ get_menu_selection(const char* const * headers, const char* const * items,
     ui->FlushKeys();
 
     // Count items to detect valid values for absolute selection
+    int header_count = 0;
+    if (headers) {
+        while (headers[header_count] != NULL)
+            ++header_count;
+    }
     int item_count = 0;
     while (items[item_count] != NULL)
         ++item_count;
@@ -679,15 +684,15 @@ get_menu_selection(const char* const * headers, const char* const * items,
         int action = device->HandleMenuKey(key, visible);
 
         if (action >= 0) {
-            if ((action & ~KEY_FLAG_ABS) >= item_count) {
+            action &= ~KEY_FLAG_ABS;
+            if (action < header_count || action >= header_count + item_count) {
                 action = Device::kNoAction;
             }
             else {
                 // Absolute selection.  Update selected item and give some
                 // feedback in the UI by selecting the item for a short time.
-                selected = action & ~KEY_FLAG_ABS;
+                selected = ui->SelectMenu(action, true);
                 action = Device::kInvokeItem;
-                selected = ui->SelectMenu(selected, true);
                 usleep(50*1000);
             }
         }
