@@ -71,6 +71,8 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     dialog_text(nullptr),
     dialog_show_log(false),
     menu_(nullptr),
+    menu_headers_(nullptr),
+    header_items(0),
     show_menu(false),
     menu_items(0),
     menu_sel(0),
@@ -371,12 +373,31 @@ void ScreenRecoveryUI::draw_screen_locked() {
         }
 
         if (show_menu) {
+            int i;
             draw_header_icon();
+            int y;
+
+            // Divider
+            y = text_first_row_ * char_height_;
+            SetColor(MENU_SEL_FG);
+            gr_fill(0, y - 1, gr_fb_width(), y);
+
+            if (header_items > 0) {
+                for (i = 0; i < header_items; ++i) {
+                    draw_menu_item(text_first_row_ + 3*i,
+                            menu_headers_[i], false);
+                }
+                y = (text_first_row_ + 3*header_items) * char_height_;
+                SetColor(MENU_SEL_FG);
+                gr_fill(0, y - 1, gr_fb_width(), y);
+            }
             int nr_items = menu_items - menu_show_start_;
-            if (nr_items > max_menu_rows_)
-                nr_items = max_menu_rows_;
-            for (int i = 0; i < nr_items; ++i) {
-                draw_menu_item(text_first_row_ + 3*i, menu_[menu_show_start_ + i],
+            if (header_items + nr_items > max_menu_rows_)
+                nr_items = max_menu_rows_ - header_items;
+            for (i = 0; i < nr_items; ++i) {
+                const char* text = menu_[menu_show_start_ + i];
+                draw_menu_item(text_first_row_ + 3 * (header_items + i),
+                        menu_[menu_show_start_ + i],
                         ((menu_show_start_ + i) == menu_sel));
             }
         }
@@ -821,7 +842,13 @@ void ScreenRecoveryUI::StartMenu(const char* const * headers, const char* const 
                                  int initial_selection) {
     pthread_mutex_lock(&updateMutex);
     if (text_rows_ > 0 && text_cols_ > 0) {
+        header_items = 0;
         menu_headers_ = headers;
+        if (menu_headers_) {
+            while (menu_headers_[header_items]) {
+                ++header_items;
+            }
+        }
         size_t i = 0;
         for (; i < text_rows_ && items[i] != nullptr; ++i) {
             strncpy(menu_[i], items[i], text_cols_ - 1);
@@ -843,7 +870,7 @@ int ScreenRecoveryUI::SelectMenu(int sel, bool abs /* = false */) {
     int wrapped = 0;
     pthread_mutex_lock(&updateMutex);
     if (abs) {
-        sel += menu_show_start_;
+        sel += menu_show_start_ - header_items;
     }
     if (show_menu) {
         int old_sel = menu_sel;
@@ -868,8 +895,8 @@ int ScreenRecoveryUI::SelectMenu(int sel, bool abs /* = false */) {
         if (menu_sel < menu_show_start_ && menu_show_start_ > 0) {
             menu_show_start_ = menu_sel;
         }
-        if (menu_sel - menu_show_start_ >= max_menu_rows_) {
-            menu_show_start_ = menu_sel - max_menu_rows_ + 1;
+        if (menu_sel - menu_show_start_ >= max_menu_rows_ - header_items) {
+            menu_show_start_ = menu_sel - (max_menu_rows_ - header_items) + 1;
         }
         sel = menu_sel;
         if (wrapped != 0) {
