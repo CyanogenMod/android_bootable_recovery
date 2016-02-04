@@ -118,6 +118,7 @@ class ScreenRecoveryUI : public RecoveryUI {
 
     char** menu_;
     const char* const* menu_headers_;
+    int header_items;
     bool show_menu;
     int menu_items, menu_sel;
 
