@@ -31,7 +31,7 @@ Volume* volume_for_path(const char* path);
 int ensure_volume_mounted(Volume* v, bool force_rw=false);
 int ensure_path_mounted(const char* path, bool force_rw=false);
 // Above, plus override SELinux default context
-int remount_for_wipe(const char* path);
+int remount_no_selinux(const char* path);
 
 // Similar to ensure_path_mounted, but allows one to specify the mount_point.
 int ensure_path_mounted_at(const char* path, const char* mount_point, bool force_rw=false);
