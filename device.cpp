@@ -39,13 +39,17 @@ struct menu_entry {
 };
 
 static const char* WIPE_MENU_NAMES[] = {
+#ifndef RELEASE_BUILD
     "System reset (keep media)",
+#endif
     "Full factory reset",
     "Wipe cache partition",
     nullptr
 };
 static const menu_entry WIPE_MENU_ENTRIES[] = {
+#ifndef RELEASE_BUILD
     { ACTION_INVOKE, { .action = Device::WIPE_DATA } },
+#endif
     { ACTION_INVOKE, { .action = Device::WIPE_FULL } },
     { ACTION_INVOKE, { .action = Device::WIPE_CACHE } },
     { ACTION_NONE, { .action = Device::NO_ACTION } }
