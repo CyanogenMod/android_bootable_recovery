@@ -790,7 +790,7 @@ static char* browse_directory(const char* path, Device* device) {
     z_size += d_size;
     zips[z_size] = NULL;
 
-    const char* headers[] = { "Choose a package to install:", path, NULL };
+    const char* headers[] = { path, NULL };
 
     char* result;
     int chosen_item = 0;
@@ -983,7 +983,7 @@ static int apply_from_storage(Device* device, const std::string& id, bool* wipe_
 
 static int
 show_apply_update_menu(Device* device) {
-    static const char* headers[] = { "Apply update", "", NULL };
+    static const char* headers[] = { "Apply update", NULL };
     char* menu_items[MAX_NUM_MANAGED_VOLUMES + 1 + 1];
     std::vector<VolumeInfo> volumes = vdc->getVolumes();
 
