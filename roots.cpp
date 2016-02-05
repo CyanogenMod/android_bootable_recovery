@@ -253,7 +253,7 @@ int ensure_volume_mounted(Volume* v, bool force_rw) {
     return ensure_path_mounted_at(v->mount_point, nullptr, force_rw);
 }
 
-int remount_for_wipe(const char* path) {
+int remount_no_selinux(const char* path) {
     int ret;
 
     char *old_fs_options;
@@ -406,7 +406,7 @@ int format_volume(const char* volume, bool force) {
             LOGE("format_volume failed to mount /data\n");
             return -1;
         }
-        remount_for_wipe("/data");
+        remount_no_selinux("/data");
         int rc = 0;
         rc = rmtree_except("/data/media", NULL);
         ensure_path_unmounted("/data");
@@ -430,7 +430,7 @@ int format_volume(const char* volume, bool force) {
 
     if (!force && strcmp(volume, "/data") == 0 && vdc->isEmulatedStorage()) {
         if (ensure_path_mounted("/data") == 0) {
-            remount_for_wipe("/data");
+            remount_no_selinux("/data");
             // Preserve .layout_version to avoid "nesting bug"
             LOGI("Preserving layout version\n");
             unsigned char layout_buf[256];
