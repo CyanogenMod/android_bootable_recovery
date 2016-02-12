@@ -66,7 +66,9 @@ static const char* ADVANCED_MENU_NAMES[] = {
 #else
     "Reboot to bootloader",
 #endif
+#ifndef RELEASE_BUILD
     "Mount /system",
+#endif
     "View recovery logs",
     "Power off",
     nullptr
@@ -78,7 +80,9 @@ static const menu_entry ADVANCED_MENU_ENTRIES[] = {
 #else
     { ACTION_INVOKE, { .action = Device::REBOOT_BOOTLOADER } },
 #endif
+#ifndef RELEASE_BUILD
     { ACTION_INVOKE, { .action = Device::MOUNT_SYSTEM } },
+#endif
     { ACTION_INVOKE, { .action = Device::VIEW_RECOVERY_LOGS } },
     { ACTION_INVOKE, { .action = Device::SHUTDOWN } },
     { ACTION_NONE, { .action = Device::NO_ACTION } }
