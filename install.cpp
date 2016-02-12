@@ -300,7 +300,6 @@ really_install_package(const char *path, bool* wipe_cache, bool needs_mount)
     if (path && needs_mount) {
         if (path[0] == '@') {
             ensure_path_mounted(path+1);
-            remount_no_selinux(path+1);
         } else {
             ensure_path_mounted(path);
             remount_no_selinux(path);
