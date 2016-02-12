@@ -45,7 +45,7 @@ static int append_sod(const char* opt_hash)
                 volume_is_readonly(part->vol) ||
                 volume_is_verity(part->vol)) {
             int fd = open(part->vol->blk_device, O_RDONLY);
-            part->size = part->used = lseek(fd, 0, SEEK_END);
+            part->size = part->used = lseek64(fd, 0, SEEK_END);
             close(fd);
         }
         else {
@@ -63,7 +63,7 @@ static int append_sod(const char* opt_hash)
             }
             else {
                 int fd = open(part->vol->blk_device, O_RDONLY);
-                part->size = part->used = lseek(fd, 0, SEEK_END);
+                part->size = part->used = lseek64(fd, 0, SEEK_END);
                 close(fd);
             }
         }
@@ -180,7 +180,7 @@ static int tar_append_device_contents(TAR* t, const char* devname, const char* s
         logmsg("tar_append_device_contents: open %s failed\n", devname);
         return -1;
     }
-    st.st_size = lseek(fd, 0, SEEK_END);
+    st.st_size = lseek64(fd, 0, SEEK_END);
     close(fd);
 
     th_set_from_stat(t, &st);
