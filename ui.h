@@ -154,6 +154,9 @@ class RecoveryUI {
     // of phones and tablets, false otherwise.
     virtual bool HasThreeButtons();
 
+    virtual bool HasBackKey() const { return has_back_key; }
+    virtual bool HasHomeKey() const { return has_home_key; }
+
     // Erase any queued-up keys.
     virtual void FlushKeys();
 
@@ -182,6 +185,10 @@ class RecoveryUI {
 
     virtual int MenuItemStart() const = 0;
     virtual int MenuItemHeight() const = 0;
+
+    virtual int  GetSysbarHeight() = 0;
+    virtual int  GetSysbarState() = 0;
+    virtual void SetSysbarState(int state) = 0;
 
     // Display some header text followed by a menu of items, which appears
     // at the top of the screen (in place of any scrolling ui_print()
@@ -222,6 +229,8 @@ private:
     bool has_power_key;
     bool has_up_key;
     bool has_down_key;
+    bool has_back_key;
+    bool has_home_key;
 
     input_device input_devices[MAX_NR_INPUT_DEVICES];
 
