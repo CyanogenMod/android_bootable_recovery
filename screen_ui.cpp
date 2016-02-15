@@ -77,6 +77,7 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     show_menu(false),
     menu_items(0),
     menu_sel(0),
+    sysbar_state(0),
     file_viewer_text_(nullptr),
     animation_fps(20),
     installing_frames(-1),
@@ -86,6 +87,10 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     wrap_count(0) {
 
     headerIcon = nullptr;
+    sysbarBackIcon = nullptr;
+    sysbarBackHighlightIcon = nullptr;
+    sysbarHomeIcon = nullptr;
+    sysbarHomeHighlightIcon = nullptr;
     for (int i = 0; i < NR_ICONS; i++) {
         backgroundIcon[i] = nullptr;
     }
@@ -281,6 +286,46 @@ void ScreenRecoveryUI::draw_menu_item(int textrow, const char *text, int selecte
     }
 }
 
+void ScreenRecoveryUI::draw_sysbar()
+{
+    GRSurface* surface;
+    int sw = gr_fb_width();
+    int sh = gr_fb_height();
+    int iw;
+    int ih = gr_get_height(sysbarBackIcon);
+    LOGI("draw_sysbar: enter\n");
+
+    // Left third is back button
+    gr_fill(0 * (sw / 3), sh - ih, 1 * (sw / 3), sh);
+    if (!HasBackKey()) {
+        if (sysbar_state & SYSBAR_BACK) {
+            surface = sysbarBackHighlightIcon;
+        }
+        else {
+            surface = sysbarBackIcon;
+        }
+        iw = gr_get_width(surface);
+        ih = gr_get_height(surface);
+        gr_blit(surface, 0, 0, iw, ih,
+                1 * (sw / 6) - (iw / 2), sh - ih);
+    }
+
+    // Middle third is home button
+    gr_fill(1 * (sw / 3), sh - ih, 2 * (sw / 3), sh);
+    if (!HasHomeKey()) {
+        if (sysbar_state & SYSBAR_HOME) {
+            surface = sysbarHomeHighlightIcon;
+        }
+        else {
+            surface = sysbarHomeIcon;
+        }
+        iw = gr_get_width(surface);
+        ih = gr_get_height(surface);
+        gr_blit(surface, 0, 0, iw, ih,
+                3 * (sw / 6) - (iw / 2), sh - ih);
+    }
+}
+
 void ScreenRecoveryUI::draw_dialog()
 {
     int x, y, w, h;
@@ -289,6 +334,7 @@ void ScreenRecoveryUI::draw_dialog()
        return;
     }
     draw_header_icon();
+    draw_sysbar();
 
     int iconHeight = gr_get_height(backgroundIcon[dialog_icon]);
 
@@ -374,9 +420,9 @@ void ScreenRecoveryUI::draw_screen_locked() {
         }
 
         if (show_menu) {
-            int i;
+            int i, y;
             draw_header_icon();
-            int y;
+            draw_sysbar();
 
             // Divider
             y = text_first_row_ * char_height_;
@@ -533,6 +579,11 @@ void ScreenRecoveryUI::Init() {
     text_top_ = 1;
 
     LoadBitmap("icon_header", &headerIcon);
+    LoadBitmap("icon_sysbar_back", &sysbarBackIcon);
+    LoadBitmap("icon_sysbar_back_highlight", &sysbarBackHighlightIcon);
+    LoadBitmap("icon_sysbar_home", &sysbarHomeIcon);
+    LoadBitmap("icon_sysbar_home_highlight", &sysbarHomeHighlightIcon);
+
     header_height_ = gr_get_height(headerIcon);
     header_width_ = gr_get_width(headerIcon);
 
