@@ -23,6 +23,9 @@
 #include "ui.h"
 #include "minui/minui.h"
 
+#define SYSBAR_BACK     0x01
+#define SYSBAR_HOME     0x02
+
 // Implementation of RecoveryUI appropriate for devices with a screen
 // (shows an icon + a progress bar, text logging, menu, etc.)
 class ScreenRecoveryUI : public RecoveryUI {
@@ -52,6 +55,11 @@ class ScreenRecoveryUI : public RecoveryUI {
     void Print(const char* fmt, ...) __printflike(2, 3);
     void PrintOnScreenOnly(const char* fmt, ...) __printflike(2, 3);
     void ShowFile(const char* filename);
+
+    // sysbar
+    int  GetSysbarHeight() { return gr_get_height(sysbarBackHighlightIcon); }
+    int  GetSysbarState() { return sysbar_state; }
+    void SetSysbarState(int state) { sysbar_state = state; Redraw(); }
 
     // menu display
     virtual int MenuItemStart() const { return menu_item_start_; }
@@ -93,6 +101,10 @@ class ScreenRecoveryUI : public RecoveryUI {
     GRSurface** loopFrames;
 
     GRSurface* headerIcon;
+    GRSurface* sysbarBackIcon;
+    GRSurface* sysbarBackHighlightIcon;
+    GRSurface* sysbarHomeIcon;
+    GRSurface* sysbarHomeHighlightIcon;
     GRSurface* progressBarEmpty;
     GRSurface* progressBarFill;
     GRSurface* stageMarkerEmpty;
@@ -125,6 +137,8 @@ class ScreenRecoveryUI : public RecoveryUI {
     int menu_show_start_;
     int max_menu_rows_;
 
+    int sysbar_state;
+
     // An alternate text screen, swapped with 'text_' when we're viewing a log file.
     char** file_viewer_text_;
 
@@ -156,10 +170,12 @@ class ScreenRecoveryUI : public RecoveryUI {
     int char_height_, char_width_;
 
     int header_height_, header_width_;
+    int sysbar_height_;
     int text_first_row_;
 
     int  draw_header_icon();
     void draw_menu_item(int textrow, const char *text, int selected);
+    void draw_sysbar();
     void draw_screen_locked();
     void update_screen_locked();
     void update_progress_locked();

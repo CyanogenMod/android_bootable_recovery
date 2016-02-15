@@ -141,6 +141,12 @@ Device::BuiltinAction Device::InvokeMenuItem(int menu_position) {
   return entry->action.action;
 }
 
+void Device::GoHome() {
+    while (menu_stack.size() > 1) {
+        menu_stack.pop();
+    }
+}
+
 int Device::HandleMenuKey(int key, int visible) {
   if (!visible) {
     return kNoAction;
@@ -166,14 +172,16 @@ int Device::HandleMenuKey(int key, int visible) {
     case KEY_ENTER:
     case KEY_POWER:
     case BTN_MOUSE:
-    case KEY_HOME:
-    case KEY_HOMEPAGE:
     case KEY_SEND:
       return kInvokeItem;
 
     case KEY_BACKSPACE:
     case KEY_BACK:
       return kGoBack;
+
+    case KEY_HOME:
+    case KEY_HOMEPAGE:
+      return kGoHome;
 
     default:
       // If you have all of the above buttons, any other buttons

@@ -59,7 +59,9 @@ RecoveryUI::RecoveryUI()
           last_key(-1),
           has_power_key(false),
           has_up_key(false),
-          has_down_key(false) {
+          has_down_key(false),
+          has_back_key(false),
+          has_home_key(false) {
     pthread_mutex_init(&key_queue_mutex, nullptr);
     pthread_cond_init(&key_queue_cond, nullptr);
     memset(key_pressed, 0, sizeof(key_pressed));
@@ -72,6 +74,12 @@ void RecoveryUI::OnKeyDetected(int key_code) {
         has_down_key = true;
     } else if (key_code == KEY_UP || key_code == KEY_VOLUMEUP) {
         has_up_key = true;
+    } else if (key_code == KEY_BACK) {
+        has_back_key = true;
+        LOGI("Detected back key, disabling virtual back button\n");
+    } else if (key_code == KEY_HOMEPAGE) {
+        has_home_key = true;
+        LOGI("Detected home key, disabling virtual home button\n");
     }
 }
 
@@ -475,6 +483,12 @@ void RecoveryUI::handle_press(input_device* dev) {
     dev->touch_start = dev->touch_track = dev->touch_pos;
     dev->in_touch = true;
     dev->in_swipe = false;
+    if (dev->touch_pos.y >= gr_fb_height() - GetSysbarHeight()) {
+        SetSysbarState(1 << (3 * dev->touch_pos.x / gr_fb_width()));
+    }
+    else {
+        SetSysbarState(0);
+    }
 }
 
 void RecoveryUI::handle_release(input_device* dev) {
@@ -496,6 +510,19 @@ void RecoveryUI::handle_release(input_device* dev) {
                 EnqueueKey(vk->keycode);
                 return;
             }
+        }
+
+        int sysbar_state = GetSysbarState();
+        SetSysbarState(0);
+        if (sysbar_state == 0x01) {
+            ProcessKey(dev, KEY_BACK, 1);
+            ProcessKey(dev, KEY_BACK, 0);
+            return;
+        }
+        if (sysbar_state == 0x02) {
+            ProcessKey(dev, KEY_HOME, 1);
+            ProcessKey(dev, KEY_HOME, 0);
+            return;
         }
     }
 
