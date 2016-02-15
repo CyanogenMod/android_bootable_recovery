@@ -165,6 +165,10 @@ class FakeUI : public RecoveryUI {
 
     virtual int MenuItemStart() const { return 0; }
     virtual int MenuItemHeight() const { return 0; }
+
+    virtual int  GetSysbarHeight() { return 0; }
+    virtual int  GetSysbarState() { return 0; }
+    virtual void SetSysbarState(int state) {}
 };
 
 void
