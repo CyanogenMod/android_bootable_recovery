@@ -662,7 +662,10 @@ get_menu_selection(const char* const * headers, const char* const * items,
     int selected = initial_selection;
     int chosen_item = -1;
 
-    while (chosen_item < 0 && chosen_item != Device::kGoBack && chosen_item != Device::kRefresh) {
+    while (chosen_item < 0 &&
+            chosen_item != Device::kGoBack &&
+            chosen_item != Device::kGoHome &&
+            chosen_item != Device::kRefresh) {
         int key = ui->WaitKey();
         int visible = ui->IsTextVisible();
 
@@ -713,6 +716,9 @@ get_menu_selection(const char* const * headers, const char* const * items,
                 case Device::kGoBack:
                     chosen_item = Device::kGoBack;
                     break;
+                case Device::kGoHome:
+                    chosen_item = Device::kGoHome;
+                    break;
                 case Device::kRefresh:
                     chosen_item = Device::kRefresh;
                     break;
@@ -723,6 +729,9 @@ get_menu_selection(const char* const * headers, const char* const * items,
     }
 
     ui->EndMenu();
+    if (chosen_item == Device::kGoHome) {
+        device->GoHome();
+    }
     return chosen_item;
 }
 
@@ -796,6 +805,11 @@ static char* browse_directory(const char* path, Device* device) {
     int chosen_item = 0;
     while (true) {
         chosen_item = get_menu_selection(headers, zips, 1, chosen_item, device);
+        if (chosen_item == Device::kGoHome) {
+            // go up and stop browsing
+            result = strdup("");
+            break;
+        }
         if (chosen_item == 0 || chosen_item == Device::kGoBack) {
             // go up but continue browsing (if the caller is update_directory)
             result = NULL;
@@ -936,6 +950,7 @@ static void choose_recovery_file(Device* device) {
 
     while (true) {
         int chosen_item = get_menu_selection(headers, entries, 1, 0, device);
+        if (chosen_item == Device::kGoHome) break;
         if (chosen_item == Device::kGoBack) break;
         if (chosen_item >= 0 && strcmp(entries[chosen_item], "Back") == 0) break;
 
@@ -959,7 +974,7 @@ static int apply_from_storage(Device* device, const std::string& id, bool* wipe_
     VolumeInfo vi = vdc->getVolume(id);
 
     char* path = browse_directory(vi.mInternalPath.c_str(), device);
-    if (path == NULL) {
+    if (path == NULL || *path == '\0') {
         ui->Print("\n-- No package file selected.\n");
         vdc->volumeUnmount(vi.mId);
         return INSTALL_NONE;
@@ -1012,6 +1027,9 @@ refresh:
     }
     if (chosen == Device::kRefresh) {
         goto refresh;
+    }
+    if (chosen == Device::kGoHome) {
+        return INSTALL_NONE;
     }
     if (chosen == Device::kGoBack) {
         return INSTALL_NONE;
