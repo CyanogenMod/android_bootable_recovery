@@ -1183,7 +1183,6 @@ refresh:
     }
     if (chosen == item_sideload) {
         static const char* headers[] = {  "ADB Sideload",
-                                    "",
                                     NULL
         };
         static const char* list[] = { "Cancel sideload", NULL };
