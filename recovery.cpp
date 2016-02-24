@@ -1016,7 +1016,8 @@ static void choose_recovery_file(Device* device) {
 
     while (true) {
         int chosen_item = get_menu_selection(headers, entries, 1, 0, device);
-        if (strcmp(entries[chosen_item], "Back") == 0) break;
+        if (chosen_item == Device::kGoBack) break;
+        if (chosen_item >= 0 && strcmp(entries[chosen_item], "Back") == 0) break;
 
         ui->ShowFile(entries[chosen_item]);
     }
