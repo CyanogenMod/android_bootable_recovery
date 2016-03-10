@@ -575,11 +575,14 @@ void RecoveryUI::handle_press(input_device* dev) {
     dev->in_touch = true;
     dev->in_swipe = false;
     if (dev->touch_pos.y >= gr_fb_height() - GetSysbarHeight()) {
-        SetSysbarState(1 << (3 * dev->touch_pos.x / gr_fb_width()));
+        int sysbar_state = 1 << (3 * dev->touch_pos.x / gr_fb_width());
+        if ((!has_back_key && sysbar_state == SYSBAR_BACK) ||
+            (!has_home_key && sysbar_state == SYSBAR_HOME)) {
+            SetSysbarState(sysbar_state);
+            return;
+        }
     }
-    else {
-        SetSysbarState(0);
-    }
+    SetSysbarState(0);
 }
 
 void RecoveryUI::handle_release(input_device* dev) {
