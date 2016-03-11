@@ -840,6 +840,18 @@ void ScreenRecoveryUI::ShowFile(const char* filename) {
     text_top_ = old_text_top;
 }
 
+void ScreenRecoveryUI::SetSysbarState(int state)
+{
+    if (HasBackKey()) {
+        state &= ~SYSBAR_BACK;
+    }
+    if (HasHomeKey()) {
+        state &= ~SYSBAR_HOME;
+    }
+    sysbar_state = state;
+    Redraw();
+}
+
 void ScreenRecoveryUI::StartMenu(const char* const * headers, const char* const * items,
                                  int initial_selection) {
     pthread_mutex_lock(&updateMutex);

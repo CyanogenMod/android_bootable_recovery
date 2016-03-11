@@ -514,12 +514,12 @@ void RecoveryUI::handle_release(input_device* dev) {
 
         int sysbar_state = GetSysbarState();
         SetSysbarState(0);
-        if (sysbar_state == 0x01) {
+        if (sysbar_state == SYSBAR_BACK) {
             ProcessKey(dev, KEY_BACK, 1);
             ProcessKey(dev, KEY_BACK, 0);
             return;
         }
-        if (sysbar_state == 0x02) {
+        if (sysbar_state == SYSBAR_HOME) {
             ProcessKey(dev, KEY_HOME, 1);
             ProcessKey(dev, KEY_HOME, 0);
             return;

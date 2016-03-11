@@ -59,7 +59,7 @@ class ScreenRecoveryUI : public RecoveryUI {
     // sysbar
     int  GetSysbarHeight() { return gr_get_height(sysbarBackHighlightIcon); }
     int  GetSysbarState() { return sysbar_state; }
-    void SetSysbarState(int state) { sysbar_state = state; Redraw(); }
+    void SetSysbarState(int state);
 
     // menu display
     virtual int MenuItemStart() const { return menu_item_start_; }
