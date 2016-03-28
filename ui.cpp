@@ -77,7 +77,7 @@ void RecoveryUI::OnKeyDetected(int key_code) {
     } else if (key_code == KEY_BACK) {
         has_back_key = true;
         LOGI("Detected back key, disabling virtual back button\n");
-    } else if (key_code == KEY_HOMEPAGE) {
+    } else if (key_code == KEY_HOMEPAGE || key_code == KEY_HOME) {
         has_home_key = true;
         LOGI("Detected home key, disabling virtual home button\n");
     }
