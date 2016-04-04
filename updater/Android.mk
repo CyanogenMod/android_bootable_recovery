@@ -33,7 +33,12 @@ LOCAL_CLANG := true
 
 LOCAL_SRC_FILES := $(updater_src_files)
 
-LOCAL_STATIC_LIBRARIES += libfec libfec_rs libext4_utils_static libsquashfs_utils libcrypto_static
+LOCAL_STATIC_LIBRARIES += libfec \
+    libfec_rs \
+    libext4_utils_static \
+    libsquashfs_utils \
+    libcrypto_utils_static \
+    libcrypto_static
 
 LOCAL_CFLAGS += -Wno-unused-parameter
 LOCAL_C_INCLUDES += system/extras/ext4_utils
