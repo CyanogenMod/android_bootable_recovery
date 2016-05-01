@@ -188,12 +188,11 @@ include $(BUILD_EXECUTABLE)
 
 # Run toybox-instlist and generate the rest of the symlinks
 toybox_recovery_links: $(TOYBOX_INSTLIST)
-toybox_recovery_links: TOY_LIST=$(shell $(TOYBOX_INSTLIST))
 toybox_recovery_links: TOYBOX_BINARY := $(TARGET_RECOVERY_ROOT_OUT)/sbin/toybox
 toybox_recovery_links:
-	@echo -e ${CL_CYN}"Generate Toybox links:"${CL_RST} $(TOY_LIST)
+	@echo -e ${CL_CYN}"Generate Toybox links:"${CL_RST} $$($(TOYBOX_INSTLIST))
 	@mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/sbin
-	$(hide) $(foreach t,$(TOY_LIST),ln -sf toybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/$(t);)
+	$(hide) $(TOYBOX_INSTLIST) | xargs -I'{}' ln -sf toybox '$(TARGET_RECOVERY_ROOT_OUT)/sbin/{}'
 
 # mkshrc
 include $(CLEAR_VARS)
