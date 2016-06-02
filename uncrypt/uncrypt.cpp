@@ -153,6 +153,10 @@ static const char* find_block_device(const char* path, bool* encryptable, bool* 
                 }
             }
             return v->blk_device;
+        } else
+        if (strncmp("/mnt/expand/", path, 12) == 0) {
+            *encrypted = true;
+            return "/dev/block/mmcblk1";
         }
     }
 
@@ -399,7 +403,7 @@ int uncrypt(const char* input_path, const char* map_file, int status_fd) {
     // On /data we want to convert the file to a block map so that we
     // can read the package without mounting the partition.  On /cache
     // and /sdcard we leave the file alone.
-    if (strncmp(path, "/data/", 6) == 0) {
+    if (strncmp(path, "/data/", 6) == 0 || strncmp(path, "/mnt/expand/", 12) == 0) {
         ALOGI("writing block map %s", map_file);
         if (produce_block_map(path, map_file, blk_dev, encrypted, status_fd) != 0) {
             return 1;
