@@ -1507,33 +1507,6 @@ main(int argc, char **argv) {
 
 	finish_sdcard_fuse(token);
 	free(&path);
-
-	/*modified_flash = true;
-      
-	std::vector<VolumeInfo> volumes = vdc->getVolumes();
-	std::vector<VolumeInfo>::iterator vitr = volumes.begin();
-	std::string id = vitr->mId;
-	
-	if (!vdc->volumeMount(id)) {
-        status = INSTALL_ERROR;
-	}
-	
-	const char* path = update_package;
-      
-	ui->ClearText();
-	ui->SetBackground(RecoveryUI::INSTALLING_UPDATE);
-	ui->Print("\n-- Install %s ...\n", update_package);
-	
-	set_sdcard_update_bootloader_message();	
-	void* token = start_sdcard_fuse(path);
-	
-	vdc->volumeUnmount(id, true);
-	
-        status = install_package(FUSE_SIDELOAD_HOST_PATHNAME, &should_wipe_cache, TEMPORARY_INSTALL_FILE, false);
-	
-	finish_sdcard_fuse(token);
-	//free(path);*/
-	
 	
         if (status == INSTALL_SUCCESS && should_wipe_cache) {
             wipe_cache(false, device);
