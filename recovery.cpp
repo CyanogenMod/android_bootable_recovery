@@ -1473,7 +1473,41 @@ main(int argc, char **argv) {
     } else
 #endif
     if (update_package != NULL) {
-        status = install_package(update_package, &should_wipe_cache, TEMPORARY_INSTALL_FILE, true);
+        modified_flash = true;
+
+        std::vector<VolumeInfo> volumes = vdc->getVolumes();
+        std::vector<VolumeInfo>::iterator vitr = volumes.begin();
+        std::string id = vitr->mId;
+
+        if (!vdc->volumeMount(id)) {
+            status = INSTALL_ERROR;
+        }
+
+        VolumeInfo vi = vdc->getVolume(id);
+
+        const char* path = update_package;
+        if (path == NULL || *path == '\0') {
+            ui->Print("\n-- No package file selected.\n");
+            vdc->volumeUnmount(vi.mId);
+            free(&path);
+            status = INSTALL_NONE;
+        }
+
+        ui->ClearText();
+        ui->SetBackground(RecoveryUI::INSTALLING_UPDATE);
+
+        ui->Print("\n-- Install %s ...\n", path);
+        set_sdcard_update_bootloader_message();
+        void* token = start_sdcard_fuse(path);
+
+        vdc->volumeUnmount(vi.mId, true);
+
+        status = install_package(FUSE_SIDELOAD_HOST_PATHNAME, &should_wipe_cache,
+                                 TEMPORARY_INSTALL_FILE, false);
+
+        finish_sdcard_fuse(token);
+        free(&path);
+
         if (status == INSTALL_SUCCESS && should_wipe_cache) {
             wipe_cache(false, device);
         }
