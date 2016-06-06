@@ -1473,7 +1473,27 @@ main(int argc, char **argv) {
     } else
 #endif
     if (update_package != NULL) {
-        status = install_package(update_package, &should_wipe_cache, TEMPORARY_INSTALL_FILE, true);
+        std::vector<VolumeInfo> volumes = vdc->getVolumes();
+        std::vector<VolumeInfo>::iterator vitr;
+
+        for (vitr = volumes.begin(); vitr != volumes.end(); ++vitr) {
+            vdc->volumeMount(vitr->mId);
+        }
+
+        void* token = start_sdcard_fuse(update_package);
+
+        for (vitr = volumes.begin(); vitr != volumes.end(); ++vitr) {
+            vdc->volumeUnmount(vitr->mId, true);
+        }
+
+        // check for sdcard path or normal path
+        if (token != NULL) {
+            status = install_package(FUSE_SIDELOAD_HOST_PATHNAME, &should_wipe_cache, TEMPORARY_INSTALL_FILE, false);
+            finish_sdcard_fuse(token);
+        } else {
+            status = install_package(update_package, &should_wipe_cache, TEMPORARY_INSTALL_FILE, true);
+        }
+
         if (status == INSTALL_SUCCESS && should_wipe_cache) {
             wipe_cache(false, device);
         }
