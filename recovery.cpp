@@ -2065,8 +2065,33 @@ int main(int argc, char **argv) {
             log_failure_code(kBootreasonInBlacklist, update_package);
             status = INSTALL_SKIPPED;
         } else {
+#ifdef CANT_USE_FUSE_SIDELOAD
+            std::vector<VolumeInfo> volumes = vdc->getVolumes();
+            std::vector<VolumeInfo>::iterator vitr;
+
+            for (vitr = volumes.begin(); vitr != volumes.end(); ++vitr) {
+                vdc->volumeMount(vitr->mId);
+            }
+
+            void* token = start_sdcard_fuse_legacy(update_package);
+
+            for (vitr = volumes.begin(); vitr != volumes.end(); ++vitr) {
+                vdc->volumeUnmount(vitr->mId, true);
+            }
+
+            // check for sdcard path or normal path
+            if (token != NULL) {
+                status = install_package(FUSE_SIDELOAD_HOST_PATHNAME, &should_wipe_cache,
+                        TEMPORARY_INSTALL_FILE, false, retry_count);
+                finish_sdcard_fuse_legacy(token);
+            } else {
+                status = install_package(update_package, &should_wipe_cache,
+                        TEMPORARY_INSTALL_FILE, true, retry_count);
+            }
+#else
             status = install_package(update_package, &should_wipe_cache,
                                      TEMPORARY_INSTALL_FILE, true, retry_count);
+#endif
             if (status == INSTALL_SUCCESS && should_wipe_cache) {
                 wipe_cache(false, device);
             }
