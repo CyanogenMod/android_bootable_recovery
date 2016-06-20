@@ -77,6 +77,7 @@ ScreenRecoveryUI::ScreenRecoveryUI() :
     show_menu(false),
     menu_items(0),
     menu_sel(0),
+    menu_show_start_(0),
     sysbar_state(0),
     file_viewer_text_(nullptr),
     intro_frames(0),
