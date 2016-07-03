@@ -174,6 +174,48 @@ static bool has_cache = false;
 static const int MAX_ARG_LENGTH = 4096;
 static const int MAX_ARGS = 100;
 
+#ifdef USE_MDTP
+
+#define MAX_CMD_LINE_LEN         (2048)
+
+static int is_mdtp_activated()
+{
+    char cmdline[MAX_CMD_LINE_LEN];
+    char *ptr;
+    int fd;
+    int mdtp_activated = 0;
+
+    fd = open("/proc/cmdline", O_RDONLY);
+    if (fd >= 0) {
+        int n = read(fd, cmdline, sizeof(cmdline) - 1);
+        if (n < 0)
+            n = 0;
+        /* get rid of trailing newline, it happens */
+        if (n > 0 && cmdline[n-1] == '\n') n--;
+        cmdline[n] = 0;
+        close(fd);
+    } else {
+        cmdline[0] = 0;
+    }
+
+    /* Look for the string "mdtp" in kernel cmdline, indicating that MDTP is activated.*/
+    ptr = cmdline;
+    while (ptr && *ptr) {
+        char *x = strchr(ptr, ' ');
+        if (x != 0)
+            *x++ = 0;
+        if (!strcmp(ptr,"mdtp")) {
+            mdtp_activated = 1;
+            break;
+        }
+
+        ptr = x;
+    }
+
+    return mdtp_activated;
+}
+#endif /* USE_MDTP */
+
 // open a given path, mounting partitions as necessary
 FILE* fopen_path(const char *path, const char *mode) {
     if (ensure_path_mounted(path) != 0) {
@@ -1107,24 +1149,31 @@ prompt_and_wait(Device* device, int status) {
                 break;
 
             case Device::MOUNT_SYSTEM:
-                char system_root_image[PROPERTY_VALUE_MAX];
-                property_get("ro.build.system_root_image", system_root_image, "");
+#ifdef USE_MDTP
+                if (is_mdtp_activated()) {
+                    ui->Print("Mounting /system forbidden by MDTP.\n");
+                }
+                else
+#endif
+                {
+                    char system_root_image[PROPERTY_VALUE_MAX];
+                    property_get("ro.build.system_root_image", system_root_image, "");
 
-                // For a system image built with the root directory (i.e.
-                // system_root_image == "true"), we mount it to /system_root, and symlink /system
-                // to /system_root/system to make adb shell work (the symlink is created through
-                // the build system).
-                // Bug: 22855115
-                if (strcmp(system_root_image, "true") == 0) {
-                    if (ensure_path_mounted_at("/", "/system_root") != -1) {
-                        ui->Print("Mounted /system.\n");
-                    }
-                } else {
-                    if (ensure_path_mounted("/system") != -1) {
-                        ui->Print("Mounted /system.\n");
+                    // For a system image built with the root directory (i.e.
+                    // system_root_image == "true"), we mount it to /system_root, and symlink /system
+                    // to /system_root/system to make adb shell work (the symlink is created through
+                    // the build system).
+                    // Bug: 22855115
+                    if (strcmp(system_root_image, "true") == 0) {
+                        if (ensure_path_mounted_at("/", "/system_root") != -1) {
+                            ui->Print("Mounted /system.\n");
+                        }
+                    } else {
+                        if (ensure_path_mounted("/system") != -1) {
+                            ui->Print("Mounted /system.\n");
+                        }
                     }
                 }
-
                 break;
         }
     }
