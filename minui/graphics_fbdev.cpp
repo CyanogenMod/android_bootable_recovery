@@ -33,7 +33,7 @@
 #include "minui.h"
 #include "graphics.h"
 
-static GRSurface* fbdev_init(minui_backend*);
+static GRSurface* fbdev_init(minui_backend*, int);
 static GRSurface* fbdev_flip(minui_backend*);
 static void fbdev_blank(minui_backend*, bool);
 static void fbdev_exit(minui_backend*);
@@ -85,7 +85,7 @@ static void set_displayed_framebuffer(unsigned n)
     displayed_buffer = n;
 }
 
-static GRSurface* fbdev_init(minui_backend* backend) {
+static GRSurface* fbdev_init(minui_backend* backend, int angle) {
     int fd = open("/dev/graphics/fb0", O_RDWR);
     if (fd == -1) {
         perror("cannot open fb0");
@@ -103,6 +103,20 @@ static GRSurface* fbdev_init(minui_backend* backend) {
         perror("failed to get fb0 info");
         close(fd);
         return NULL;
+    }
+
+    if(angle == 180)
+    {
+        printf("Display rotation set to 180degree\n");
+        vi.rotate = FB_ROTATE_UD;
+        if (ioctl(fd, FBIOPUT_VSCREENINFO, &vi) < 0) {
+            perror("failed to set fb0 rotate\n");
+        }
+        if (ioctl(fd, FBIOGET_VSCREENINFO, &vi) < 0) {
+            perror("failed to get fb0 info");
+            close(fd);
+            return NULL;
+        }
     }
 
     // We print this out for informational purposes only, but

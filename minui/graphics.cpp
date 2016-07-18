@@ -427,11 +427,16 @@ void gr_flip() {
 
 int gr_init(void)
 {
+    return gr_init_rotate(0);
+}
+
+int gr_init_rotate(int angle)
+{
     gr_init_font();
 
     gr_backend = open_adf();
     if (gr_backend) {
-        gr_draw = gr_backend->init(gr_backend);
+        gr_draw = gr_backend->init(gr_backend, angle);
         if (!gr_draw) {
             gr_backend->exit(gr_backend);
         }
@@ -439,12 +444,12 @@ int gr_init(void)
 
     if (!gr_draw) {
         gr_backend = open_drm();
-        gr_draw = gr_backend->init(gr_backend);
+        gr_draw = gr_backend->init(gr_backend, angle);
     }
 
     if (!gr_draw) {
         gr_backend = open_fbdev();
-        gr_draw = gr_backend->init(gr_backend);
+        gr_draw = gr_backend->init(gr_backend, angle);
         if (gr_draw == NULL) {
             return -1;
         }
