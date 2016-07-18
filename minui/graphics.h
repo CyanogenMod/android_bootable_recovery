@@ -22,7 +22,7 @@
 // TODO: lose the function pointers.
 struct minui_backend {
     // Initializes the backend and returns a GRSurface* to draw into.
-    GRSurface* (*init)(minui_backend*);
+    GRSurface* (*init)(minui_backend*, int);
 
     // Causes the current drawing surface (returned by the most recent
     // call to flip() or init()) to be displayed, and returns a new

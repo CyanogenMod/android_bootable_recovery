@@ -34,6 +34,7 @@ struct GRSurface {
 };
 
 int gr_init();
+int gr_init_rotate(int angle);
 void gr_exit();
 
 int gr_fb_width();
