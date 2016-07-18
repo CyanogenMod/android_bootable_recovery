@@ -559,7 +559,12 @@ static char** Alloc2d(size_t rows, size_t cols) {
 }
 
 void ScreenRecoveryUI::Init() {
-    gr_init();
+    char prop_str[PROPERTY_VALUE_MAX];
+    int  int_value = 0;
+    property_get("ro.sf.hwrotation", prop_str, "0");
+    int_value = atoi(prop_str);
+
+    gr_init_rotate(int_value);
 
     gr_set_font("log");
     gr_font_size(&log_char_width_, &log_char_height_);
