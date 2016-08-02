@@ -44,6 +44,9 @@ on init
     write /proc/sys/kernel/panic_on_oops 1
     write /proc/sys/vm/max_map_count 1000000
 
+    # Reload the file_contexts on /sbin
+    restorecon_recursive /sbin
+
 on fs
     mount pstore pstore /sys/fs/pstore
 
