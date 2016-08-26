@@ -31,6 +31,7 @@
 class ScreenRecoveryUI : public RecoveryUI {
   public:
     ScreenRecoveryUI();
+    virtual ~ScreenRecoveryUI() { }
 
     void Init();
     void SetLocale(const char* locale);
@@ -155,8 +156,6 @@ class ScreenRecoveryUI : public RecoveryUI {
 
     int stage, max_stage;
 
-    int char_width_;
-    int char_height_;
     pthread_mutex_t updateMutex;
     bool rtl_locale;
 
