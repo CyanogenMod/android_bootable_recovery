@@ -285,11 +285,12 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libminiunz_static
 LOCAL_MODULE_TAGS := optional
 LOCAL_CFLAGS := -Dmain=miniunz_main -D__ANDROID__ -DIOAPI_NO_64
-LOCAL_C_INCLUDES := external/zlib
+LOCAL_C_INCLUDES := external/zlib bionic/libc/include
 LOCAL_SRC_FILES := \
     ../../external/zlib/src/contrib/minizip/ioapi.c \
     ../../external/zlib/src/contrib/minizip/miniunz.c \
     ../../external/zlib/src/contrib/minizip/unzip.c
+LOCAL_STATIC_LIBRARIES += libc
 include $(BUILD_STATIC_LIBRARY)
 
 # Reboot static library
