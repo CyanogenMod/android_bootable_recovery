@@ -50,8 +50,7 @@ LOCAL_SRC_FILES := \
 # External tools
 LOCAL_SRC_FILES += \
     ../../system/core/toolbox/newfs_msdos.c \
-    ../../system/core/toolbox/start.c \
-    ../../system/core/toolbox/stop.c \
+    ../../system/core/toolbox/start_stop.cpp \
     ../../system/vold/vdc.cpp
 
 LOCAL_MODULE := recovery
@@ -96,9 +95,7 @@ LOCAL_STATIC_LIBRARIES := \
     libdiskconfig \
     libsysutils \
     libfs_mgr \
-    libsquashfs_utils \
     libbase \
-    libcutils \
     libutils \
     liblog \
     liblogwrap \
@@ -110,9 +107,14 @@ LOCAL_STATIC_LIBRARIES := \
     libm \
     libc \
     libext2_blkid \
-    libext2_uuid
+    libext2_uuid \
+    libfec \
+    libfec_rs \
+    libsquashfs_utils \
+    libmincrypt
 
 LOCAL_HAL_STATIC_LIBRARIES := libhealthd
+LOCAL_WHOLE_STATIC_LIBRARIES += libcutils
 
 # OEMLOCK support requires a device specific liboemlock be supplied.
 # See comments in recovery.cpp for the API.
@@ -272,7 +274,7 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libminizip_static
 LOCAL_MODULE_TAGS := optional
-LOCAL_CFLAGS := -Dmain=minizip_main -D__ANDROID__ -DIOAPI_NO_64
+LOCAL_CFLAGS := -Dmain=minizip_main -D__ANDROID__ -DIOAPI_NO_64 -Wno-unknown-attributes
 LOCAL_C_INCLUDES := external/zlib
 LOCAL_SRC_FILES := \
     ../../external/zlib/src/contrib/minizip/ioapi.c \
@@ -284,7 +286,7 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libminiunz_static
 LOCAL_MODULE_TAGS := optional
-LOCAL_CFLAGS := -Dmain=miniunz_main -D__ANDROID__ -DIOAPI_NO_64
+LOCAL_CFLAGS := -Dmain=miniunz_main -D__ANDROID__ -DIOAPI_NO_64 -Wno-unknown-attributes
 LOCAL_C_INCLUDES := external/zlib bionic/libc/include
 LOCAL_SRC_FILES := \
     ../../external/zlib/src/contrib/minizip/ioapi.c \
