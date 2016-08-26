@@ -67,6 +67,7 @@ LOCAL_C_INCLUDES += \
     system/vold \
     system/extras/ext4_utils \
     system/core/adb \
+    system/core/fs_mgr/include \
     external/e2fsprogs/lib
 
 LOCAL_STATIC_LIBRARIES := \
