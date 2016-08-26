@@ -22,6 +22,7 @@
 class WearRecoveryUI : public ScreenRecoveryUI {
   public:
     WearRecoveryUI();
+    virtual ~WearRecoveryUI() { }
 
     void Init();
     // overall recovery state ("background image")
