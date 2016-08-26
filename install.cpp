@@ -406,7 +406,7 @@ really_install_package(const char *path, bool* wipe_cache, bool needs_mount,
     // setjmp/longjmp.
     signal(SIGBUS, sig_bus);
     if (setjmp(jb) == 0) {
-        err = verify_file(map.addr, map.length, loadedKeys, numKeys);
+        err = verify_file(map.addr, map.length, loadedKeys);
         std::chrono::duration<double> duration = std::chrono::system_clock::now() - t0;
         ui->Print("Update package verification took %.1f s (result %d).\n", duration.count(), err);
     } else {
