@@ -114,6 +114,7 @@ GRSurface* ScreenRecoveryUI::GetCurrentText() {
         case NO_COMMAND: return no_command_text;
         case NONE: abort();
     }
+    return error_text;
 }
 
 int ScreenRecoveryUI::PixelsFromDp(int dp) {
@@ -359,12 +360,13 @@ void ScreenRecoveryUI::draw_sysbar()
 void ScreenRecoveryUI::draw_dialog()
 {
     int x, y, w, h;
+    GRSurface* surface;
 
-    draw_background_locked(dialog_icon);
+    draw_background_locked();
 
-    int iconHeight = gr_get_height(backgroundIcon[dialog_icon]);
+    int iconHeight = gr_get_height(surface);
 
-    x = (gr_fb_width()/2 - (char_width*strlen(dialog_text))/2);
+    x = (gr_fb_width()/2 - (char_width_*strlen(dialog_text))/2);
     y = (gr_fb_height()/2 + iconHeight/2);
 
     SetColor(ERROR_TEXT);
@@ -380,10 +382,10 @@ void ScreenRecoveryUI::draw_dialog()
          * Rect width 4px
          * Rect padding 8px
          */
-        w = char_width*4;
-        h = char_height;
+        w = char_width_*4;
+        h = char_height_;
         x = gr_fb_width()/2 - w/2;
-        y = gr_fb_height() - h - 4*char_height;
+        y = gr_fb_height() - h - 4*char_height_;
         SetColor(HEADER);
         gr_fill(x-(4+8), y-(4+8), x+w+(4+8), y+h+(4+8));
         SetColor(MENU_SEL_BG);
@@ -412,7 +414,7 @@ void ScreenRecoveryUI::draw_screen_locked() {
         if (currentIcon == INSTALLING_UPDATE) {
             size_t y = header_height_ + 4;
 
-            draw_background_locked(currentIcon);
+            draw_background_locked();
 
             SetColor(LOG);
             int cx, cy;
@@ -907,7 +909,7 @@ void ScreenRecoveryUI::DialogShowInfo(const char* text)
     pthread_mutex_lock(&updateMutex);
     free(dialog_text);
     dialog_text = strdup(text);
-    dialog_icon = INFO;
+    //dialog_icon = INFO;
     update_screen_locked();
     pthread_mutex_unlock(&updateMutex);
 }

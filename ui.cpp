@@ -82,7 +82,7 @@ static int message_socket_client_event(int fd, uint32_t epevents, void *data)
     nread = client->Read(buf, sizeof(buf));
     if (nread <= 0) {
         ev_del_fd(fd);
-        self->DialogDismiss();
+        //self->DialogDismiss();
         client->Close();
         delete client;
         return 0;
@@ -102,10 +102,10 @@ static int message_socket_client_event(int fd, uint32_t epevents, void *data)
     printf("field[0]=%s, field[1]=%s\n", fields[0], fields[1]);
     if (strcmp(fields[0], "dialog") == 0) {
         if (strcmp(fields[1], "show") == 0 && nfields > 2) {
-            self->DialogShowInfo(fields[2]);
+            //self->DialogShowInfo(fields[2]);
         }
         if (strcmp(fields[1], "dismiss") == 0) {
-            self->DialogDismiss();
+            //self->DialogDismiss();
         }
     }
 

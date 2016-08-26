@@ -177,7 +177,6 @@ class ScreenRecoveryUI : public RecoveryUI {
     int wrap_count;
 
     int log_char_height_, log_char_width_;
-    int char_height_, char_width_;
 
     int header_height_, header_width_;
     int sysbar_height_;
