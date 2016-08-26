@@ -265,6 +265,7 @@ LOCAL_CFLAGS := -Dmain=make_ext4fs_main
 LOCAL_SRC_FILES := \
     ../../system/extras/ext4_utils/make_ext4fs_main.c \
     ../../system/core/libcutils/canned_fs_config.c
+LOCAL_STATIC_LIBRARIES += libselinux
 include $(BUILD_STATIC_LIBRARY)
 
 # Minizip static library
