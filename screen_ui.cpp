@@ -364,7 +364,7 @@ void ScreenRecoveryUI::draw_screen_locked() {
         if (currentIcon == INSTALLING_UPDATE) {
             size_t y = header_height_ + 4;
 
-            draw_background_locked(currentIcon);
+            draw_background_locked();
 
             SetColor(LOG);
             int cx, cy;

@@ -526,13 +526,6 @@ void RecoveryUI::handle_release(input_device* dev) {
         }
     }
 
-    if (DialogShowing()) {
-        if (DialogDismissable() && !dev->in_swipe) {
-            DialogDismiss();
-        }
-        return;
-    }
-
     if (in_swipe) {
         if (abs(diff.x) > abs(diff.y)) {
             if (abs(diff.x) > min_swipe_px.x) {
@@ -572,12 +565,10 @@ void RecoveryUI::handle_gestures(input_device* dev) {
         diff.y = dev->touch_pos.y - dev->touch_track.y;
         if (abs(diff.y) > MenuItemHeight()) {
             dev->in_swipe = true;
-            if (!DialogShowing()) {
-                dev->touch_track = dev->touch_pos;
-                int key = (diff.y < 0) ? KEY_VOLUMEUP : KEY_VOLUMEDOWN;
-                ProcessKey(dev, key, 1);
-                ProcessKey(dev, key, 0);
-            }
+            dev->touch_track = dev->touch_pos;
+            int key = (diff.y < 0) ? KEY_VOLUMEUP : KEY_VOLUMEDOWN;
+            ProcessKey(dev, key, 1);
+            ProcessKey(dev, key, 0);
         }
     }
 }
