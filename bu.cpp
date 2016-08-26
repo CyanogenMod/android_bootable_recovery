@@ -19,8 +19,6 @@
 
 #include "bu.h"
 
-#include "messagesocket.h"
-
 #include "voldclient.h"
 
 #define PATHNAME_RC "/tmp/burc"
@@ -42,8 +40,6 @@ char* hash_name;
 size_t hash_datalen;
 SHA_CTX sha_ctx;
 MD5_CTX md5_ctx;
-
-static MessageSocket ms;
 
 void
 ui_print(const char* format, ...) {
@@ -178,7 +174,7 @@ int update_progress(uint64_t off)
         if (now != last_time && pct != last_pct) {
             char msg[256];
             sprintf(msg, "%s: %d%% complete", curpart->name, pct);
-            ms.Show(msg);
+            ui_print(msg);
             last_time = now;
             last_pct = pct;
         }
@@ -362,22 +358,18 @@ int main(int argc, char **argv)
     vdc = new VoldClient();
     vdc->start();
 
-    ms.ClientInit();
-
     if (!strcmp(opname, "backup")) {
-        ms.Show("Backup in progress...");
+        ui_print("Backup in progress...");
         rc = do_backup(argc-optidx, &argv[optidx]);
     }
     else if (!strcmp(opname, "restore")) {
-        ms.Show("Restore in progress...");
+        ui_print("Restore in progress...");
         rc = do_restore(argc-optidx, &argv[optidx]);
     }
     else {
         logmsg("Unknown operation %s\n", opname);
         rc = 1;
     }
-
-    ms.Dismiss();
 
     xcomp_enable_set(xcomp_enable);
 
