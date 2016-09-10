@@ -201,7 +201,7 @@ static int set_bootloader_message_block(const bootloader_message* in,
     }
 
 #ifdef BOARD_RECOVERY_BLDRMSG_OFFSET
-    fseek(f, BOARD_RECOVERY_BLDRMSG_OFFSET, SEEK_SET);
+    lseek(fd.get(), BOARD_RECOVERY_BLDRMSG_OFFSET, SEEK_SET);
 #endif
 
     size_t written = 0;
