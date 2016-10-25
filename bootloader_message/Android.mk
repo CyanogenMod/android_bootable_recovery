@@ -1,4 +1,4 @@
-# Copyright (C) 2015 The Android Open Source Project
+# Copyright (C) 2016 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,13 +15,10 @@
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
-
 LOCAL_CLANG := true
-LOCAL_SRC_FILES := update_verifier.cpp
-
-LOCAL_MODULE := update_verifier
-LOCAL_SHARED_LIBRARIES := libbase libcutils libhardware liblog
-
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/..
-
-include $(BUILD_EXECUTABLE)
+LOCAL_SRC_FILES := bootloader_message.cpp
+LOCAL_MODULE := libbootloader_message
+LOCAL_STATIC_LIBRARIES := libbase libfs_mgr
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
+include $(BUILD_STATIC_LIBRARY)

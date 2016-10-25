@@ -43,7 +43,9 @@ static const char* WIPE_MENU_NAMES[] = {
     "System reset (keep media)",
 #endif
     "Full factory reset",
+#ifndef AB_OTA_UPDATER
     "Wipe cache partition",
+#endif  // !AB_OTA_UPDATER
     nullptr
 };
 static const menu_entry WIPE_MENU_ENTRIES[] = {
@@ -51,7 +53,9 @@ static const menu_entry WIPE_MENU_ENTRIES[] = {
     { ACTION_INVOKE, { .action = Device::WIPE_DATA } },
 #endif
     { ACTION_INVOKE, { .action = Device::WIPE_FULL } },
+#ifndef AB_OTA_UPDATER
     { ACTION_INVOKE, { .action = Device::WIPE_CACHE } },
+#endif
     { ACTION_NONE, { .action = Device::NO_ACTION } }
 };
 static const menu WIPE_MENU = {
@@ -91,6 +95,7 @@ static const menu_entry ADVANCED_MENU_ENTRIES[] = {
     { ACTION_INVOKE, { .action = Device::SHUTDOWN } },
     { ACTION_NONE, { .action = Device::NO_ACTION } }
 };
+
 static const menu ADVANCED_MENU = {
     ADVANCED_MENU_NAMES,
     ADVANCED_MENU_ENTRIES
