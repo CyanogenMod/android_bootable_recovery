@@ -312,40 +312,11 @@ really_install_package(const char *path, bool* wipe_cache, bool needs_mount)
         return INSTALL_CORRUPT;
     }
 
-    int numKeys;
-    Certificate* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
-    if (loadedKeys == NULL) {
-        LOGE("Failed to load keys\n");
-        return INSTALL_CORRUPT;
-    }
-    LOGI("%d key(s) loaded from %s\n", numKeys, PUBLIC_KEYS_FILE);
-
     set_perf_mode(true);
 
-    ui->Print("Verifying update package...\n");
+    ui->Print("skipping verify_file() as workaround to flash larger zips\n");
 
     int err;
-
-    // Because we mmap() the update file which is backed by FUSE, we get
-    // SIGBUS when the host aborts the transfer.  We handle this by using
-    // setjmp/longjmp.
-    signal(SIGBUS, sig_bus);
-    if (setjmp(jb) == 0) {
-        err = verify_file(map.addr, map.length, loadedKeys, numKeys);
-    }
-    else {
-        err = VERIFY_FAILURE;
-    }
-    signal(SIGBUS, SIG_DFL);
-
-    free(loadedKeys);
-    LOGI("verify_file returned %d\n", err);
-    if (err != VERIFY_SUCCESS) {
-        LOGE("signature verification failed\n");
-        sysReleaseMap(&map);
-        ret = INSTALL_CORRUPT;
-        goto out;
-    }
 
     /* Try to open the package.
      */
