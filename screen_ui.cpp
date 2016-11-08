@@ -369,7 +369,8 @@ void ScreenRecoveryUI::draw_screen_locked() {
 
    if (show_text) {
         if (currentIcon == INSTALLING_UPDATE || currentIcon == ERASING) {
-            size_t y = header_height_ + 4;
+            size_t y = currentIcon == INSTALLING_UPDATE
+                    ? 3 * gr_fb_height() / 4 : header_height_ + 4;
 
             SetColor(LOG);
             int cx, cy;
@@ -378,7 +379,7 @@ void ScreenRecoveryUI::draw_screen_locked() {
             // display from the bottom up, until we hit the top of the
             // screen or we've displayed the entire text buffer.
             size_t ty, count;
-            int row = (text_first_row_ + log_text_rows_ - 1) % log_text_rows_;
+            int row = (text_row_ + log_text_rows_ - 1) % log_text_rows_;
             for (ty = gr_fb_height() - cy, count = 0;
                  ty > y + 2 && count < log_text_rows_;
                  ty -= (cy + 2), ++count) {
