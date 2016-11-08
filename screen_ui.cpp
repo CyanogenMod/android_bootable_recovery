@@ -371,8 +371,6 @@ void ScreenRecoveryUI::draw_screen_locked() {
         if (currentIcon == INSTALLING_UPDATE || currentIcon == ERASING) {
             size_t y = header_height_ + 4;
 
-            draw_background_locked();
-
             SetColor(LOG);
             int cx, cy;
             gr_set_font("log");
