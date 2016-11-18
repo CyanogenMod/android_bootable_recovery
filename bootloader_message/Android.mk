@@ -15,6 +15,11 @@
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
+
+ifeq ($(TARGET_HAS_NO_MISC_PARTITION),true)
+  LOCAL_CFLAGS += -DNO_MISC_PARTITION
+endif
+
 LOCAL_CLANG := true
 LOCAL_SRC_FILES := bootloader_message.cpp
 LOCAL_MODULE := libbootloader_message
