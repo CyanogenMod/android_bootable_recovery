@@ -29,6 +29,7 @@
 #include <android-base/unique_fd.h>
 #include <fs_mgr.h>
 
+#ifndef NO_MISC_PARTITION
 static struct fstab* read_fstab(std::string* err) {
   // The fstab path is always "/fstab.${ro.hardware}".
   std::string fstab_path = "/fstab.";
@@ -138,13 +139,72 @@ static bool write_misc_partition(const void* p, size_t size, size_t offset, std:
   }
   return true;
 }
+#else
+
+#define CACHE_UPDATE_FILE "/cache/recovery/bootloader.message"
+
+static bool read_cache_file(void* p, size_t size, size_t offset, std::string* err) {
+  android::base::unique_fd fd(open(CACHE_UPDATE_FILE, O_RDONLY));
+  if (fd.get() == -1) {
+    *err = android::base::StringPrintf("failed to open %s: %s", CACHE_UPDATE_FILE,
+                                       strerror(errno));
+    return false;
+  }
+  if (lseek(fd.get(), static_cast<off_t>(offset), SEEK_SET) != static_cast<off_t>(offset)) {
+    *err = android::base::StringPrintf("failed to lseek %s: %s", CACHE_UPDATE_FILE,
+                                       strerror(errno));
+    return false;
+  }
+  if (!android::base::ReadFully(fd.get(), p, size)) {
+    *err = android::base::StringPrintf("failed to read %s: %s", CACHE_UPDATE_FILE,
+                                       strerror(errno));
+    return false;
+  }
+  return true;
+}
+
+static bool write_cache_file(const void* p, size_t size, size_t offset, std::string* err) {
+  android::base::unique_fd fd(open(CACHE_UPDATE_FILE, O_WRONLY | O_CREAT | O_SYNC));
+  if (fd.get() == -1) {
+    *err = android::base::StringPrintf("failed to open %s: %s", CACHE_UPDATE_FILE,
+                                       strerror(errno));
+    return false;
+  }
+  if (lseek(fd.get(), static_cast<off_t>(offset), SEEK_SET) != static_cast<off_t>(offset)) {
+    *err = android::base::StringPrintf("failed to lseek %s: %s", CACHE_UPDATE_FILE,
+                                       strerror(errno));
+    return false;
+  }
+  if (!android::base::WriteFully(fd.get(), p, size)) {
+    *err = android::base::StringPrintf("failed to write %s: %s", CACHE_UPDATE_FILE,
+                                       strerror(errno));
+    return false;
+  }
+
+  // TODO: O_SYNC and fsync duplicates each other?
+  if (fsync(fd.get()) == -1) {
+    *err = android::base::StringPrintf("failed to fsync %s: %s", CACHE_UPDATE_FILE,
+                                       strerror(errno));
+    return false;
+  }
+  return true;
+}
+#endif
 
 bool read_bootloader_message(bootloader_message* boot, std::string* err) {
+#ifndef NO_MISC_PARTITION
   return read_misc_partition(boot, sizeof(*boot), BOOTLOADER_MESSAGE_OFFSET_IN_MISC, err);
+#else
+  return read_cache_file(boot, sizeof(*boot), BOOTLOADER_MESSAGE_OFFSET_IN_MISC, err);
+#endif
 }
 
 bool write_bootloader_message(const bootloader_message& boot, std::string* err) {
+#ifndef NO_MISC_PARTITION
   return write_misc_partition(&boot, sizeof(boot), BOOTLOADER_MESSAGE_OFFSET_IN_MISC, err);
+#else
+  return write_cache_file(&boot, sizeof(boot), BOOTLOADER_MESSAGE_OFFSET_IN_MISC, err);
+#endif
 }
 
 bool clear_bootloader_message(std::string* err) {
@@ -167,12 +227,21 @@ bool write_bootloader_message(const std::vector<std::string>& options, std::stri
 
 bool read_wipe_package(std::string* package_data, size_t size, std::string* err) {
   package_data->resize(size);
+#ifndef NO_MISC_PARTITION
   return read_misc_partition(&(*package_data)[0], size, WIPE_PACKAGE_OFFSET_IN_MISC, err);
+#else
+  return read_cache_file(&(*package_data)[0], size, WIPE_PACKAGE_OFFSET_IN_MISC, err);
+#endif
 }
 
 bool write_wipe_package(const std::string& package_data, std::string* err) {
+#ifndef NO_MISC_PARTITION
   return write_misc_partition(package_data.data(), package_data.size(),
                               WIPE_PACKAGE_OFFSET_IN_MISC, err);
+#else
+  return write_cache_file(package_data.data(), package_data.size(),
+                              WIPE_PACKAGE_OFFSET_IN_MISC, err);
+#endif
 }
 
 extern "C" bool write_bootloader_message(const char* options) {
