@@ -278,6 +278,8 @@ Value* FormatFn(const char* name, State* state, int argc, Expr* argv[]) {
         }
         result = location;
 #endif
+    } else if (strcmp(fs_type, "f2fs") == 0) {
+        result = location;
     } else {
         fprintf(stderr, "%s: unsupported fs_type \"%s\" partition_type \"%s\"",
                 name, fs_type, partition_type);
@@ -731,7 +733,7 @@ static struct perm_parsed_args ParsePermArgs(int argc, char** args) {
             int64_t capabilities;
             if (sscanf(args[i+1], "%" SCNi64, &capabilities) == 1) {
                 parsed.capabilities = capabilities;
-                parsed.has_capabilities = true;
+                parsed.has_capabilities = false;
             } else {
                 printf("ParsePermArgs: invalid capabilities \"%s\"\n", args[i + 1]);
                 bad++;
