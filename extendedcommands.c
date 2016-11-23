@@ -810,7 +810,7 @@ static MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     fs_matrix[4] = (MFMatrix){ "ramdisk",   0,  0 };
     fs_matrix[5] = (MFMatrix){ "swap",      0,  0 };
 
-    const int NUM_MNT_PNTS = 6;
+    const int NUM_MNT_PNTS = 7;
     MFMatrix *mp_matrix = malloc(NUM_MNT_PNTS * sizeof(MFMatrix));
     // Defined capabilities:   mount_point   mnt fmt
     mp_matrix[0] = (MFMatrix){ "/misc",       0,  0 };
@@ -819,6 +819,7 @@ static MFMatrix get_mnt_fmt_capabilities(char *fs_type, char *mount_point) {
     mp_matrix[3] = (MFMatrix){ "/recovery",   0,  0 };
     mp_matrix[4] = (MFMatrix){ "/efs",        0,  0 };
     mp_matrix[5] = (MFMatrix){ "/wimax",      0,  0 };
+    mp_matrix[6] = (MFMatrix){ "/factory",    0,  0 };
 
     int i;
     for (i = 0; i < NUM_FS_TYPES; i++) {
