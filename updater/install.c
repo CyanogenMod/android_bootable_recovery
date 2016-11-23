@@ -731,7 +731,7 @@ static struct perm_parsed_args ParsePermArgs(int argc, char** args) {
             int64_t capabilities;
             if (sscanf(args[i+1], "%" SCNi64, &capabilities) == 1) {
                 parsed.capabilities = capabilities;
-                parsed.has_capabilities = true;
+                parsed.has_capabilities = false;
             } else {
                 printf("ParsePermArgs: invalid capabilities \"%s\"\n", args[i + 1]);
                 bad++;
