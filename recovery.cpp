@@ -840,8 +840,12 @@ static void file_to_ui(const char* fn) {
     // If the user didn't abort, then give the user time to glance at
     // the end of the log, sorry, no rewind here
     if (key != KEY_POWER && key != KEY_BACK) {
-        ui->Print("\n--END-- (press any key)\n");
-        ui->WaitKey();
+        ui->Print("\n------END------\n");
+        ui->Print("\n(press BACK OR POWER TO exit)\n");
+        while (key !=KEY_BACK || KEY !=KEY_POWER){
+            key=ui->WaitKey();
+        }
+        
     }
 
     ui->SetBackground(RecoveryUI::NONE);
