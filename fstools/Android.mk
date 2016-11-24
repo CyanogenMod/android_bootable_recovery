@@ -42,7 +42,8 @@ LOCAL_STATIC_LIBRARIES := \
 	libext2_e2p \
 	libc++_static \
 	libc \
-	libm
+	libm \
+	libselinux
 
 FSTOOLS_LINKS := \
 	e2fsck mke2fs tune2fs fsck.ext4 mkfs.ext4 \
