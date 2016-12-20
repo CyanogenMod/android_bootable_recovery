@@ -1320,6 +1320,14 @@ static int apply_from_storage(Device* device, const std::string& id, bool* wipe_
     ui->Print("\n-- Install %s ...\n", path);
     set_sdcard_update_bootloader_message();
 
+#ifdef CANT_USE_FUSE_SIDELOAD
+    void* token = start_sdcard_fuse_legacy(path);
+    int status = install_package(FUSE_SIDELOAD_HOST_PATHNAME, wipe_cache,
+        TEMPORARY_INSTALL_FILE, false, 0);
+    finish_sdcard_fuse_legacy(token);
+    vdc->volumeUnmount(vi.mId, true);
+    return status;
+#else
     // We used to use fuse in a thread as opposed to a process. Since accessing
     // through fuse involves going from kernel to userspace to kernel, it leads
     // to deadlock when a page fault occurs. (Bug: 26313124)
@@ -1380,6 +1388,7 @@ static int apply_from_storage(Device* device, const std::string& id, bool* wipe_
     }
 
     return result;
+#endif
 }
 
 static int

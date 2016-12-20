@@ -23,6 +23,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #include "fuse_sideload.h"
 
@@ -81,4 +82,123 @@ bool start_sdcard_fuse(const char* path) {
     vtab.close = close_file;
 
     return run_fuse_sideload(&vtab, &fd, fd.file_size, fd.block_size) == 0;
+}
+
+struct token {
+    pid_t pid;
+    const char* path;
+    int result;
+};
+
+static void* run_sdcard_fuse_legacy(void* cookie) {
+    token* t = reinterpret_cast<token*>(cookie);
+
+    struct stat sb;
+    if (stat(t->path, &sb) < 0) {
+        fprintf(stderr, "failed to stat %s: %s\n", t->path, strerror(errno));
+        t->result = -1;
+        return NULL;
+     }
+
+    struct file_data fd;
+    struct provider_vtab vtab;
+
+    fd.fd = open(t->path, O_RDONLY);
+    if (fd.fd < 0) {
+        fprintf(stderr, "failed to open %s: %s\n", t->path, strerror(errno));
+        t->result = -1;
+        return NULL;
+    }
+    fd.file_size = sb.st_size;
+    fd.file_size = sb.st_size;
+    fd.block_size = 65536;
+    fd.block_size = 65536;
+    vtab.read_block = read_block_file;
+    vtab.read_block = read_block_file;
+    vtab.close = close_file;
+    vtab.close = close_file;
+
+    t->result = run_fuse_sideload(&vtab, &fd, fd.file_size, fd.block_size);
+    return NULL;
+}
+
+// How long (in seconds) we wait for the fuse-provided package file to
+// appear, before timing out.
+#define SDCARD_INSTALL_TIMEOUT 10
+
+static void* run_sdcard_fuse(void* cookie) {
+    token* t = reinterpret_cast<token*>(cookie);
+
+    struct stat sb;
+    if (stat(t->path, &sb) < 0) {
+        fprintf(stderr, "failed to stat %s: %s\n", t->path, strerror(errno));
+        t->result = -1;
+        return NULL;
+    }
+
+    struct file_data fd;
+    struct provider_vtab vtab;
+
+    fd.fd = open(t->path, O_RDONLY);
+    if (fd.fd < 0) {
+        fprintf(stderr, "failed to open %s: %s\n", t->path, strerror(errno));
+        t->result = -1;
+        return NULL;
+    }
+    fd.file_size = sb.st_size;
+    fd.block_size = 65536;
+
+    vtab.read_block = read_block_file;
+    vtab.close = close_file;
+
+    t->result = run_fuse_sideload(&vtab, &fd, fd.file_size, fd.block_size);
+    return NULL;
+}
+
+// How long (in seconds) we wait for the fuse-provided package file to
+// appear, before timing out.
+#define SDCARD_INSTALL_TIMEOUT 10
+
+void* start_sdcard_fuse_legacy(const char* path) {
+    token* t = new token;
+
+    t->path = path;
+    if ((t->pid = fork()) < 0) {
+        free(t);
+        return NULL;
+    }
+    if (t->pid == 0) {
+        run_sdcard_fuse(t);
+        _exit(0);
+    }
+
+    time_t start_time = time(NULL);
+    time_t now = start_time;
+
+    while (now - start_time < SDCARD_INSTALL_TIMEOUT) {
+        struct stat st;
+        if (stat(FUSE_SIDELOAD_HOST_PATHNAME, &st) == 0) {
+            break;
+        }
+        if (errno != ENOENT && errno != ENOTCONN) {
+            free(t);
+            t = NULL;
+            break;
+        }
+        sleep(1);
+        now = time(NULL);
+    }
+
+    return t;
+}
+
+void finish_sdcard_fuse_legacy(void* cookie) {
+    if (cookie == NULL) return;
+    token* t = reinterpret_cast<token*>(cookie);
+
+    kill(t->pid, SIGTERM);
+    int status;
+    waitpid(t->pid, &status, 0);
+
+    delete t;
 }
