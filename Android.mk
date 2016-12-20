@@ -116,6 +116,11 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_HAL_STATIC_LIBRARIES := libhealthd
 LOCAL_WHOLE_STATIC_LIBRARIES += libcutils
 
+# Don't use Fuse-sideload. Use old method instead.
+ifeq ($(BOARD_RECOVERY_CANT_USE_FUSE_SIDELOAD), true)
+    LOCAL_CFLAGS += -DCANT_USE_FUSE_SIDELOAD
+endif
+
 # OEMLOCK support requires a device specific liboemlock be supplied.
 # See comments in recovery.cpp for the API.
 ifeq ($(TARGET_HAVE_OEMLOCK), true)

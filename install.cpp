@@ -567,13 +567,13 @@ really_install_package(const char *path, bool* wipe_cache, bool needs_mount,
     set_perf_mode(true);
 
     // Verify package.
-    if (!verify_package(map.addr, map.length)) {
+/*    if (!verify_package(map.addr, map.length)) {
         log_buffer.push_back(android::base::StringPrintf("error: %d", kZipVerificationFailure));
         sysReleaseMap(&map);
         set_perf_mode(false);
         return INSTALL_CORRUPT;
     }
-
+*/
     // Try to open the package.
     ZipArchive zip;
     int err = mzOpenZipArchive(map.addr, map.length, &zip);
