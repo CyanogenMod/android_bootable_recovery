@@ -116,6 +116,11 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_HAL_STATIC_LIBRARIES := libhealthd
 LOCAL_WHOLE_STATIC_LIBRARIES += libcutils
 
+# Use fuse in thread if fuse is not working properly in a proces.
+ifeq ($(BOARD_RECOVERY_MUST_USE_FUSE_THREAD), true)
+    LOCAL_CFLAGS += -DMUST_USE_FUSE_THREAD
+endif
+
 # OEMLOCK support requires a device specific liboemlock be supplied.
 # See comments in recovery.cpp for the API.
 ifeq ($(TARGET_HAVE_OEMLOCK), true)

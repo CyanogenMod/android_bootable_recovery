@@ -312,17 +312,28 @@ static int
 try_update_binary(const char* path, ZipArchive* zip, bool* wipe_cache,
                   std::vector<std::string>& log_buffer, int retry_count)
 {
+    int logIndex = 0;
+    LOGE("%s: %d\n", __func__, logIndex++);
+
     read_source_target_build(zip, log_buffer);
+    LOGE("%s: %d\n", __func__, logIndex++);
 
     int pipefd[2];
     pipe(pipefd);
+    LOGE("%s: %d\n", __func__, logIndex++);
 
     std::vector<std::string> args;
+    LOGE("%s: %d\n", __func__, logIndex++);
     int ret = update_binary_command(path, zip, retry_count, pipefd[1], &args);
+    LOGE("%s: %d\n", __func__, logIndex++);
     mzCloseZipArchive(zip);
+    LOGE("%s: %d\n", __func__, logIndex++);
     if (ret) {
+    LOGE("%s: %d\n", __func__, logIndex++);
         close(pipefd[0]);
+    LOGE("%s: %d\n", __func__, logIndex++);
         close(pipefd[1]);
+    LOGE("%s: %d\n", __func__, logIndex++);
         return ret;
     }
 
